@@ -37,9 +37,18 @@ function Ojos({ estado }: { estado: EstadoLia }) {
         <>
           <path d="M-21.5 1 A6.5 6.5 0 0 0 -8.5 1 Z" fill={TINTA} />
           <path d="M8.5 1 A6.5 6.5 0 0 0 21.5 1 Z" fill={TINTA} />
-          {/* Cejas */}
+          {/* Cejas: el motor de animación cambia su grosor e inclinación. */}
           <path
-            d="M-23 -4 L-8 -1 M23 -4 L8 -1"
+            id="lia-ceja-izq"
+            d="M-23 -4 L-8 -1"
+            stroke={TINTA}
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            id="lia-ceja-der"
+            d="M23 -4 L8 -1"
             stroke={TINTA}
             strokeWidth="1.8"
             fill="none"
@@ -263,6 +272,17 @@ export function Lia({ estado, onClick }: LiaProps) {
           <g id="lia-mejillas" fill="#FF9EB5" opacity={POSES[estado].mejillas}>
             <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
             <ellipse cx="27" cy="13" rx="5.5" ry="3" />
+          </g>
+          {/* Gota de esfuerzo: oculta salvo cuando el motor la anima. */}
+          <g id="lia-gota" opacity="0">
+            <path
+              d="M0 -4.5 C1.8 -1.6 3 0.2 3 2 A3 3 0 0 1 -3 2 C-3 0.2 -1.8 -1.6 0 -4.5 Z"
+              fill="#8FD8F5"
+              stroke="#4BAEDB"
+              strokeWidth="0.8"
+              strokeLinejoin="round"
+            />
+            <circle cx="-1" cy="1.8" r="0.8" fill="#fff" opacity="0.8" />
           </g>
           <g id="lia-petalo" transform={PETALO_BASE}>
             <Petalo />
