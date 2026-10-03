@@ -8,10 +8,3 @@ export const ESTADOS: readonly EstadoLia[] = [
   "termino",
 ];
 
-export function esEstado(valor: unknown): valor is EstadoLia {
-  return ESTADOS.some((estado) => estado === valor);
-}
-
-export function siguienteEstado(estado: EstadoLia): EstadoLia {
-  return ESTADOS[(ESTADOS.indexOf(estado) + 1) % ESTADOS.length];
-}

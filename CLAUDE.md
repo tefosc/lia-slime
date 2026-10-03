@@ -24,6 +24,12 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   - `Lia.tsx` — geometría del personaje; `poses.ts` — valores de reposo por
     estado; `movimiento.ts` — resorte amortiguado; `useAnimacionLia.ts` — bucle
     de animación que escribe los `transform` directamente en el SVG.
+- `src/estado/` — sesiones de Claude Code: `sesiones.ts` (evento → estado,
+  registro por `session_id`, prioridad y caducidad), `useEstadoLia.ts` (escucha
+  el evento `lia-evento`) y `config.ts` (tiempos).
+- `src-tauri/src/receptor.rs` — receptor local de eventos en `127.0.0.1:47615`.
+- `scripts/simular-evento.ps1` — envía eventos de prueba al receptor.
+- `docs/hooks.md` — cómo conectar los hooks de Claude Code.
 - `src/window.ts` — posicionamiento de la ventana (borde superior central).
 - `src/useWindowDrag.ts` — arrastre manual de la ventana.
 - `src-tauri/` — Rust y configuración de Tauri.
@@ -54,9 +60,20 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   fotograma solo cuando toca: 60 fps en movimiento rápido y 20 fps en lento.
 - `document.hidden` casi nunca es verdadero en una ventana siempre encima, así
   que la pausa por visibilidad ahorra poco en la práctica.
-- Solo en desarrollo: la variable de entorno `VITE_LIA_ESTADO` (del proceso,
-  no de un archivo `.env`) fija el estado inicial, y un clic sin arrastre pasa
-  al siguiente estado.
+- Para probar estados sin Claude Code se usa `scripts/simular-evento.ps1`.
+
+## Receptor de eventos (dependencias de Windows)
+
+- Escucha solo en `127.0.0.1:47615`; si el puerto está ocupado, informa del
+  error y no abre otro.
+- El token se genera en cada arranque y se guarda en
+  `%APPDATA%\dev.lia.mascota\cabecera-hook.txt`. Los permisos son los que
+  Windows da a `%APPDATA%` (usuario, SYSTEM y administradores).
+- Los hooks son de tipo `command` con `async: true` y usan `curl.exe`. No se
+  usan hooks HTTP porque Windows tarda unos 2 s en rechazar una conexión a un
+  puerto local cerrado, y eso retrasaría a Claude Code con Lia cerrada.
+- Privacidad: del evento solo se conservan `hook_event_name`, `session_id` y
+  `notification_type`. Nunca registres ni reenvíes otros campos.
 
 ## Reglas de seguridad y dependencias (obligatorias)
 
