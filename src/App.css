@@ -1,0 +1,25 @@
+/* El fondo debe ser totalmente transparente para que se vea el escritorio. */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.mascot {
+  display: block;
+}
+
+.mascot circle {
+  cursor: grab;
+}
