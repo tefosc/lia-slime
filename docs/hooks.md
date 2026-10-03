@@ -2,8 +2,8 @@
 
 Lia reacciona a los eventos de Claude Code mediante *hooks*. Cada hook envía
 el evento a un receptor que Lia abre en `127.0.0.1:47615` mientras está en
-ejecución. Lia solo observa: no aprueba permisos ni modifica nada en Claude
-Code.
+ejecución. Lia observa los eventos y, además, puede mostrar las solicitudes de
+permiso para que las apruebes o deniegues con un clic.
 
 > Estas instrucciones son para **Windows**. Usan `curl.exe`, incluido en
 > Windows 10 y 11, y la carpeta `%APPDATA%`.
@@ -15,8 +15,9 @@ Code.
   HTTP que `curl` sabe leer. El token cambia en cada arranque, y como el hook
   lo lee del archivo, `settings.json` no contiene ningún secreto ni hay que
   editarlo de nuevo.
-- Cada hook es de tipo `command` con `async: true`: Claude Code lo lanza en
-  segundo plano y no espera su resultado, así que nunca queda bloqueado.
+- Los hooks de monitoreo son de tipo `command` con `async: true`: Claude Code
+  los lanza en segundo plano y no espera su resultado, así que nunca queda
+  bloqueado. El de `PermissionRequest` es la excepción (ver más abajo).
 - Si Lia está cerrada, `curl` abandona a los 0.3 s (`--connect-timeout`) y el
   hook termina sin efecto.
 - De cada evento, Lia conserva únicamente el nombre del evento, el
@@ -111,9 +112,8 @@ lugar de duplicar la clave.
         "hooks": [
           {
             "type": "command",
-            "async": true,
-            "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "timeout": 75,
+            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
           }
         ]
       }
@@ -158,7 +158,8 @@ lugar de duplicar la clave.
 }
 ```
 
-El comando es el mismo en los nueve eventos. Qué hace cada opción:
+El comando es el mismo en ocho eventos; `PermissionRequest` usa otro, explicado
+en la sección siguiente. Qué hace cada opción del comando común:
 
 | Opción | Para qué sirve |
 |---|---|
@@ -168,13 +169,52 @@ El comando es el mismo en los nueve eventos. Qué hace cada opción:
 | `-H "@archivo"` | Lee la cabecera `Authorization` con el token desde el archivo. |
 | `--data-binary "@-"` | Envía como cuerpo el JSON que Claude Code pasa por stdin. |
 
+## Aprobar permisos desde Lia (`PermissionRequest`)
+
+Este hook es **síncrono** (sin `async`), porque Claude Code necesita su
+respuesta. Su comando se diferencia del resto en tres cosas:
+
+- Envía a `/permiso` en lugar de `/evento`.
+- No lleva `-o NUL`: `curl` imprime la respuesta de Lia y Claude Code la lee.
+- `-m 70` y `"timeout": 75`: Lia espera tu decisión 60 s como máximo, así que
+  curl (70 s) y el hook (75 s) deben esperar algo más que eso.
+
+Qué ocurre en cada caso:
+
+| Situación | Resultado en Claude Code |
+|---|---|
+| Pulsas **Permitir** en la tarjeta | La herramienta se ejecuta |
+| Pulsas **Denegar** | Se deniega con el mensaje "Denegado desde Lia" |
+| Pasan 60 s sin decidir | Lia responde "sin decisión" y aparece el diálogo normal |
+| Lia está cerrada | curl falla a los 0.3 s y aparece el diálogo normal |
+| Lia se cierra o falla mientras espera | Se corta la conexión y aparece el diálogo normal |
+| Interrumpes Claude Code mientras espera | Lia retira la tarjeta |
+
+Lia nunca permite ni deniega por su cuenta: solo cuando pulsas un botón.
+
+Ten en cuenta:
+
+- **Mientras la tarjeta está abierta, Claude Code espera** y no muestra su
+  diálogo en la terminal. Si no miras a Lia, la espera dura hasta 60 s.
+- **No se dispara en modo auto, `dontAsk` ni `bypassPermissions`**, ni cuando
+  una regla ya permite la herramienta: en esos casos no hay nada que aprobar.
+- La tarjeta muestra la herramienta, el comando, la ruta o la URL, y una
+  etiqueta "Sesión N". Ese texto solo existe en memoria mientras la solicitud
+  está activa; nunca se guarda ni se registra.
+- Si el comando parece peligroso (borrado recursivo, formateo, archivos de
+  credenciales), la tarjeta se resalta en amarillo. Es solo un aviso: no
+  bloquea nada.
+- Para cambiar los 60 s hay que modificar `ESPERA_PERMISO` en
+  `src-tauri/src/permisos.rs` y ajustar `-m` y `timeout` del hook en
+  consecuencia.
+
 ## Qué hace Lia con cada evento
 
 | Evento de Claude Code | Estado de la sesión |
 |---|---|
 | `SessionStart` | inactivo |
 | `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure` | trabajando |
-| `PermissionRequest` | necesita |
+| `PermissionRequest` | necesita mientras la tarjeta está abierta |
 | `Notification` con `permission_prompt`, `agent_needs_input`, `elicitation_dialog` o `elicitation_url_dialog` | necesita |
 | `Notification` de otro tipo (por ejemplo `idle_prompt`, que solo indica que Claude Code espera tu siguiente mensaje) | sin cambio |
 | `SubagentStop` | sin cambio: puede llegar después de `Stop` y no se usa |
@@ -198,6 +238,8 @@ Con Lia abierta, desde la carpeta del repositorio:
 .\scripts\simular-evento.ps1 Notification -Notificacion permission_prompt
 .\scripts\simular-evento.ps1 Stop
 .\scripts\simular-evento.ps1 SessionEnd
+.\scripts\simular-evento.ps1 -Permiso 'echo prueba'   # tarjeta de permiso
+.\scripts\simular-evento.ps1 -Peligroso              # tarjeta resaltada
 ```
 
 ## Desactivar

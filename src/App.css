@@ -10,8 +10,23 @@ body,
 }
 
 #root {
+  user-select: none;
+}
+
+/* Lia a la izquierda y la tarjeta a su derecha, o al revés si no cabe. */
+.escena {
+  height: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  user-select: none;
+}
+
+.escena-izquierda {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.lia-caja {
+  flex: none;
+  width: 200px;
+  height: 200px;
 }

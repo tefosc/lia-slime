@@ -1,3 +1,4 @@
+mod permisos;
 mod receptor;
 
 use tauri::Manager;
@@ -6,11 +7,16 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let estado = receptor::iniciar(app.handle().clone());
+            let pendientes = permisos::Pendientes::default();
+            let estado = receptor::iniciar(app.handle().clone(), pendientes.clone());
             app.manage(estado);
+            app.manage(pendientes);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![receptor::error_receptor])
+        .invoke_handler(tauri::generate_handler![
+            receptor::error_receptor,
+            permisos::resolver_permiso
+        ])
         .run(tauri::generate_context!())
         .expect("error al ejecutar la aplicación Tauri");
 }

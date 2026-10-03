@@ -28,6 +28,8 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   registro por `session_id`, prioridad y caducidad), `useEstadoLia.ts` (escucha
   el evento `lia-evento`) y `config.ts` (tiempos).
 - `src-tauri/src/receptor.rs` — receptor local de eventos en `127.0.0.1:47615`.
+- `src-tauri/src/permisos.rs` y `src/permisos/` — solicitudes de permiso: el
+  hilo que espera la decisión, la cola y la tarjeta.
 - `scripts/simular-evento.ps1` — envía eventos de prueba al receptor.
 - `docs/hooks.md` — cómo conectar los hooks de Claude Code.
 - `src/window.ts` — posicionamiento de la ventana (borde superior central).
@@ -74,6 +76,11 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   puerto local cerrado, y eso retrasaría a Claude Code con Lia cerrada.
 - Privacidad: del evento solo se conservan `hook_event_name`, `session_id` y
   `notification_type`. Nunca registres ni reenvíes otros campos.
+- Permisos (`/permiso`): única excepción. El comando, la ruta o la URL viven
+  solo en memoria mientras la solicitud está activa y nunca se registran.
+- Seguridad de los permisos: Lia solo permite o deniega cuando el usuario
+  pulsa un botón. Ante tiempo agotado, cierre o fallo responde "sin decisión"
+  para que Claude Code muestre su diálogo normal. No cambies esto.
 
 ## Reglas de seguridad y dependencias (obligatorias)
 

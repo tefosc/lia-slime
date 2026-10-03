@@ -1,10 +1,12 @@
 //! Receptor local de eventos de Claude Code.
 //!
-//! Escucha únicamente en 127.0.0.1 y acepta un solo tipo de petición:
-//! `POST /evento` con el token correcto y un cuerpo JSON. Del evento conserva
-//! solo su nombre, el identificador de sesión y el tipo de notificación; todo
-//! lo demás (prompts, rutas, comandos, contenido de herramientas) se descarta
-//! al deserializar y nunca se registra.
+//! Escucha únicamente en 127.0.0.1 y acepta dos rutas, ambas con el token
+//! correcto y un cuerpo JSON:
+//! - `POST /evento`: eventos de monitoreo. Solo se conserva el nombre del
+//!   evento, el identificador de sesión y el tipo de notificación.
+//! - `POST /permiso`: solicitudes de permiso (ver `permisos.rs`).
+//!
+//! Prompts, rutas, comandos y contenido de herramientas nunca se registran.
 
 use std::fs;
 use std::io::{Read, Write};
@@ -14,6 +16,8 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
+
+use crate::permisos::{self, Pendientes};
 
 /// Puerto fijo del receptor. Si está ocupado no se prueba con otro.
 pub const PUERTO: u16 = 47615;
@@ -25,7 +29,7 @@ const CABECERAS_MAXIMO: usize = 8 * 1024;
 const CUERPO_MAXIMO: usize = 64 * 1024;
 const ESPERA_SOCKET: Duration = Duration::from_millis(500);
 
-/// Campos que se leen del JSON del hook. serde ignora el resto.
+/// Campos que se leen del JSON de un evento de monitoreo. serde ignora el resto.
 #[derive(Deserialize)]
 struct EventoHook {
     hook_event_name: String,
@@ -33,7 +37,7 @@ struct EventoHook {
     notification_type: Option<String>,
 }
 
-/// Lo único que sale del receptor hacia el frontend.
+/// Lo único que sale del receptor hacia el frontend en `/evento`.
 #[derive(Clone, Serialize)]
 struct EventoLia {
     evento: String,
@@ -53,8 +57,8 @@ pub fn error_receptor(estado: State<'_, EstadoReceptor>) -> Option<String> {
 
 /// Arranca el receptor. Nunca hace fallar a la app: si algo sale mal, Lia
 /// sigue abierta y el error queda disponible en `EstadoReceptor`.
-pub fn iniciar(app: AppHandle) -> EstadoReceptor {
-    match arrancar(app) {
+pub fn iniciar(app: AppHandle, pendientes: Pendientes) -> EstadoReceptor {
+    match arrancar(app, pendientes) {
         Ok(()) => EstadoReceptor { error: None },
         Err(error) => {
             eprintln!("[lia] receptor de eventos desactivado: {error}");
@@ -63,7 +67,7 @@ pub fn iniciar(app: AppHandle) -> EstadoReceptor {
     }
 }
 
-fn arrancar(app: AppHandle) -> Result<(), String> {
+fn arrancar(app: AppHandle, pendientes: Pendientes) -> Result<(), String> {
     // Primero el puerto: si está ocupado no se toca el token en uso.
     let escucha = TcpListener::bind((Ipv4Addr::LOCALHOST, PUERTO)).map_err(|e| {
         format!(
@@ -80,11 +84,7 @@ fn arrancar(app: AppHandle) -> Result<(), String> {
         .name("lia-receptor".into())
         .spawn(move || {
             for conexion in escucha.incoming().flatten() {
-                let codigo = atender(conexion, &esperado, &app);
-                // Solo se registra el código de los rechazos, nunca el contenido.
-                if cfg!(debug_assertions) && codigo >= 400 {
-                    eprintln!("[lia] petición rechazada con {codigo}");
-                }
+                atender(conexion, &esperado, &app, &pendientes);
             }
         })
         .map_err(|e| format!("no se pudo crear el hilo del receptor ({e})"))?;
@@ -117,26 +117,56 @@ fn guardar_cabecera(app: &AppHandle, token: &str) -> Result<(), String> {
     .map_err(|e| format!("no se pudo guardar el token ({e})"))
 }
 
-/// Atiende una conexión y devuelve el código HTTP con el que respondió.
-fn atender(mut conexion: TcpStream, esperado: &str, app: &AppHandle) -> u16 {
+enum Ruta {
+    Evento,
+    Permiso,
+}
+
+/// Atiende una conexión. Las solicitudes de permiso se pasan a su propio
+/// hilo, que responde cuando haya decisión; el resto se responde aquí mismo.
+fn atender(mut conexion: TcpStream, esperado: &str, app: &AppHandle, pendientes: &Pendientes) {
     let _ = conexion.set_read_timeout(Some(ESPERA_SOCKET));
     let _ = conexion.set_write_timeout(Some(ESPERA_SOCKET));
 
-    let codigo = match procesar(&mut conexion, esperado) {
-        Ok(evento) => {
-            // Solo en desarrollo, y solo nombre del evento y principio de la
-            // sesión, para poder diagnosticar el orden en que llegan.
-            if cfg!(debug_assertions) {
-                let sesion: String = evento.sesion.chars().take(8).collect();
-                let tipo = evento.notificacion.as_deref().unwrap_or("");
-                eprintln!("[lia] {} {sesion} {tipo}", evento.evento);
+    let codigo = match leer(&mut conexion, esperado) {
+        Ok((Ruta::Evento, cuerpo)) => match validar_evento(&cuerpo) {
+            Ok(evento) => {
+                // Solo en desarrollo, y solo nombre del evento y principio de
+                // la sesión, para poder diagnosticar el orden en que llegan.
+                if cfg!(debug_assertions) {
+                    let sesion: String = evento.sesion.chars().take(8).collect();
+                    let tipo = evento.notificacion.as_deref().unwrap_or("");
+                    eprintln!("[lia] {} {sesion} {tipo}", evento.evento);
+                }
+                let _ = app.emit(EVENTO_TAURI, evento);
+                204
             }
-            let _ = app.emit(EVENTO_TAURI, evento);
-            204
+            Err(codigo) => codigo,
+        },
+        Ok((Ruta::Permiso, cuerpo)) => {
+            match permisos::recibir(conexion, &cuerpo, app.clone(), pendientes.clone()) {
+                // La conexión ya es del hilo de la solicitud.
+                Ok(()) => return,
+                Err((conexion_devuelta, codigo)) => {
+                    conexion = conexion_devuelta;
+                    codigo
+                }
+            }
         }
         Err(codigo) => codigo,
     };
+
+    // Solo se registra el código de los rechazos, nunca el contenido.
+    if cfg!(debug_assertions) && codigo >= 400 {
+        eprintln!("[lia] petición rechazada con {codigo}");
+    }
+    responder(&mut conexion, codigo, "");
+}
+
+/// Escribe una respuesta HTTP completa y cierra.
+pub fn responder(conexion: &mut TcpStream, codigo: u16, cuerpo: &str) {
     let razon = match codigo {
+        200 => "OK",
         204 => "No Content",
         400 => "Bad Request",
         401 => "Unauthorized",
@@ -147,15 +177,24 @@ fn atender(mut conexion: TcpStream, esperado: &str, app: &AppHandle) -> u16 {
         413 => "Content Too Large",
         _ => "Request Header Fields Too Large",
     };
+    let tipo = if cuerpo.is_empty() {
+        ""
+    } else {
+        "Content-Type: application/json\r\n"
+    };
     let _ = conexion.write_all(
-        format!("HTTP/1.1 {codigo} {razon}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-            .as_bytes(),
+        format!(
+            "HTTP/1.1 {codigo} {razon}\r\n{tipo}Content-Length: {}\r\nConnection: close\r\n\r\n{cuerpo}",
+            cuerpo.len()
+        )
+        .as_bytes(),
     );
-    codigo
+    let _ = conexion.flush();
 }
 
-/// Lee y valida la petición. El error es el código HTTP del rechazo.
-fn procesar(conexion: &mut TcpStream, esperado: &str) -> Result<EventoLia, u16> {
+/// Lee y valida la petición hasta el cuerpo. El error es el código HTTP del
+/// rechazo.
+fn leer(conexion: &mut TcpStream, esperado: &str) -> Result<(Ruta, Vec<u8>), u16> {
     // Cabeceras: se lee hasta la línea en blanco, con un tope de tamaño.
     let mut datos = Vec::with_capacity(1024);
     let mut bloque = [0u8; 1024];
@@ -176,9 +215,11 @@ fn procesar(conexion: &mut TcpStream, esperado: &str) -> Result<EventoLia, u16> 
     let mut lineas = cabeceras.split("\r\n");
     let mut inicio = lineas.next().unwrap_or("").split(' ');
     let (metodo, ruta) = (inicio.next().unwrap_or(""), inicio.next().unwrap_or(""));
-    if ruta != "/evento" {
-        return Err(404);
-    }
+    let ruta = match ruta {
+        "/evento" => Ruta::Evento,
+        "/permiso" => Ruta::Permiso,
+        _ => return Err(404),
+    };
     if metodo != "POST" {
         return Err(405);
     }
@@ -215,8 +256,11 @@ fn procesar(conexion: &mut TcpStream, esperado: &str) -> Result<EventoLia, u16> 
     conexion
         .read_exact(&mut cuerpo[ya_leido..])
         .map_err(|_| 408u16)?;
+    Ok((ruta, cuerpo))
+}
 
-    let hook: EventoHook = serde_json::from_slice(&cuerpo).map_err(|_| 400u16)?;
+fn validar_evento(cuerpo: &[u8]) -> Result<EventoLia, u16> {
+    let hook: EventoHook = serde_json::from_slice(cuerpo).map_err(|_| 400u16)?;
     if !es_identificador(&hook.hook_event_name, 64)
         || !es_identificador(&hook.session_id, 128)
         || !hook
@@ -244,7 +288,7 @@ fn iguales(a: &[u8], b: &[u8]) -> bool {
 
 /// Solo letras, números, guiones y guiones bajos, con longitud acotada: así
 /// ningún texto libre puede colarse en estos campos.
-fn es_identificador(texto: &str, maximo: usize) -> bool {
+pub fn es_identificador(texto: &str, maximo: usize) -> bool {
     !texto.is_empty()
         && texto.len() <= maximo
         && texto
