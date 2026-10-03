@@ -1,8 +1,9 @@
 .tarjeta {
+  position: relative;
   box-sizing: border-box;
   width: 300px;
-  height: 184px;
-  margin: 8px;
+  height: 178px;
+  margin: 14px 8px 8px;
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
@@ -55,10 +56,13 @@
   line-height: 1.25;
 }
 
+/* Pastilla sobre el borde superior, para no quitarle sitio al título. */
 .tarjeta-cola {
-  flex: none;
-  margin-left: auto;
-  padding: 1px 7px;
+  position: absolute;
+  top: -9px;
+  right: 14px;
+  padding: 1px 8px;
+  border: 1.5px solid #e0a800;
   border-radius: 8px;
   background: #ffd95a;
   font-size: 11px;
