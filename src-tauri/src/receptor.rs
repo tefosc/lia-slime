@@ -124,6 +124,13 @@ fn atender(mut conexion: TcpStream, esperado: &str, app: &AppHandle) -> u16 {
 
     let codigo = match procesar(&mut conexion, esperado) {
         Ok(evento) => {
+            // Solo en desarrollo, y solo nombre del evento y principio de la
+            // sesión, para poder diagnosticar el orden en que llegan.
+            if cfg!(debug_assertions) {
+                let sesion: String = evento.sesion.chars().take(8).collect();
+                let tipo = evento.notificacion.as_deref().unwrap_or("");
+                eprintln!("[lia] {} {sesion} {tipo}", evento.evento);
+            }
             let _ = app.emit(EVENTO_TAURI, evento);
             204
         }

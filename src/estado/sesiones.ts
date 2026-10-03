@@ -19,10 +19,13 @@ const PRIORIDAD: readonly EstadoLia[] = [
   "inactivo",
 ];
 
-/** Notificaciones en las que Claude Code espera algo del usuario. */
+/**
+ * Notificaciones en las que Claude Code necesita una respuesta del usuario.
+ * `idle_prompt` no está: solo avisa de que espera el siguiente mensaje, y
+ * llega tras cada respuesta terminada.
+ */
 const NOTIFICACIONES_QUE_PIDEN = new Set([
   "permission_prompt",
-  "idle_prompt",
   "agent_needs_input",
   "elicitation_dialog",
   "elicitation_url_dialog",
@@ -41,9 +44,9 @@ export function efectoDe(evento: EventoLia): Efecto {
     case "PreToolUse":
     case "PostToolUse":
     case "PostToolUseFailure":
-    // Un subagente que acaba no significa que la sesión haya terminado.
-    case "SubagentStop":
       return "trabajando";
+    // `SubagentStop` no se usa: Claude Code puede emitirlo después de `Stop`
+    // (por subagentes internos) y devolvería la sesión a `trabajando`.
     case "PermissionRequest":
       return "necesita";
     case "Notification":

@@ -39,7 +39,7 @@ Code.
 
 ## Fragmento para `~/.claude/settings.json`
 
-Sustituye `TU_USUARIO` (aparece 10 veces) por tu nombre de usuario de Windows.
+Sustituye `TU_USUARIO` (aparece 9 veces) por tu nombre de usuario de Windows.
 Si ya tienes una sección `"hooks"`, añade estos eventos dentro de ella en
 lugar de duplicar la clave.
 
@@ -130,18 +130,6 @@ lugar de duplicar la clave.
         ]
       }
     ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "async": true,
-            "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
@@ -170,7 +158,7 @@ lugar de duplicar la clave.
 }
 ```
 
-El comando es el mismo en los diez eventos. Qué hace cada opción:
+El comando es el mismo en los nueve eventos. Qué hace cada opción:
 
 | Opción | Para qué sirve |
 |---|---|
@@ -185,10 +173,11 @@ El comando es el mismo en los diez eventos. Qué hace cada opción:
 | Evento de Claude Code | Estado de la sesión |
 |---|---|
 | `SessionStart` | inactivo |
-| `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `SubagentStop` | trabajando |
+| `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure` | trabajando |
 | `PermissionRequest` | necesita |
-| `Notification` con `permission_prompt`, `idle_prompt`, `agent_needs_input`, `elicitation_dialog` o `elicitation_url_dialog` | necesita |
-| `Notification` de otro tipo | sin cambio |
+| `Notification` con `permission_prompt`, `agent_needs_input`, `elicitation_dialog` o `elicitation_url_dialog` | necesita |
+| `Notification` de otro tipo (por ejemplo `idle_prompt`, que solo indica que Claude Code espera tu siguiente mensaje) | sin cambio |
+| `SubagentStop` | sin cambio: puede llegar después de `Stop` y no se usa |
 | `Stop` | termino, y a los 4 s vuelve a inactivo |
 | `SessionEnd` | se elimina la sesión |
 
