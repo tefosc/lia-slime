@@ -28,6 +28,9 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   registro por `session_id`, prioridad y caducidad), `useEstadoLia.ts` (escucha
   el evento `lia-evento`) y `config.ts` (tiempos).
 - `src-tauri/src/receptor.rs` — receptor local de eventos en `127.0.0.1:47615`.
+- `src-tauri/src/cursor.rs` — lee la posición global del cursor (30 Hz si se
+  mueve, 4 Hz en reposo, en pausa con la ventana oculta) y la envía como
+  `lia-cursor`. La posición solo vive en memoria; nunca se registra.
 - `src-tauri/src/permisos.rs` y `src/permisos/` — solicitudes de permiso: el
   hilo que espera la decisión, la cola y la tarjeta.
 - `scripts/simular-evento.ps1` — envía eventos de prueba al receptor.

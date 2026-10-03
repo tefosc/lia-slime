@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { acercar, limitarPaso, Resorte } from "./movimiento";
 import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
@@ -41,6 +43,38 @@ const POP = { aplaste: -0.8, celebracionAplaste: -0.5, celebracionSalto: 55 };
  * gelatina en oleadas separadas por respiros. Una unidad del viewBox equivale
  * a 1.22 px en la ventana de 200x200.
  */
+/** Píxeles de pantalla por unidad del viewBox (ventana de 200 / viewBox de 164). */
+const PX_POR_UNIDAD = 200 / 164;
+/** Centro del cuerpo dentro del viewBox (-82 -110 164 164), en fracción. */
+const CENTRO_CUERPO = { x: 82 / 164, y: 110 / 164 };
+
+/**
+ * Mirada: Lia sigue el cursor con los ojos y se inclina un poco hacia él.
+ * Distancias en píxeles de pantalla (CSS), tiempos en segundos.
+ */
+export const MIRADA = {
+  /** Lecturas por segundo del cursor mientras se mueve (bucle en Rust). */
+  frecuenciaActiva: 30,
+  /** Lecturas por segundo cuando el cursor lleva un rato quieto. */
+  frecuenciaReposo: 4,
+  /** Segundos sin movimiento para pasar a la frecuencia de reposo. */
+  tiempoParaReposo: 2,
+  /** Desplazamiento máximo de los ojos hacia el cursor, en px. */
+  maxDesplazamientoOjos: 4,
+  /** Distancia en px a la que los ojos ya recorrieron unos 3/4 del tope. */
+  suavidadCurva: 120,
+  /** Inclinación máxima del cuerpo hacia el cursor, en grados. */
+  maxInclinacion: 2,
+  /** Desplazamiento lateral máximo del cuerpo al inclinarse, en px. */
+  maxDesplazamientoCuerpo: 1.5,
+  /** Retraso con que la mirada alcanza al cursor (sensación orgánica). */
+  retrasoMirada: 0.1,
+  /** Más allá de esta distancia en px la mirada se queda en el tope. */
+  distanciaMaxima: 600,
+  /** Segundos con el cursor quieto para que la mirada vuelva al centro. */
+  tiempoParaCentrar: 10,
+};
+
 export const ESFUERZO = {
   /** Amplitud de la gelatina: cuánto cambia la escala (0.025 = 2.5 %). */
   amplitud: 0.025,
@@ -220,9 +254,32 @@ export function useAnimacionLia(
       cara,
     ];
 
+    // Mirada: desplazamiento de los ojos (px) e inclinación (-1 a 1) hacia
+    // el cursor. Amortiguación crítica con el retraso configurado.
+    const ritmoMirada = 2 / MIRADA.retrasoMirada;
+    const nuevaMirada = () =>
+      new Resorte(0, ritmoMirada * ritmoMirada, 2 * ritmoMirada);
+    const miradaX = nuevaMirada();
+    const miradaY = nuevaMirada();
+    const inclinacion = nuevaMirada();
+    const resortesMirada = [miradaX, miradaY, inclinacion];
+    resortes.push(...resortesMirada);
+
+    /** Cursor respecto al centro del cuerpo, en px; null si no se conoce. */
+    let cursor: { x: number; y: number } | null = null;
+    let ultimoCursor = 0;
+
     // Intensidad (0 a 1) de cada movimiento continuo; se encienden y apagan
     // poco a poco para que el cambio de estado no dé saltos.
-    const pesos = { respira: 0, mece: 0, agita: 0, salta: 0, flota: 0 };
+    const pesos = {
+      respira: 0,
+      mece: 0,
+      agita: 0,
+      salta: 0,
+      flota: 0,
+      ojos: 0,
+      inclina: 0,
+    };
 
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -339,6 +396,36 @@ export function useAnimacionLia(
         pesos.respira = peso(pesos.respira, e === "inactivo" ? 1 : 0);
       }
       pesos.mece = peso(pesos.mece, e === "inactivo" ? 1 : 0);
+      // Ojos que siguen: solo los redondos. Inclinación: completa en reposo y
+      // en alerta, a la mitad mientras trabaja o celebra.
+      pesos.ojos = peso(pesos.ojos, e === "inactivo" || e === "necesita" ? 1 : 0);
+      pesos.inclina = peso(
+        pesos.inclina,
+        e === "inactivo" || e === "necesita" ? 1 : 0.5,
+      );
+
+      // Objetivo de la mirada: hacia el cursor, o al centro si lleva mucho
+      // quieto o el sistema pide movimiento reducido.
+      if (cursor && !quieto && tiempo - ultimoCursor < MIRADA.tiempoParaCentrar) {
+        const distancia = Math.hypot(cursor.x, cursor.y);
+        const limitada = Math.min(distancia, MIRADA.distanciaMaxima);
+        // Curva suave: crece rápido cerca y se aplana lejos.
+        const fuerza = Math.tanh(limitada / MIRADA.suavidadCurva);
+        const dirX = distancia > 0 ? cursor.x / distancia : 0;
+        const dirY = distancia > 0 ? cursor.y / distancia : 0;
+        miradaX.objetivo = dirX * fuerza * MIRADA.maxDesplazamientoOjos;
+        miradaY.objetivo = dirY * fuerza * MIRADA.maxDesplazamientoOjos;
+        inclinacion.objetivo = dirX * fuerza;
+      } else {
+        miradaX.objetivo = 0;
+        miradaY.objetivo = 0;
+        inclinacion.objetivo = 0;
+      }
+      // Resortes rápidos: dos medios pasos los mantienen estables.
+      for (const resorte of resortesMirada) {
+        resorte.paso(dt / 2);
+        resorte.paso(dt / 2);
+      }
       pesos.agita = peso(pesos.agita, e === "necesita" ? 1 : 0);
       pesos.salta = peso(pesos.salta, e === "necesita" ? 1 : 0);
       pesos.flota = peso(pesos.flota, e === "termino" ? 1 : 0);
@@ -361,6 +448,14 @@ export function useAnimacionLia(
     };
 
     const dibujar = () => {
+      // Mirada: de px de pantalla a unidades del viewBox.
+      const ojosX = (miradaX.valor * pesos.ojos) / PX_POR_UNIDAD;
+      const ojosDY = (miradaY.valor * pesos.ojos) / PX_POR_UNIDAD;
+      const giroCuerpo = MIRADA.maxInclinacion * inclinacion.valor * pesos.inclina;
+      const inclinaX =
+        (MIRADA.maxDesplazamientoCuerpo * inclinacion.valor * pesos.inclina) /
+        PX_POR_UNIDAD;
+
       const fuerza = Math.min(1, Math.max(0, tension.valor));
       const bote = Math.abs(Math.sin((Math.PI * tiempo) / SALTAR.periodo));
       const salto = SALTAR.altura * bote * pesos.salta;
@@ -391,7 +486,7 @@ export function useAnimacionLia(
         flotanteEl,
         "flotante",
         "transform",
-        `translate(${temblor.toFixed(2)},${(BASE_Y - altura).toFixed(1)}) scale(${sx.toFixed(3)},${sy.toFixed(3)}) translate(0,${-BASE_Y})`,
+        `translate(${(temblor + inclinaX).toFixed(2)},${(BASE_Y - altura).toFixed(1)}) rotate(${giroCuerpo.toFixed(2)}) scale(${sx.toFixed(3)},${sy.toFixed(3)}) translate(0,${-BASE_Y})`,
       );
       escribir(
         extrasEl,
@@ -485,7 +580,7 @@ export function useAnimacionLia(
         ojosEl,
         "ojos",
         "transform",
-        `translate(0,${OJOS_Y}) scale(1,${ojosY.toFixed(2)}) translate(0,${-OJOS_Y})`,
+        `translate(${ojosX.toFixed(2)},${(OJOS_Y + ojosDY).toFixed(2)}) scale(1,${ojosY.toFixed(2)}) translate(0,${-OJOS_Y})`,
       );
     };
 
@@ -579,6 +674,35 @@ export function useAnimacionLia(
     };
     const alCambiarReducido = () => pedir();
 
+    // Cursor: llega de Rust en px CSS respecto a la esquina de la ventana. Se
+    // pasa al centro del cuerpo con la posición real del SVG, que cambia si
+    // la tarjeta se abre a la izquierda. Solo vive en memoria.
+    let cancelado = false;
+    let dejarCursor: (() => void) | undefined;
+    listen<{ x: number; y: number }>("lia-cursor", ({ payload }) => {
+      const caja = svg.getBoundingClientRect();
+      cursor = {
+        x: payload.x - (caja.left + caja.width * CENTRO_CUERPO.x),
+        y: payload.y - (caja.top + caja.height * CENTRO_CUERPO.y),
+      };
+      ultimoCursor = tiempo;
+      pedir();
+    })
+      .then((dejar) => {
+        if (cancelado) dejar();
+        else dejarCursor = dejar;
+      })
+      .catch(() => {
+        // Fuera de Tauri no hay cursor: Lia mira al frente.
+      });
+    invoke("configurar_cursor", {
+      frecuenciaActiva: MIRADA.frecuenciaActiva,
+      frecuenciaReposo: MIRADA.frecuenciaReposo,
+      tiempoParaReposo: MIRADA.tiempoParaReposo,
+    }).catch(() => {
+      // Fuera de Tauri no hay bucle del cursor.
+    });
+
     document.addEventListener("visibilitychange", alCambiarVisibilidad);
     reducido.addEventListener("change", alCambiarReducido);
     buscarCara();
@@ -586,6 +710,9 @@ export function useAnimacionLia(
 
     return () => {
       detener();
+      cancelado = true;
+      dejarCursor?.();
+      cursor = null;
       document.removeEventListener("visibilitychange", alCambiarVisibilidad);
       reducido.removeEventListener("change", alCambiarReducido);
       alCambiar.current = null;

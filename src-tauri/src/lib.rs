@@ -1,3 +1,4 @@
+mod cursor;
 mod permisos;
 mod receptor;
 
@@ -11,11 +12,13 @@ pub fn run() {
             let estado = receptor::iniciar(app.handle().clone(), pendientes.clone());
             app.manage(estado);
             app.manage(pendientes);
+            cursor::iniciar(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             receptor::error_receptor,
-            permisos::resolver_permiso
+            permisos::resolver_permiso,
+            cursor::configurar_cursor
         ])
         .run(tauri::generate_context!())
         .expect("error al ejecutar la aplicación Tauri");
