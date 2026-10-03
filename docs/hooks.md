@@ -40,7 +40,7 @@ permiso para que las apruebes o deniegues con un clic.
 
 ## Fragmento para `~/.claude/settings.json`
 
-Sustituye `TU_USUARIO` (aparece 9 veces) por tu nombre de usuario de Windows.
+Sustituye `TU_USUARIO` (aparece 10 veces) por tu nombre de usuario de Windows.
 Si ya tienes una sección `"hooks"`, añade estos eventos dentro de ella en
 lugar de duplicar la clave.
 
@@ -170,7 +170,7 @@ lugar de duplicar la clave.
 }
 ```
 
-El comando es el mismo en ocho eventos; `PermissionRequest` usa otro, explicado
+El comando es el mismo en nueve eventos; `PermissionRequest` usa otro, explicado
 en la sección siguiente. Qué hace cada opción del comando común:
 
 | Opción                  | Para qué sirve                                                 |
