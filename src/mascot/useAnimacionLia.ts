@@ -122,6 +122,52 @@ export const TOQUES = {
   temblorEnojo: 0.8,
 };
 
+/**
+ * Caricias: frotar el cursor sobre la cabeza de Lia, sin pulsar, la pone
+ * contenta. Distancias en px de pantalla, tiempos en segundos.
+ */
+export const CARICIAS = {
+  /** Cambios de dirección del cursor para contar como frotar. */
+  cambiosDeDireccion: 3,
+  /** Tiempo en el que deben ocurrir esos cambios. */
+  ventana: 1.5,
+  /** Recorrido mínimo en ese tiempo, para que no salte al pasar de largo. */
+  recorridoMinimo: 40,
+  /** Parte superior del cuerpo que cuenta como cabeza (0.65 = 65 %). */
+  alturaCabeza: 0.65,
+  /** Cuánto sigue contenta después de la última caricia. */
+  duracion: 2,
+  /** Ronroneo: balanceo del cuerpo en grados y veces por segundo. */
+  balanceo: 1.6,
+  frecuenciaBalanceo: 2.2,
+  /** Cada cuánto sale un corazón y cuánto tarda en subir y desvanecerse. */
+  intervaloCorazones: 0.45,
+  duracionCorazon: 1.3,
+  /** Cuánto sube cada corazón, en unidades del viewBox. */
+  subidaCorazon: 24,
+};
+
+/**
+ * Mareo: arrastrar a Lia dando vueltas la marea. Tiempos en segundos.
+ */
+export const MAREO = {
+  /** Vueltas completas del cursor durante el arrastre para marearla. */
+  vueltas: 2,
+  /**
+   * Las vueltas se van olvidando con este tiempo. Debe ser bastante mayor que
+   * lo que se tarda en dar una vuelta, o nunca se llega al total.
+   */
+  memoria: 8,
+  /** Cuánto dura el mareo desde la última vuelta. */
+  duracion: 3.5,
+  /** Vaivén del cuerpo: grados y veces por segundo. */
+  vaiven: 4,
+  frecuenciaVaiven: 1.1,
+  /** Vueltas por segundo de las espirales de los ojos y de las estrellas. */
+  giroOjos: 1,
+  giroEstrellas: 0.6,
+};
+
 export const ESFUERZO = {
   /** Amplitud de la gelatina: cuánto cambia la escala (0.025 = 2.5 %). */
   amplitud: 0.025,
@@ -244,10 +290,20 @@ function buscar(svg: SVGSVGElement, id: string): SVGElement | null {
  * `transform` directamente en los elementos del SVG, sin pasar por el estado
  * de React en cada fotograma.
  */
+/** Reacciones que el dibujo puede pedirle al motor de animación. */
+export interface AccionesLia {
+  /** Toque sobre el cuerpo; `lado` va de -1 (izquierda) a 1 (derecha). */
+  tocar: (lado: number) => void;
+  /** El cursor está frotando la cabeza. */
+  acariciar: () => void;
+  /** El arrastre dio suficientes vueltas. */
+  marear: () => void;
+}
+
 export function useAnimacionLia(
   svgRef: RefObject<SVGSVGElement | null>,
   estado: EstadoLia,
-): { tocar: (lado: number) => void } {
+): AccionesLia {
   const estadoActual = useRef(estado);
   const alCambiar = useRef<(() => void) | null>(null);
   const alTocar = useRef<((lado: number) => void) | null>(null);
@@ -256,6 +312,10 @@ export function useAnimacionLia(
    * Lia se aplasta hacia el lado contrario.
    */
   const tocar = useRef((lado: number) => alTocar.current?.(lado)).current;
+  const alAcariciar = useRef<(() => void) | null>(null);
+  const alMarear = useRef<(() => void) | null>(null);
+  const acariciar = useRef(() => alAcariciar.current?.()).current;
+  const marear = useRef(() => alMarear.current?.()).current;
 
   useEffect(() => {
     if (estadoActual.current === estado) return;
@@ -279,6 +339,19 @@ export function useAnimacionLia(
       "lia-cejas-enojo",
       "lia-mejillas-enojo",
       "lia-marca-enojo",
+      "lia-ojos-feliz",
+      "lia-mejillas-feliz",
+      "lia-corazon-0",
+      "lia-corazon-1",
+      "lia-corazon-2",
+      "lia-ojos-mareo",
+      "lia-boca-mareo",
+      "lia-espiral-izq",
+      "lia-espiral-der",
+      "lia-estrellas",
+      "lia-estrella-0",
+      "lia-estrella-1",
+      "lia-estrella-2",
     ];
 
     const sombraEl = buscar(svg, "lia-sombra");
@@ -340,7 +413,25 @@ export function useAnimacionLia(
     const sorpresa = new Resorte(0, 900, 60);
     const enojo = new Resorte(0, 120, 20);
     resortes.push(empuje, sacudida, sorpresa, enojo);
-    let reaccion: "ninguna" | "sorpresa" | "enojo" = "ninguna";
+    // Alegría (caricias) y mareo (arrastre en círculos): cuánto se ve cada cara.
+    const feliz = new Resorte(0, 200, 28);
+    const mareo = new Resorte(0, 200, 28);
+    resortes.push(feliz, mareo);
+    /** Ronroneo (0 a 1): sigue a las caricias recientes, en cualquier estado. */
+    let mimo = 0;
+    let ultimaCaricia = -10;
+    /** Vaivén del mareo (0 a 1): en cualquier estado, aunque la cara no cambie. */
+    let vaivenMareo = 0;
+    let finMareo = 0;
+    /** Corazones en vuelo: momento de salida y posición horizontal de cada uno. */
+    const corazones = [
+      { inicio: -10, x: 0 },
+      { inicio: -10, x: 0 },
+      { inicio: -10, x: 0 },
+    ];
+    let proximoCorazon = 0;
+    let siguienteCorazon = 0;
+    let reaccion: "ninguna" | "sorpresa" | "enojo" | "feliz" | "mareo" = "ninguna";
     let finReaccion = 0;
     let inicioEnojo = 0;
     /** Fuerza del temblor del enojo (0 a 1): cada clic la renueva. */
@@ -490,6 +581,20 @@ export function useAnimacionLia(
       }
       sorpresa.objetivo = reaccion === "sorpresa" ? 1 : 0;
       enojo.objetivo = reaccion === "enojo" ? 1 : 0;
+      feliz.objetivo = reaccion === "feliz" ? 1 : 0;
+      mareo.objetivo = reaccion === "mareo" ? 1 : 0;
+      feliz.paso(dt);
+      mareo.paso(dt);
+      mimo = acercar(mimo, tiempo - ultimaCaricia < 0.5 ? 1 : 0, dt, 5);
+      vaivenMareo = acercar(vaivenMareo, tiempo < finMareo ? 1 : 0, dt, 3);
+      // Mientras está contenta, sale un corazón cada cierto tiempo.
+      if (reaccion === "feliz" && !quieto && tiempo >= proximoCorazon) {
+        const corazon = corazones[siguienteCorazon];
+        corazon.inicio = tiempo;
+        corazon.x = azar(-22, 22);
+        siguienteCorazon = (siguienteCorazon + 1) % corazones.length;
+        proximoCorazon = tiempo + CARICIAS.intervaloCorazones;
+      }
       // La sorpresa usa un resorte rígido: dos medios pasos lo mantienen estable.
       sorpresa.paso(dt / 2);
       sorpresa.paso(dt / 2);
@@ -559,6 +664,8 @@ export function useAnimacionLia(
       const quieto = reducido.matches;
       const sorprendida = Math.min(1, Math.max(0, sorpresa.valor));
       const enojada = Math.min(1, Math.max(0, enojo.valor));
+      const contenta = Math.min(1, Math.max(0, feliz.valor));
+      const mareada = Math.min(1, Math.max(0, mareo.valor));
 
       // Mirada: de px de pantalla a unidades del viewBox. Enojada, aparta la
       // mirada: los ojos van hacia el lado contrario al cursor.
@@ -568,7 +675,16 @@ export function useAnimacionLia(
       // El rebote del toque se suma a la inclinación hacia el cursor.
       const giroCuerpo =
         MIRADA.maxInclinacion * inclinacion.valor * pesos.inclina +
-        TOQUES.inclinacionRebote * empuje.valor;
+        TOQUES.inclinacionRebote * empuje.valor +
+        // Ronroneo de las caricias y vaivén del mareo.
+        (quieto
+          ? 0
+          : CARICIAS.balanceo *
+              Math.sin(TAU * tiempo * CARICIAS.frecuenciaBalanceo) *
+              Math.max(contenta, 0.5 * mimo) +
+            MAREO.vaiven *
+              Math.sin(TAU * tiempo * MAREO.frecuenciaVaiven) *
+              vaivenMareo);
       const inclinaX =
         (MIRADA.maxDesplazamientoCuerpo * inclinacion.valor * pesos.inclina +
           TOQUES.desplazamientoRebote * empuje.valor +
@@ -585,9 +701,65 @@ export function useAnimacionLia(
       // Caras de sorpresa y enojo: se muestran u ocultan con opacidad.
       const opacidad = (id: string, valor: number) =>
         escribir(caras[id], id, "opacity", valor.toFixed(2));
-      opacidad("lia-ojos-normal", 1 - sorprendida);
+      opacidad("lia-ojos-normal", 1 - Math.max(sorprendida, contenta, mareada));
       opacidad("lia-ojos-sorpresa", sorprendida);
-      opacidad("lia-boca-normal", 1 - Math.max(sorprendida, enojada));
+      opacidad("lia-ojos-feliz", contenta);
+      opacidad("lia-mejillas-feliz", contenta);
+      opacidad("lia-ojos-mareo", mareada);
+      opacidad("lia-boca-mareo", mareada);
+      opacidad("lia-estrellas", mareada);
+      opacidad("lia-boca-normal", 1 - Math.max(sorprendida, enojada, mareada));
+
+      // Corazones: suben, se balancean un poco y se desvanecen.
+      corazones.forEach((corazon, i) => {
+        const id = `lia-corazon-${i}`;
+        const avance = (tiempo - corazon.inicio) / CARICIAS.duracionCorazon;
+        if (avance < 0 || avance >= 1) {
+          opacidad(id, 0);
+          return;
+        }
+        opacidad(id, Math.sin(Math.PI * avance));
+        const x = corazon.x + 3 * Math.sin(avance * 7 + i);
+        const y = -44 - CARICIAS.subidaCorazon * avance;
+        escribir(
+          caras[id],
+          `${id}-t`,
+          "transform",
+          `translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${(0.7 + 0.5 * avance).toFixed(2)})`,
+        );
+      });
+
+      // Mareo: las espirales de los ojos giran y unas estrellas dan vueltas
+      // sobre la cabeza.
+      if (mareada > 0.01) {
+        const giro = quieto ? 0 : (tiempo * MAREO.giroOjos * 360) % 360;
+        escribir(
+          caras["lia-espiral-izq"],
+          "lia-espiral-izq-t",
+          "transform",
+          `rotate(${giro.toFixed(0)})`,
+        );
+        escribir(
+          caras["lia-espiral-der"],
+          "lia-espiral-der-t",
+          "transform",
+          `rotate(${(-giro).toFixed(0)})`,
+        );
+        for (let i = 0; i < 3; i++) {
+          const id = `lia-estrella-${i}`;
+          const angulo =
+            (quieto ? 0 : TAU * tiempo * MAREO.giroEstrellas) + (TAU * i) / 3;
+          // Órbita aplanada: parece que giran alrededor de la cabeza.
+          const x = 20 * Math.cos(angulo);
+          const y = -50 + 5 * Math.sin(angulo);
+          escribir(
+            caras[id],
+            `${id}-t`,
+            "transform",
+            `translate(${x.toFixed(1)},${y.toFixed(1)})`,
+          );
+        }
+      }
       opacidad("lia-boca-sorpresa", sorprendida * (1 - enojada));
       opacidad("lia-boca-enojo", enojada);
       opacidad("lia-cejas-enojo", enojada);
@@ -747,6 +919,11 @@ export function useAnimacionLia(
       pesos.agita > 0.01 ||
       gotaInicio >= 0 ||
       (reaccion === "enojo" && temblorEnojo > 0.05) ||
+      reaccion === "feliz" ||
+      reaccion === "mareo" ||
+      mimo > 0.05 ||
+      vaivenMareo > 0.05 ||
+      corazones.some((c) => tiempo - c.inicio < CARICIAS.duracionCorazon) ||
       // Por debajo de este umbral el temblor ya no se aprecia.
       tension.valor > 0.02 ||
       Math.abs(cara.valor - cara.objetivo) > 0.02 ||
@@ -803,7 +980,7 @@ export function useAnimacionLia(
       // Los estados de Claude Code mandan: cualquier cambio corta la reacción.
       reaccion = "ninguna";
       toques = [];
-      for (const r of [sorpresa, enojo]) {
+      for (const r of [sorpresa, enojo, feliz, mareo]) {
         r.valor = 0;
         r.objetivo = 0;
         r.velocidad = 0;
@@ -830,7 +1007,8 @@ export function useAnimacionLia(
         aplaste.impulso(-0.7 * fuerza);
         sacudida.impulso(sentido * TOQUES.sacudidaPetalo * 24 * fuerza);
       }
-      if (estadoActual.current === "inactivo") {
+      // Mareada no se sorprende ni se enoja: bastante tiene.
+      if (estadoActual.current === "inactivo" && reaccion !== "mareo") {
         parpadeoInicio = tiempo;
         toques = toques.filter((t) => tiempo - t <= TOQUES.ventanaEnojo);
         toques.push(tiempo);
@@ -857,6 +1035,34 @@ export function useAnimacionLia(
           // Saltito de susto.
           if (!quieto) elevacion.impulso(45);
         }
+      }
+      pedir();
+    };
+
+    // Caricia: se llama mientras el cursor frota la cabeza. En `inactivo`
+    // pone la cara contenta y calma el enojo; en los demás estados solo hay
+    // un ronroneo suave, sin cambiar la cara.
+    alAcariciar.current = () => {
+      ultimaCaricia = tiempo;
+      if (estadoActual.current === "inactivo" && reaccion !== "mareo") {
+        if (reaccion !== "feliz") {
+          proximoCorazon = tiempo + 0.15;
+          toques = [];
+        }
+        reaccion = "feliz";
+        finReaccion = tiempo + CARICIAS.duracion;
+      }
+      pedir();
+    };
+
+    // Mareo: se llama cuando el arrastre ya dio las vueltas necesarias. El
+    // vaivén aplica en cualquier estado; la cara mareada solo en `inactivo`.
+    alMarear.current = () => {
+      finMareo = tiempo + MAREO.duracion;
+      if (estadoActual.current === "inactivo") {
+        reaccion = "mareo";
+        finReaccion = finMareo;
+        toques = [];
       }
       pedir();
     };
@@ -918,11 +1124,13 @@ export function useAnimacionLia(
       dejarCursor?.();
       cursor = null;
       alTocar.current = null;
+      alAcariciar.current = null;
+      alMarear.current = null;
       document.removeEventListener("visibilitychange", alCambiarVisibilidad);
       reducido.removeEventListener("change", alCambiarReducido);
       alCambiar.current = null;
     };
   }, [svgRef]);
 
-  return { tocar };
+  return { tocar, acariciar, marear };
 }

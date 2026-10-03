@@ -85,8 +85,10 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   nunca ignora; si el bucle no late en 1 s, el vigilante la devuelve al modo
   normal. No quites estas protecciones: la ventana no debe quedar atrapada.
 - El pétalo y la sombra no son zona activa: los clics sobre ellos pasan.
-- Las reacciones a los clics (toque, sorpresa, enojo) solo cambian la cara en
-  `inactivo`; los estados de Claude Code mandan siempre.
+- Las reacciones (toque, sorpresa y enojo por clics; alegría al frotar la
+  cabeza; mareo al arrastrarla en círculos) solo cambian la cara en
+  `inactivo`; los estados de Claude Code mandan siempre. Sus parámetros están
+  en `TOQUES`, `CARICIAS` y `MAREO` de `useAnimacionLia.ts`.
 
 ## Receptor de eventos (dependencias de Windows)
 
