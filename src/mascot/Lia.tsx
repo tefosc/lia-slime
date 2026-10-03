@@ -2,7 +2,13 @@ import { useRef } from "react";
 import { useWindowDrag } from "../useWindowDrag";
 import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
-import { ESFUERZO, useAnimacionLia } from "./useAnimacionLia";
+import {
+  bocaEsfuerzo,
+  ESFUERZO,
+  grosorOjosEsfuerzo,
+  ojosEsfuerzo,
+  useAnimacionLia,
+} from "./useAnimacionLia";
 import "./lia.css";
 
 // La geometría y los colores siguen docs/lia-referencia.svg. El origen de
@@ -19,6 +25,12 @@ const PETALO_CONTORNO =
 const SOMBRA_BASE = sombraPara(POSES.inactivo.sombra);
 const PETALO_BASE = `translate(${POSES.inactivo.petalo.x},${POSES.inactivo.petalo.y}) rotate(${POSES.inactivo.petalo.giro})`;
 
+// Cara de esfuerzo en su tensión mínima; son constantes para que React no
+// vuelva a escribirlas y pise lo que anima el motor.
+const OJOS_ESFUERZO_BASE = ojosEsfuerzo(ESFUERZO.cara.tensionMinima);
+const GROSOR_ESFUERZO_BASE = grosorOjosEsfuerzo(ESFUERZO.cara.tensionMinima);
+const BOCA_ESFUERZO_BASE = bocaEsfuerzo(ESFUERZO.cara.tensionMinima);
+
 function Ojos({ estado }: { estado: EstadoLia }) {
   switch (estado) {
     case "inactivo":
@@ -34,62 +46,17 @@ function Ojos({ estado }: { estado: EstadoLia }) {
       );
     case "trabajando":
       return (
-        // Dos caras superpuestas: el motor de animación cruza su opacidad al
-        // ritmo de las oleadas de esfuerzo. Empieza visible la de respiro.
-        <>
-          <g id="lia-cara-respiro">
-            {ESFUERZO.cara.caraRespiro === "pupilas" ? (
-              <>
-                <g id="lia-ojos-concentrados">
-                  <g fill="#FFFFFF" stroke={TINTA} strokeWidth="1.2">
-                    <ellipse cx="-15" cy="2" rx="7" ry="8.5" />
-                    <ellipse cx="15" cy="2" rx="7" ry="8.5" />
-                  </g>
-                  <g id="lia-pupilas" fill={TINTA}>
-                    <circle cx="-14" cy="-1" r="3" />
-                    <circle cx="16" cy="-1" r="3" />
-                  </g>
-                </g>
-                <path
-                  id="lia-cejas"
-                  d="M-23 -7 L-8 -3 M23 -7 L8 -3"
-                  stroke={TINTA}
-                  strokeWidth="2.2"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              </>
-            ) : (
-              <>
-                <g id="lia-ojos-concentrados">
-                  <ellipse cx="-15" cy="2" rx="6.5" ry="8.5" fill={TINTA} />
-                  <ellipse cx="15" cy="2" rx="6.5" ry="8.5" fill={TINTA} />
-                  <circle cx="-13" cy="-1" r="2.6" fill="#fff" />
-                  <circle cx="17" cy="-1" r="2.6" fill="#fff" />
-                </g>
-                <path
-                  id="lia-cejas"
-                  d="M-23 -10 L-8 -5 M23 -10 L8 -5"
-                  stroke={TINTA}
-                  strokeWidth="2.4"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              </>
-            )}
-          </g>
-          <g id="lia-cara-oleada" opacity="0">
-            <path
-              id="lia-ojos-apretados"
-              d="M-22 -4 L-10 2 L-22 8 M22 -4 L10 2 L22 8"
-              stroke={TINTA}
-              strokeWidth="2.6"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
-        </>
+        // Una sola cara: el motor de animación interpola estos mismos trazos
+        // entre relajados y tensos al ritmo de las oleadas de esfuerzo.
+        <path
+          id="lia-ojos-esfuerzo"
+          d={OJOS_ESFUERZO_BASE}
+          stroke={TINTA}
+          strokeWidth={GROSOR_ESFUERZO_BASE}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       );
     case "necesita":
       return (
@@ -129,22 +96,14 @@ function Boca({ estado }: { estado: EstadoLia }) {
       );
     case "trabajando":
       return (
-        // La boca ondulada es común a las dos caras, salvo en la variante
-        // "bocaO", donde la cara de respiro usa una boca redonda.
-        <>
-          <path
-            id="lia-boca-ondulada"
-            d="M-9 17 Q-6 13 -3 17 T3 17 T9 17"
-            stroke={TINTA}
-            strokeWidth="1.8"
-            fill="none"
-            strokeLinecap="round"
-            opacity={ESFUERZO.cara.caraRespiro === "bocaO" ? "0" : "1"}
-          />
-          {ESFUERZO.cara.caraRespiro === "bocaO" && (
-            <ellipse id="lia-boca-o" cx="0" cy="18" rx="3" ry="3.5" fill={TINTA} />
-          )}
-        </>
+        <path
+          id="lia-boca-ondulada"
+          d={BOCA_ESFUERZO_BASE}
+          stroke={TINTA}
+          strokeWidth="1.8"
+          fill="none"
+          strokeLinecap="round"
+        />
       );
     case "necesita":
       return (

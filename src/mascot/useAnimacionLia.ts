@@ -4,8 +4,6 @@ import { acercar, limitarPaso, Resorte } from "./movimiento";
 import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
 
-type CaraRespiro = "pupilas" | "bocaO";
-
 const TAU = Math.PI * 2;
 /** Fotogramas por segundo según la rapidez del movimiento en curso. */
 const FPS_RAPIDO = 60;
@@ -74,29 +72,70 @@ export const ESFUERZO = {
     duracion: 1.4,
   },
   /**
-   * Cara: en la oleada, ojos apretados "> <"; en el respiro, cara concentrada.
-   * Las dos comparten la boca ondulada (salvo en la variante "bocaO").
+   * Cara: una sola, con ojos "> <" y boca ondulada, que se tensa en la oleada
+   * y se relaja en el respiro. La tensión va de 0 (relajada) a 1 (tensa).
    */
   cara: {
-    /** Intensidad del temblor a partir de la cual aparece la cara de oleada. */
-    umbralEntrada: 0.5,
-    /** Intensidad por debajo de la cual vuelve la cara de respiro. */
-    umbralSalida: 0.3,
-    /** Duración aproximada del cruce entre caras, en segundos. */
-    duracionCruce: 0.12,
-    /** Barrido horizontal de las pupilas en el respiro, en px de pantalla. */
-    amplitudBarridoPupilas: 1.5,
-    /** Duración de un barrido completo de las pupilas, en segundos. */
-    periodoBarridoPupilas: 5,
     /**
-     * Variante de la cara de respiro: "pupilas" (ojos blancos con pupila que
-     * barre) o "bocaO" (ojos redondos, cejas altas y boca redonda).
+     * Piso de tensión: aunque no haya temblor, la cara no baja de aquí, para
+     * que nunca se vea dormida ni triste.
      */
-    caraRespiro: "pupilas" as CaraRespiro,
+    tensionMinima: 0.25,
+    /** Tensión fija cuando el sistema pide movimiento reducido. */
+    tensionReducida: 0.5,
+    /** Resorte con el que la cara sigue a la oleada: más rigidez, más rápido. */
+    rigidezCara: 140,
+    /** Amortiguación de ese resorte: más alta, menos rebote. */
+    amortiguacionCara: 20,
+    /** Grosor del trazo de los ojos con la cara tensa y relajada. */
+    grosorOjosTenso: 2.6,
+    grosorOjosRelajado: 2.2,
+    /**
+     * Punto de control de la onda de la boca (su base está en y = 17): cuanto
+     * más lejos de 17, más marcada la onda.
+     */
+    amplitudBocaTensa: 13,
+    amplitudBocaRelajada: 15,
   },
 };
-/** Píxeles de pantalla por unidad del viewBox (ventana de 200 / viewBox de 164). */
-const PX_POR_UNIDAD = 200 / 164;
+
+/** Ojo izquierdo ">" relajado y tenso; el derecho es su espejo. */
+const OJO_RELAJADO = [-21.5, -2.5, -11, 2, -21.5, 6.5];
+const OJO_TENSO = [-22, -4, -10, 2, -22, 8];
+
+function mezclar(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+/** Atributo `d` de los dos ojos para una tensión entre 0 y 1. */
+export function ojosEsfuerzo(t: number): string {
+  const p = OJO_RELAJADO.map((v, i) => mezclar(v, OJO_TENSO[i], t).toFixed(1));
+  const espejo = OJO_RELAJADO.map((v, i) =>
+    (mezclar(v, OJO_TENSO[i], t) * (i % 2 === 0 ? -1 : 1)).toFixed(1),
+  );
+  return (
+    `M${p[0]} ${p[1]} L${p[2]} ${p[3]} L${p[4]} ${p[5]} ` +
+    `M${espejo[0]} ${espejo[1]} L${espejo[2]} ${espejo[3]} L${espejo[4]} ${espejo[5]}`
+  );
+}
+
+export function grosorOjosEsfuerzo(t: number): string {
+  return mezclar(
+    ESFUERZO.cara.grosorOjosRelajado,
+    ESFUERZO.cara.grosorOjosTenso,
+    t,
+  ).toFixed(2);
+}
+
+/** Atributo `d` de la boca ondulada para una tensión entre 0 y 1. */
+export function bocaEsfuerzo(t: number): string {
+  const y = mezclar(
+    ESFUERZO.cara.amplitudBocaRelajada,
+    ESFUERZO.cara.amplitudBocaTensa,
+    t,
+  ).toFixed(1);
+  return `M-9 17 Q-6 ${y} -3 17 T3 17 T9 17`;
+}
 
 /** Cuánto se encoge la sombra por cada unidad que sube el cuerpo. */
 const SOMBRA_POR_ALTURA = 0.015;
@@ -147,13 +186,10 @@ export function useAnimacionLia(
     const ojosEl = buscar(svg, "lia-ojos");
     const petaloEl = buscar(svg, "lia-petalo");
     const gotaEl = buscar(svg, "lia-gota");
-    // Las caras de esfuerzo solo existen en `trabajando`: se buscan en cada
+    // La cara de esfuerzo solo existe en `trabajando`: se busca en cada
     // cambio de estado.
-    let caraRespiroEl: SVGElement | null = null;
-    let caraOleadaEl: SVGElement | null = null;
-    let pupilasEl: SVGElement | null = null;
+    let ojosEsfuerzoEl: SVGElement | null = null;
     let bocaOnduladaEl: SVGElement | null = null;
-    let bocaOEl: SVGElement | null = null;
 
     const inicial = POSES[estadoActual.current];
     const elevacion = new Resorte(inicial.elevacion, 120, 14);
@@ -166,10 +202,13 @@ export function useAnimacionLia(
     // Intensidad del temblor de esfuerzo (0 a 1). Con amortiguación crítica
     // sube y baja con una curva suave, sin rebotar.
     const tension = new Resorte(0, 120, 22);
-    // Cruce entre caras: 0 = cara de respiro, 1 = cara de oleada. Amortiguación
-    // crítica, con la rigidez ajustada a la duración del cruce.
-    const ritmoCruce = 4 / ESFUERZO.cara.duracionCruce;
-    const cara = new Resorte(0, ritmoCruce * ritmoCruce, 2 * ritmoCruce);
+    // Tensión de la cara (0 relajada, 1 tensa): sigue a la intensidad del
+    // temblor, sin bajar del piso configurado.
+    const cara = new Resorte(
+      ESFUERZO.cara.tensionMinima,
+      ESFUERZO.cara.rigidezCara,
+      ESFUERZO.cara.amortiguacionCara,
+    );
     const resortes = [
       elevacion,
       sombra,
@@ -202,9 +241,6 @@ export function useAnimacionLia(
     /** Instante en que aparece la gota, o -1 si no hay ninguna. */
     let gotaInicio = -1;
 
-    /** Cara visible: con histéresis para que no parpadee en el límite. */
-    let caraDeOleada = false;
-
     /** Deja el esfuerzo en su punto de partida, sin gota ni oleada a medias. */
     const reiniciarEsfuerzo = () => {
       enOleada = false;
@@ -212,23 +248,23 @@ export function useAnimacionLia(
       gotaInicio = -1;
     };
 
-    /** Vuelve de golpe a la cara de respiro, sin cruce a medias. */
+    /** Deja la cara relajada, sin tensión a medias de una oleada anterior. */
     const reiniciarCara = () => {
-      caraDeOleada = false;
-      cara.valor = 0;
-      cara.objetivo = 0;
+      const base = reducido.matches
+        ? ESFUERZO.cara.tensionReducida
+        : ESFUERZO.cara.tensionMinima;
+      cara.valor = base;
+      cara.objetivo = base;
       cara.velocidad = 0;
     };
 
-    const CLAVES_CARA = ["cara-respiro", "cara-oleada", "pupilas", "boca-ond", "boca-o"];
     const buscarCara = () => {
-      caraRespiroEl = buscar(svg, "lia-cara-respiro");
-      caraOleadaEl = buscar(svg, "lia-cara-oleada");
-      pupilasEl = buscar(svg, "lia-pupilas");
+      ojosEsfuerzoEl = buscar(svg, "lia-ojos-esfuerzo");
       bocaOnduladaEl = buscar(svg, "lia-boca-ondulada");
-      bocaOEl = buscar(svg, "lia-boca-o");
       // Son elementos nuevos: lo escrito en los anteriores ya no vale.
-      for (const clave of CLAVES_CARA) escritos.delete(clave);
+      for (const clave of ["ojos-d", "ojos-grosor", "boca-d"]) {
+        escritos.delete(clave);
+      }
     };
 
     // Último valor escrito en cada atributo, para no tocar el DOM si no cambió.
@@ -274,19 +310,21 @@ export function useAnimacionLia(
         }
         tension.objetivo = enOleada ? 1 : 0;
       } else {
-        // Con movimiento reducido no hay oleadas: queda la cara de respiro.
+        // Con movimiento reducido no hay oleadas.
         reiniciarEsfuerzo();
         tension.objetivo = 0;
       }
       tension.paso(dt);
 
-      if (tension.valor > ESFUERZO.cara.umbralEntrada) caraDeOleada = true;
-      else if (tension.valor < ESFUERZO.cara.umbralSalida) caraDeOleada = false;
-      cara.objetivo = caraDeOleada && e === "trabajando" && !quieto ? 1 : 0;
-      // El resorte del cruce es muy rígido: dos medios pasos lo mantienen
-      // estable aunque el fotograma llegue tarde.
-      cara.paso(dt / 2);
-      cara.paso(dt / 2);
+      if (quieto) {
+        // Tensión fija, sin interpolación animada.
+        reiniciarCara();
+      } else {
+        const intensidad = Math.min(1, Math.max(0, tension.valor));
+        const piso = ESFUERZO.cara.tensionMinima;
+        cara.objetivo = piso + (1 - piso) * intensidad;
+        cara.paso(dt);
+      }
 
       if (e === "trabajando") {
         // En el respiro respira con normalidad; durante la oleada, no. Con
@@ -420,28 +458,17 @@ export function useAnimacionLia(
       );
       escribir(gotaEl, "gota-op", "opacity", gotaOpacidad.toFixed(2));
 
-      // Cruce entre la cara de respiro y la de oleada, solo con opacidad.
-      const mezcla = Math.min(1, Math.max(0, cara.valor));
-      const deRespiro = (1 - mezcla).toFixed(2);
-      const deOleada = mezcla.toFixed(2);
-      escribir(caraRespiroEl, "cara-respiro", "opacity", deRespiro);
-      escribir(caraOleadaEl, "cara-oleada", "opacity", deOleada);
-      if (bocaOEl) {
-        // Variante "bocaO": la boca también cambia con la cara.
-        escribir(bocaOEl, "boca-o", "opacity", deRespiro);
-        escribir(bocaOnduladaEl, "boca-ond", "opacity", deOleada);
-      }
-      // Barrido lento de las pupilas para que la cara no parezca congelada.
-      const barrido = reducido.matches
-        ? 0
-        : (ESFUERZO.cara.amplitudBarridoPupilas / PX_POR_UNIDAD) *
-          Math.sin((TAU * tiempo) / ESFUERZO.cara.periodoBarridoPupilas);
+      // Cara de esfuerzo: se interpolan los puntos de los mismos trazos. Los
+      // valores van redondeados, así que solo se escriben si cambian a la vista.
+      const tensionCara = Math.min(1, Math.max(0, cara.valor));
+      escribir(ojosEsfuerzoEl, "ojos-d", "d", ojosEsfuerzo(tensionCara));
       escribir(
-        pupilasEl,
-        "pupilas",
-        "transform",
-        `translate(${barrido.toFixed(2)},0)`,
+        ojosEsfuerzoEl,
+        "ojos-grosor",
+        "stroke-width",
+        grosorOjosEsfuerzo(tensionCara),
       );
+      escribir(bocaOnduladaEl, "boca-d", "d", bocaEsfuerzo(tensionCara));
 
       let ojosY = 1;
       if (parpadeoInicio >= 0) {
@@ -524,7 +551,7 @@ export function useAnimacionLia(
       buscarCara();
       // Al cambiar de estado no debe quedar una gota ni una oleada a medias;
       // el temblor se apaga solo porque su resorte vuelve a 0. `trabajando`
-      // empieza siempre con la cara de respiro.
+      // empieza siempre con la cara relajada.
       reiniciarEsfuerzo();
       reiniciarCara();
       if (!reducido.matches) {
