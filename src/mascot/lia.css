@@ -1,0 +1,9 @@
+.lia {
+  display: block;
+}
+
+#lia-personaje {
+  cursor: grab;
+  /* Evita que el gesto táctil o de lápiz cancele el arrastre. */
+  touch-action: none;
+}
