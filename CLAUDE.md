@@ -21,6 +21,9 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 
 - `src/` — UI (React).
 - `src/mascot/` — SVG y estados de la mascota.
+  - `Lia.tsx` — geometría del personaje; `poses.ts` — valores de reposo por
+    estado; `movimiento.ts` — resorte amortiguado; `useAnimacionLia.ts` — bucle
+    de animación que escribe los `transform` directamente en el SVG.
 - `src/window.ts` — posicionamiento de la ventana (borde superior central).
 - `src/useWindowDrag.ts` — arrastre manual de la ventana.
 - `src-tauri/` — Rust y configuración de Tauri.
@@ -41,6 +44,19 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   `macOSPrivateApi`, que no está activado.
 - La posición se calcula en píxeles físicos sobre el área de trabajo del
   monitor principal.
+
+## Animación y rendimiento (dependencias de WebView2)
+
+- El dibujo ocurre en los procesos hijos `msedgewebview2.exe` (renderer y
+  gpu-process), no en `lia.exe`: el consumo hay que medirlo sumándolos.
+- En pantallas de 144 Hz, pedir `requestAnimationFrame` en cada refresco ya
+  gasta CPU aunque no se dibuje. El bucle espera con un temporizador y pide el
+  fotograma solo cuando toca: 60 fps en movimiento rápido y 20 fps en lento.
+- `document.hidden` casi nunca es verdadero en una ventana siempre encima, así
+  que la pausa por visibilidad ahorra poco en la práctica.
+- Solo en desarrollo: la variable de entorno `VITE_LIA_ESTADO` (del proceso,
+  no de un archivo `.env`) fija el estado inicial, y un clic sin arrastre pasa
+  al siguiente estado.
 
 ## Reglas de seguridad y dependencias (obligatorias)
 

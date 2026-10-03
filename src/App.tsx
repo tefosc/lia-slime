@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
 import { Lia } from "./mascot/Lia";
-import { siguienteEstado } from "./mascot/tipos";
+import { esEstado, siguienteEstado } from "./mascot/tipos";
 import type { EstadoLia } from "./mascot/tipos";
 import { placeAtTopCenter } from "./window";
 import "./App.css";
 
+// Temporal, solo en desarrollo: la variable de entorno VITE_LIA_ESTADO del
+// proceso que lanza `pnpm tauri dev` fija el estado inicial.
+const ESTADO_INICIAL: EstadoLia =
+  import.meta.env.DEV && esEstado(import.meta.env.VITE_LIA_ESTADO)
+    ? import.meta.env.VITE_LIA_ESTADO
+    : "inactivo";
+
 function App() {
-  const [estado, setEstado] = useState<EstadoLia>("inactivo");
+  const [estado, setEstado] = useState<EstadoLia>(ESTADO_INICIAL);
 
   useEffect(() => {
     placeAtTopCenter().catch((error: unknown) => {

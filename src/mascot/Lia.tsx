@@ -1,5 +1,8 @@
+import { useRef } from "react";
 import { useWindowDrag } from "../useWindowDrag";
+import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
+import { useAnimacionLia } from "./useAnimacionLia";
 import "./lia.css";
 
 // La geometría y los colores siguen docs/lia-referencia.svg. El origen de
@@ -13,40 +16,8 @@ const PETALO_BORDE = "#F28FB2";
 const PETALO_CONTORNO =
   "M0 0 C-12 -8 -14 -22 -6 -27 L0 -22 L6 -27 C14 -22 12 -8 0 0 Z";
 
-interface Pose {
-  /** Píxeles que se eleva el personaje sobre el suelo. */
-  elevacion: number;
-  sombra: { cy: number; rx: number; ry: number; opacity: number };
-  petalo: string;
-  mejillas: number;
-}
-
-const POSES: Record<EstadoLia, Pose> = {
-  inactivo: {
-    elevacion: 0,
-    sombra: { cy: 44, rx: 40, ry: 5, opacity: 0.12 },
-    petalo: "translate(18,-36) rotate(18)",
-    mejillas: 0.75,
-  },
-  trabajando: {
-    elevacion: 0,
-    sombra: { cy: 44, rx: 40, ry: 5, opacity: 0.12 },
-    petalo: "translate(18,-36) rotate(18)",
-    mejillas: 0.75,
-  },
-  necesita: {
-    elevacion: 12,
-    sombra: { cy: 46, rx: 28, ry: 4, opacity: 0.08 },
-    petalo: "translate(18,-36) rotate(42)",
-    mejillas: 0.75,
-  },
-  termino: {
-    elevacion: 6,
-    sombra: { cy: 46, rx: 34, ry: 4.5, opacity: 0.1 },
-    petalo: "translate(14,-58) rotate(-15)",
-    mejillas: 0.95,
-  },
-};
+const SOMBRA_BASE = sombraPara(POSES.inactivo.sombra);
+const PETALO_BASE = `translate(${POSES.inactivo.petalo.x},${POSES.inactivo.petalo.y}) rotate(${POSES.inactivo.petalo.giro})`;
 
 function Ojos({ estado }: { estado: EstadoLia }) {
   switch (estado) {
@@ -240,13 +211,18 @@ interface LiaProps {
 }
 
 export function Lia({ estado, onClick }: LiaProps) {
+  const svgRef = useRef<SVGSVGElement>(null);
   const arrastre = useWindowDrag<SVGGElement>(onClick);
-  const pose = POSES[estado];
+  useAnimacionLia(svgRef, estado);
 
+  // La elevación, la sombra y la pose del pétalo las escribe el motor de
+  // animación (useAnimacionLia). Aquí solo van los valores de reposo de
+  // `inactivo`, que son constantes para que React no los vuelva a escribir.
   return (
     <svg
+      ref={svgRef}
       className="lia"
-      viewBox="-75 -95 150 150"
+      viewBox="-82 -110 164 164"
       width="200"
       height="200"
       role="img"
@@ -254,8 +230,8 @@ export function Lia({ estado, onClick }: LiaProps) {
     >
       {/* El arrastre va en este grupo: solo responde lo que está pintado. */}
       <g id="lia-personaje" {...arrastre}>
-        <ellipse id="lia-sombra" cx="0" fill="#000" {...pose.sombra} />
-        <g id="lia-flotante" transform={`translate(0,${-pose.elevacion})`}>
+        <ellipse id="lia-sombra" cx="0" fill="#000" {...SOMBRA_BASE} />
+        <g id="lia-flotante">
           <path
             id="lia-cuerpo"
             d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z"
@@ -284,13 +260,16 @@ export function Lia({ estado, onClick }: LiaProps) {
           <g id="lia-boca">
             <Boca estado={estado} />
           </g>
-          <g id="lia-mejillas" fill="#FF9EB5" opacity={pose.mejillas}>
+          <g id="lia-mejillas" fill="#FF9EB5" opacity={POSES[estado].mejillas}>
             <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
             <ellipse cx="27" cy="13" rx="5.5" ry="3" />
           </g>
-          <g id="lia-petalo" transform={pose.petalo}>
+          <g id="lia-petalo" transform={PETALO_BASE}>
             <Petalo />
           </g>
+        </g>
+        {/* Sube con el cuerpo, pero no se deforma con él. */}
+        <g id="lia-extras">
           <Extras estado={estado} />
         </g>
       </g>
