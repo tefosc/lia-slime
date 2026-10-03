@@ -1,9 +1,13 @@
+import { useWindowDrag } from "../useWindowDrag";
+
 /**
- * Placeholder de la mascota: un círculo menta. El atributo
- * `data-tauri-drag-region` va en el propio círculo, así que solo se arrastra
- * la ventana al presionar sobre él y no sobre el área transparente.
+ * Placeholder de la mascota: un círculo menta. Los manejadores de arrastre
+ * van en el propio círculo, así que solo se mueve la ventana al presionar
+ * sobre él y no sobre el área transparente.
  */
 export function Mascot() {
+  const drag = useWindowDrag<SVGCircleElement>();
+
   return (
     <svg
       className="mascot"
@@ -14,7 +18,7 @@ export function Mascot() {
       aria-label="Lia"
     >
       <circle
-        data-tauri-drag-region
+        {...drag}
         cx="100"
         cy="100"
         r="60"

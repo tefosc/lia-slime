@@ -22,6 +22,7 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 - `src/` — UI (React).
 - `src/mascot/` — SVG y estados de la mascota.
 - `src/window.ts` — posicionamiento de la ventana (borde superior central).
+- `src/useWindowDrag.ts` — arrastre manual de la ventana.
 - `src-tauri/` — Rust y configuración de Tauri.
   - `tauri.conf.json` — opciones de la ventana.
   - `capabilities/default.json` — permisos que el frontend puede usar.
@@ -31,6 +32,9 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 - `skipTaskbar` solo tiene efecto en Windows y Linux.
 - `focusable: false` aplica `WS_EX_NOACTIVATE` en Windows: al hacer clic en la
   mascota no se quita el foco a la app activa.
+- Con `focusable: false` el arrastre nativo de Tauri (`data-tauri-drag-region`,
+  `startDragging`) no funciona en Windows; por eso `src/useWindowDrag.ts` mueve
+  la ventana a mano con eventos de puntero y `setPosition`.
 - `shadow: false` es necesario: en Windows, la sombra en una ventana sin
   decoraciones añade un borde blanco de 1 px.
 - La transparencia depende de WebView2 en Windows; en macOS exigiría
