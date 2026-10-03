@@ -4,6 +4,8 @@ import { acercar, limitarPaso, Resorte } from "./movimiento";
 import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
 
+type CaraRespiro = "pupilas" | "bocaO";
+
 const TAU = Math.PI * 2;
 /** Fotogramas por segundo según la rapidez del movimiento en curso. */
 const FPS_RAPIDO = 60;
@@ -41,7 +43,7 @@ const POP = { aplaste: -0.8, celebracionAplaste: -0.5, celebracionSalto: 55 };
  * gelatina en oleadas separadas por respiros. Una unidad del viewBox equivale
  * a 1.22 px en la ventana de 200x200.
  */
-const ESFUERZO = {
+export const ESFUERZO = {
   /** Amplitud de la gelatina: cuánto cambia la escala (0.025 = 2.5 %). */
   amplitud: 0.025,
   /** Frecuencia del temblor, en Hz. */
@@ -71,18 +73,30 @@ const ESFUERZO = {
     /** Duración total: crecer, resbalar y desvanecerse. */
     duracion: 1.4,
   },
-  cejas: {
-    /** Grosor en reposo y grosor marcado durante la oleada. */
-    grosorBase: 1.8,
-    grosor: 2.4,
-    /** Grados extra de inclinación hacia el centro durante la oleada. */
-    inclinacion: 9,
-    /** Cuánto se mantienen marcadas en el respiro (0 = nada, 1 = igual). */
-    relajado: 0.45,
+  /**
+   * Cara: en la oleada, ojos apretados "> <"; en el respiro, cara concentrada.
+   * Las dos comparten la boca ondulada (salvo en la variante "bocaO").
+   */
+  cara: {
+    /** Intensidad del temblor a partir de la cual aparece la cara de oleada. */
+    umbralEntrada: 0.5,
+    /** Intensidad por debajo de la cual vuelve la cara de respiro. */
+    umbralSalida: 0.3,
+    /** Duración aproximada del cruce entre caras, en segundos. */
+    duracionCruce: 0.12,
+    /** Barrido horizontal de las pupilas en el respiro, en px de pantalla. */
+    amplitudBarridoPupilas: 1.5,
+    /** Duración de un barrido completo de las pupilas, en segundos. */
+    periodoBarridoPupilas: 5,
+    /**
+     * Variante de la cara de respiro: "pupilas" (ojos blancos con pupila que
+     * barre) o "bocaO" (ojos redondos, cejas altas y boca redonda).
+     */
+    caraRespiro: "pupilas" as CaraRespiro,
   },
 };
-/** Punto medio de cada ceja, sobre el que rota al inclinarse. */
-const CEJA = { x: 15.5, y: -2.5 };
+/** Píxeles de pantalla por unidad del viewBox (ventana de 200 / viewBox de 164). */
+const PX_POR_UNIDAD = 200 / 164;
 
 /** Cuánto se encoge la sombra por cada unidad que sube el cuerpo. */
 const SOMBRA_POR_ALTURA = 0.015;
@@ -133,9 +147,13 @@ export function useAnimacionLia(
     const ojosEl = buscar(svg, "lia-ojos");
     const petaloEl = buscar(svg, "lia-petalo");
     const gotaEl = buscar(svg, "lia-gota");
-    // Las cejas solo existen en `trabajando`: se buscan en cada cambio.
-    let cejaIzqEl: SVGElement | null = null;
-    let cejaDerEl: SVGElement | null = null;
+    // Las caras de esfuerzo solo existen en `trabajando`: se buscan en cada
+    // cambio de estado.
+    let caraRespiroEl: SVGElement | null = null;
+    let caraOleadaEl: SVGElement | null = null;
+    let pupilasEl: SVGElement | null = null;
+    let bocaOnduladaEl: SVGElement | null = null;
+    let bocaOEl: SVGElement | null = null;
 
     const inicial = POSES[estadoActual.current];
     const elevacion = new Resorte(inicial.elevacion, 120, 14);
@@ -148,8 +166,10 @@ export function useAnimacionLia(
     // Intensidad del temblor de esfuerzo (0 a 1). Con amortiguación crítica
     // sube y baja con una curva suave, sin rebotar.
     const tension = new Resorte(0, 120, 22);
-    // Cuánto se marcan las cejas (0 a 1).
-    const ceno = new Resorte(0, 90, 13);
+    // Cruce entre caras: 0 = cara de respiro, 1 = cara de oleada. Amortiguación
+    // crítica, con la rigidez ajustada a la duración del cruce.
+    const ritmoCruce = 4 / ESFUERZO.cara.duracionCruce;
+    const cara = new Resorte(0, ritmoCruce * ritmoCruce, 2 * ritmoCruce);
     const resortes = [
       elevacion,
       sombra,
@@ -158,7 +178,7 @@ export function useAnimacionLia(
       petaloGiro,
       aplaste,
       tension,
-      ceno,
+      cara,
     ];
 
     // Intensidad (0 a 1) de cada movimiento continuo; se encienden y apagan
@@ -182,6 +202,9 @@ export function useAnimacionLia(
     /** Instante en que aparece la gota, o -1 si no hay ninguna. */
     let gotaInicio = -1;
 
+    /** Cara visible: con histéresis para que no parpadee en el límite. */
+    let caraDeOleada = false;
+
     /** Deja el esfuerzo en su punto de partida, sin gota ni oleada a medias. */
     const reiniciarEsfuerzo = () => {
       enOleada = false;
@@ -189,13 +212,23 @@ export function useAnimacionLia(
       gotaInicio = -1;
     };
 
-    const buscarCejas = () => {
-      cejaIzqEl = buscar(svg, "lia-ceja-izq");
-      cejaDerEl = buscar(svg, "lia-ceja-der");
+    /** Vuelve de golpe a la cara de respiro, sin cruce a medias. */
+    const reiniciarCara = () => {
+      caraDeOleada = false;
+      cara.valor = 0;
+      cara.objetivo = 0;
+      cara.velocidad = 0;
+    };
+
+    const CLAVES_CARA = ["cara-respiro", "cara-oleada", "pupilas", "boca-ond", "boca-o"];
+    const buscarCara = () => {
+      caraRespiroEl = buscar(svg, "lia-cara-respiro");
+      caraOleadaEl = buscar(svg, "lia-cara-oleada");
+      pupilasEl = buscar(svg, "lia-pupilas");
+      bocaOnduladaEl = buscar(svg, "lia-boca-ondulada");
+      bocaOEl = buscar(svg, "lia-boca-o");
       // Son elementos nuevos: lo escrito en los anteriores ya no vale.
-      for (const clave of ["ceja-izq", "ceja-der", "ceja-izq-g", "ceja-der-g"]) {
-        escritos.delete(clave);
-      }
+      for (const clave of CLAVES_CARA) escritos.delete(clave);
     };
 
     // Último valor escrito en cada atributo, para no tocar el DOM si no cambió.
@@ -240,15 +273,20 @@ export function useAnimacionLia(
           }
         }
         tension.objetivo = enOleada ? 1 : 0;
-        ceno.objetivo = enOleada ? 1 : ESFUERZO.cejas.relajado;
       } else {
+        // Con movimiento reducido no hay oleadas: queda la cara de respiro.
         reiniciarEsfuerzo();
         tension.objetivo = 0;
-        // Con movimiento reducido las cejas quedan marcadas, sin temblor.
-        ceno.objetivo = e === "trabajando" ? 1 : 0;
       }
       tension.paso(dt);
-      ceno.paso(dt);
+
+      if (tension.valor > ESFUERZO.cara.umbralEntrada) caraDeOleada = true;
+      else if (tension.valor < ESFUERZO.cara.umbralSalida) caraDeOleada = false;
+      cara.objetivo = caraDeOleada && e === "trabajando" && !quieto ? 1 : 0;
+      // El resorte del cruce es muy rígido: dos medios pasos lo mantienen
+      // estable aunque el fotograma llegue tarde.
+      cara.paso(dt / 2);
+      cara.paso(dt / 2);
 
       if (e === "trabajando") {
         // En el respiro respira con normalidad; durante la oleada, no. Con
@@ -382,26 +420,28 @@ export function useAnimacionLia(
       );
       escribir(gotaEl, "gota-op", "opacity", gotaOpacidad.toFixed(2));
 
-      const marca = Math.min(1, Math.max(0, ceno.valor));
-      const grosor = (
-        ESFUERZO.cejas.grosorBase +
-        (ESFUERZO.cejas.grosor - ESFUERZO.cejas.grosorBase) * marca
-      ).toFixed(2);
-      const inclinacion = (ESFUERZO.cejas.inclinacion * marca).toFixed(1);
+      // Cruce entre la cara de respiro y la de oleada, solo con opacidad.
+      const mezcla = Math.min(1, Math.max(0, cara.valor));
+      const deRespiro = (1 - mezcla).toFixed(2);
+      const deOleada = mezcla.toFixed(2);
+      escribir(caraRespiroEl, "cara-respiro", "opacity", deRespiro);
+      escribir(caraOleadaEl, "cara-oleada", "opacity", deOleada);
+      if (bocaOEl) {
+        // Variante "bocaO": la boca también cambia con la cara.
+        escribir(bocaOEl, "boca-o", "opacity", deRespiro);
+        escribir(bocaOnduladaEl, "boca-ond", "opacity", deOleada);
+      }
+      // Barrido lento de las pupilas para que la cara no parezca congelada.
+      const barrido = reducido.matches
+        ? 0
+        : (ESFUERZO.cara.amplitudBarridoPupilas / PX_POR_UNIDAD) *
+          Math.sin((TAU * tiempo) / ESFUERZO.cara.periodoBarridoPupilas);
       escribir(
-        cejaIzqEl,
-        "ceja-izq",
+        pupilasEl,
+        "pupilas",
         "transform",
-        `rotate(${inclinacion} ${-CEJA.x} ${CEJA.y})`,
+        `translate(${barrido.toFixed(2)},0)`,
       );
-      escribir(
-        cejaDerEl,
-        "ceja-der",
-        "transform",
-        `rotate(-${inclinacion} ${CEJA.x} ${CEJA.y})`,
-      );
-      escribir(cejaIzqEl, "ceja-izq-g", "stroke-width", grosor);
-      escribir(cejaDerEl, "ceja-der-g", "stroke-width", grosor);
 
       let ojosY = 1;
       if (parpadeoInicio >= 0) {
@@ -436,8 +476,8 @@ export function useAnimacionLia(
       gotaInicio >= 0 ||
       // Por debajo de este umbral el temblor ya no se aprecia.
       tension.valor > 0.02 ||
-      Math.abs(ceno.valor - ceno.objetivo) > 0.02 ||
-      resortes.some((r) => r !== tension && r !== ceno && !r.enReposo);
+      Math.abs(cara.valor - cara.objetivo) > 0.02 ||
+      resortes.some((r) => r !== tension && r !== cara && !r.enReposo);
 
     // Depende de la pantalla: a 144 Hz, `requestAnimationFrame` se dispara
     // 144 veces por segundo y pedirlo en cada refresco ya gasta CPU en
@@ -481,10 +521,12 @@ export function useAnimacionLia(
 
     alCambiar.current = () => {
       fijarObjetivos();
-      buscarCejas();
+      buscarCara();
       // Al cambiar de estado no debe quedar una gota ni una oleada a medias;
-      // el temblor se apaga solo porque su resorte vuelve a 0.
+      // el temblor se apaga solo porque su resorte vuelve a 0. `trabajando`
+      // empieza siempre con la cara de respiro.
       reiniciarEsfuerzo();
+      reiniciarCara();
       if (!reducido.matches) {
         aplaste.impulso(POP.aplaste);
         if (estadoActual.current === "termino") {
@@ -501,6 +543,7 @@ export function useAnimacionLia(
         // Al ocultarse se limpia el esfuerzo para no volver con una gota o
         // un temblor atascados.
         reiniciarEsfuerzo();
+        reiniciarCara();
         tension.valor = 0;
         tension.velocidad = 0;
       }
@@ -511,7 +554,7 @@ export function useAnimacionLia(
 
     document.addEventListener("visibilitychange", alCambiarVisibilidad);
     reducido.addEventListener("change", alCambiarReducido);
-    buscarCejas();
+    buscarCara();
     pedir();
 
     return () => {
