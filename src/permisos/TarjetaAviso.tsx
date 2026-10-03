@@ -1,4 +1,5 @@
 import type { Aviso } from "../estado/useEstadoLia";
+import { TEXTO_ENTENDIDO } from "./textos";
 import "./permisos.css";
 
 interface Props {
@@ -19,7 +20,7 @@ export function TarjetaAviso({ aviso, onCerrar }: Props) {
           className="boton boton-permitir"
           onClick={onCerrar}
         >
-          Entendido
+          {TEXTO_ENTENDIDO}
         </button>
       </div>
     </div>

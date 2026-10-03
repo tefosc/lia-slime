@@ -34,7 +34,8 @@ export function useEstadoLia() {
     let dejarDeEscuchar: (() => void) | undefined;
     listen<EventoLia>("lia-evento", ({ payload }) => {
       if (payload.evento === "StopFailure") {
-        setAviso({ id: siguienteAviso++, ...avisoDeError(payload.error) });
+        const id = siguienteAviso++;
+        setAviso({ id, ...avisoDeError(payload.error, id) });
       } else if (payload.evento === "UserPromptSubmit") {
         // Si se vuelve a escribir a Claude, el aviso anterior ya no aplica.
         setAviso(null);

@@ -1,6 +1,6 @@
 # Conectar Lia con Claude Code
 
-Lia reacciona a los eventos de Claude Code mediante *hooks*. Cada hook envía
+Lia reacciona a los eventos de Claude Code mediante _hooks_. Cada hook envía
 el evento a un receptor que Lia abre en `127.0.0.1:47615` mientras está en
 ejecución. Lia observa los eventos y, además, puede mostrar las solicitudes de
 permiso para que las apruebes o deniegues con un clic.
@@ -40,7 +40,7 @@ permiso para que las apruebes o deniegues con un clic.
 
 ## Fragmento para `~/.claude/settings.json`
 
-Sustituye `TU_USUARIO` (aparece 10 veces) por tu nombre de usuario de Windows.
+Sustituye `TU_USUARIO` (aparece 9 veces) por tu nombre de usuario de Windows.
 Si ya tienes una sección `"hooks"`, añade estos eventos dentro de ella en
 lugar de duplicar la clave.
 
@@ -170,16 +170,16 @@ lugar de duplicar la clave.
 }
 ```
 
-El comando es el mismo en nueve eventos; `PermissionRequest` usa otro, explicado
+El comando es el mismo en ocho eventos; `PermissionRequest` usa otro, explicado
 en la sección siguiente. Qué hace cada opción del comando común:
 
-| Opción | Para qué sirve |
-|---|---|
-| `-s -o NUL` | Sin salida: `NUL` es el dispositivo nulo de Windows. |
-| `--connect-timeout 0.3` | Si Lia está cerrada, abandona a los 0.3 s. |
-| `-m 1` | Tiempo máximo total de 1 s. |
-| `-H "@archivo"` | Lee la cabecera `Authorization` con el token desde el archivo. |
-| `--data-binary "@-"` | Envía como cuerpo el JSON que Claude Code pasa por stdin. |
+| Opción                  | Para qué sirve                                                 |
+| ----------------------- | -------------------------------------------------------------- |
+| `-s -o NUL`             | Sin salida: `NUL` es el dispositivo nulo de Windows.           |
+| `--connect-timeout 0.3` | Si Lia está cerrada, abandona a los 0.3 s.                     |
+| `-m 1`                  | Tiempo máximo total de 1 s.                                    |
+| `-H "@archivo"`         | Lee la cabecera `Authorization` con el token desde el archivo. |
+| `--data-binary "@-"`    | Envía como cuerpo el JSON que Claude Code pasa por stdin.      |
 
 ## Aprobar permisos desde Lia (`PermissionRequest`)
 
@@ -193,14 +193,14 @@ respuesta. Su comando se diferencia del resto en tres cosas:
 
 Qué ocurre en cada caso:
 
-| Situación | Resultado en Claude Code |
-|---|---|
-| Pulsas **Permitir** en la tarjeta | La herramienta se ejecuta |
-| Pulsas **Denegar** | Se deniega con el mensaje "Denegado desde Lia" |
-| Pasan 60 s sin decidir | Lia responde "sin decisión" y aparece el diálogo normal |
-| Lia está cerrada | curl falla a los 0.3 s y aparece el diálogo normal |
-| Lia se cierra o falla mientras espera | Se corta la conexión y aparece el diálogo normal |
-| Interrumpes Claude Code mientras espera | Lia retira la tarjeta |
+| Situación                               | Resultado en Claude Code                                |
+| --------------------------------------- | ------------------------------------------------------- |
+| Pulsas **Permitir** en la tarjeta       | La herramienta se ejecuta                               |
+| Pulsas **Denegar**                      | Se deniega con el mensaje "Denegado desde Lia"          |
+| Pasan 60 s sin decidir                  | Lia responde "sin decisión" y aparece el diálogo normal |
+| Lia está cerrada                        | curl falla a los 0.3 s y aparece el diálogo normal      |
+| Lia se cierra o falla mientras espera   | Se corta la conexión y aparece el diálogo normal        |
+| Interrumpes Claude Code mientras espera | Lia retira la tarjeta                                   |
 
 Lia nunca permite ni deniega por su cuenta: solo cuando pulsas un botón.
 
@@ -222,17 +222,17 @@ Ten en cuenta:
 
 ## Qué hace Lia con cada evento
 
-| Evento de Claude Code | Estado de la sesión |
-|---|---|
-| `SessionStart` | inactivo |
-| `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure` | trabajando |
-| `PermissionRequest` | necesita mientras la tarjeta está abierta |
-| `Notification` con `permission_prompt`, `agent_needs_input`, `elicitation_dialog` o `elicitation_url_dialog` | necesita |
-| `Notification` de otro tipo (por ejemplo `idle_prompt`, que solo indica que Claude Code espera tu siguiente mensaje) | sin cambio |
-| `SubagentStop` | sin cambio: puede llegar después de `Stop` y no se usa |
-| `Stop` | termino, y a los 4 s vuelve a inactivo |
-| `StopFailure` (límite de uso, servidores saturados, problema de cuenta...) | inactivo, con un aviso que explica el motivo hasta que pulses "Entendido" o vuelvas a escribir |
-| `SessionEnd` | se elimina la sesión |
+| Evento de Claude Code                                                                                                | Estado de la sesión                                                                            |
+| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `SessionStart`                                                                                                       | inactivo                                                                                       |
+| `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`                                                | trabajando                                                                                     |
+| `PermissionRequest`                                                                                                  | necesita mientras la tarjeta está abierta                                                      |
+| `Notification` con `permission_prompt`, `agent_needs_input`, `elicitation_dialog` o `elicitation_url_dialog`         | necesita                                                                                       |
+| `Notification` de otro tipo (por ejemplo `idle_prompt`, que solo indica que Claude Code espera tu siguiente mensaje) | sin cambio                                                                                     |
+| `SubagentStop`                                                                                                       | sin cambio: puede llegar después de `Stop` y no se usa                                         |
+| `Stop`                                                                                                               | termino, y a los 4 s vuelve a inactivo                                                         |
+| `StopFailure` (límite de uso, servidores saturados, problema de cuenta...)                                           | inactivo, con un aviso que explica el motivo hasta que pulses "Entendido" o vuelvas a escribir |
+| `SessionEnd`                                                                                                         | se elimina la sesión                                                                           |
 
 Con varias sesiones abiertas se muestra el estado de mayor prioridad:
 necesita, trabajando, termino, inactivo. Una sesión que lleva 5 minutos en

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { esPeligroso } from "./peligro";
-import { describirAccion } from "./textos";
+import { preguntaDePermiso, TEXTOS_PERMISO } from "./textos";
 import type { Solicitud } from "./usePermisos";
 import "./permisos.css";
 
@@ -59,15 +59,15 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
       aria-label="Solicitud de permiso de Claude Code"
     >
       <div className="tarjeta-cabecera">
-        <span className="tarjeta-titulo">{describirAccion(solicitud.herramienta)}</span>
+        <span className="tarjeta-titulo">
+          {preguntaDePermiso(solicitud.herramienta, solicitud.id)}
+        </span>
         {pendientes > 1 && (
-          <span className="tarjeta-cola">{pendientes - 1} más en espera</span>
+          <span className="tarjeta-cola">{TEXTOS_PERMISO.enEspera(pendientes - 1)}</span>
         )}
       </div>
 
-      {peligroso && (
-        <div className="tarjeta-aviso">Cuidado: esto podría borrar o exponer datos</div>
-      )}
+      {peligroso && <div className="tarjeta-aviso">{TEXTOS_PERMISO.peligro}</div>}
 
       {solicitud.detalle &&
         (expandido ? (
@@ -79,8 +79,9 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
         ))}
       <div className="tarjeta-pie">
         <span>
-          {solicitud.etiqueta} · si no eliges, se preguntará en la terminal en{" "}
+          {TEXTOS_PERMISO.pieAntes(solicitud.etiqueta)}
           <span className="tarjeta-tiempo">{restante} s</span>
+          {TEXTOS_PERMISO.pieDespues}
         </span>
         {largo && (
           <button
@@ -89,7 +90,7 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
             className="tarjeta-expandir"
             onClick={() => setExpandido((valor) => !valor)}
           >
-            {expandido ? "Ver menos" : "Ver todo"}
+            {expandido ? TEXTOS_PERMISO.verMenos : TEXTOS_PERMISO.verTodo}
           </button>
         )}
       </div>
@@ -102,7 +103,7 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
           disabled={!activos}
           onClick={() => decidir(false)}
         >
-          No permitir
+          {TEXTOS_PERMISO.denegar}
         </button>
         <button
           type="button"
@@ -111,7 +112,7 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
           disabled={!activos}
           onClick={() => decidir(true)}
         >
-          Permitir
+          {TEXTOS_PERMISO.permitir}
         </button>
       </div>
     </div>

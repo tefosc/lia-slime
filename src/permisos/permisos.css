@@ -83,6 +83,7 @@
 }
 
 .tarjeta-aviso {
+  flex: none;
   font-size: 12px;
   font-weight: 700;
   color: #8a5a00;
@@ -101,6 +102,8 @@
 }
 
 .tarjeta-resumen {
+  /* El comando nunca se encoge: es lo más importante de la tarjeta. */
+  flex: none;
   font-family: ui-monospace, Consolas, monospace;
   font-size: 12px;
   white-space: nowrap;
