@@ -11,6 +11,8 @@
   .\scripts\simular-evento.ps1 UserPromptSubmit
   .\scripts\simular-evento.ps1 Notification -Notificacion permission_prompt
   .\scripts\simular-evento.ps1 Stop -Sesion otra
+  .\scripts\simular-evento.ps1 StopFailure                 # límite de uso
+  .\scripts\simular-evento.ps1 StopFailure -Motivo overloaded
   .\scripts\simular-evento.ps1 PreToolUse -SinToken        # debe dar 401
   .\scripts\simular-evento.ps1 PreToolUse -CuerpoInvalido  # debe dar 400
 
@@ -24,11 +26,13 @@ param(
   [ValidateSet(
     'SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse',
     'PostToolUseFailure', 'PermissionRequest', 'Notification', 'SubagentStop',
-    'Stop', 'SessionEnd'
+    'Stop', 'StopFailure', 'SessionEnd'
   )]
   [string]$Evento,
   [string]$Sesion = 'simulada-1',
   [string]$Notificacion,
+  # Motivo de StopFailure: rate_limit, overloaded, billing_error...
+  [string]$Motivo = 'rate_limit',
   # Comando falso para una solicitud de permiso de Bash.
   [string]$Permiso,
   # Solicitud de permiso con un comando falso que parece peligroso.
@@ -64,6 +68,7 @@ if ($CuerpoInvalido) {
 } else {
   $datos = [ordered]@{ session_id = $Sesion; hook_event_name = $Evento }
   if ($Notificacion) { $datos.notification_type = $Notificacion }
+  if ($Evento -eq 'StopFailure') { $datos.error_type = $Motivo }
   # Relleno parecido al de un hook real, para comprobar que Lia lo descarta.
   $datos.cwd = 'C:\ruta\de\prueba'
   $datos.prompt = 'texto de prueba que Lia no debe conservar'

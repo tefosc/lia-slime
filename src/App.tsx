@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useEstadoLia } from "./estado/useEstadoLia";
 import { Lia } from "./mascot/Lia";
+import { TarjetaAviso } from "./permisos/TarjetaAviso";
 import { TarjetaPermiso } from "./permisos/TarjetaPermiso";
 import { usePermisos } from "./permisos/usePermisos";
 import {
@@ -12,7 +13,7 @@ import type { Lado } from "./window";
 import "./App.css";
 
 function App() {
-  const estadoSesiones = useEstadoLia();
+  const { estado: estadoSesiones, aviso, cerrarAviso } = useEstadoLia();
   const { actual, pendientes, resolver } = usePermisos();
   // Mientras haya solicitudes pendientes, Lia necesita al usuario.
   const estado = pendientes > 0 ? "necesita" : estadoSesiones;
@@ -21,7 +22,7 @@ function App() {
   const [lado, setLado] = useState<Lado | null>(null);
   const ladoActual = useRef<Lado | null>(null);
   const cambios = useRef(Promise.resolve());
-  const hayTarjeta = actual !== null;
+  const hayTarjeta = actual !== null || aviso !== null;
 
   useEffect(() => {
     placeAtTopCenter().catch((error: unknown) => {
@@ -55,14 +56,19 @@ function App() {
       <div className="lia-caja">
         <Lia estado={estado} />
       </div>
-      {actual && lado && (
-        <TarjetaPermiso
-          key={actual.id}
-          solicitud={actual}
-          pendientes={pendientes}
-          onResolver={resolver}
-        />
-      )}
+      {lado &&
+        (actual ? (
+          <TarjetaPermiso
+            key={actual.id}
+            solicitud={actual}
+            pendientes={pendientes}
+            onResolver={resolver}
+          />
+        ) : (
+          aviso && (
+            <TarjetaAviso key={aviso.id} aviso={aviso} onCerrar={cerrarAviso} />
+          )
+        ))}
     </div>
   );
 }

@@ -40,7 +40,7 @@ permiso para que las apruebes o deniegues con un clic.
 
 ## Fragmento para `~/.claude/settings.json`
 
-Sustituye `TU_USUARIO` (aparece 9 veces) por tu nombre de usuario de Windows.
+Sustituye `TU_USUARIO` (aparece 10 veces) por tu nombre de usuario de Windows.
 Si ya tienes una sección `"hooks"`, añade estos eventos dentro de ella en
 lugar de duplicar la clave.
 
@@ -142,6 +142,18 @@ lugar de duplicar la clave.
         ]
       }
     ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "async": true,
+            "timeout": 5,
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+          }
+        ]
+      }
+    ],
     "SessionEnd": [
       {
         "hooks": [
@@ -158,7 +170,7 @@ lugar de duplicar la clave.
 }
 ```
 
-El comando es el mismo en ocho eventos; `PermissionRequest` usa otro, explicado
+El comando es el mismo en nueve eventos; `PermissionRequest` usa otro, explicado
 en la sección siguiente. Qué hace cada opción del comando común:
 
 | Opción | Para qué sirve |
@@ -219,6 +231,7 @@ Ten en cuenta:
 | `Notification` de otro tipo (por ejemplo `idle_prompt`, que solo indica que Claude Code espera tu siguiente mensaje) | sin cambio |
 | `SubagentStop` | sin cambio: puede llegar después de `Stop` y no se usa |
 | `Stop` | termino, y a los 4 s vuelve a inactivo |
+| `StopFailure` (límite de uso, servidores saturados, problema de cuenta...) | inactivo, con un aviso que explica el motivo hasta que pulses "Entendido" o vuelvas a escribir |
 | `SessionEnd` | se elimina la sesión |
 
 Con varias sesiones abiertas se muestra el estado de mayor prioridad:

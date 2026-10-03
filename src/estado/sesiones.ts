@@ -6,6 +6,8 @@ export interface EventoLia {
   evento: string;
   sesion: string;
   notificacion: string | null;
+  /** Solo en `StopFailure`: motivo del fallo (`rate_limit`, `overloaded`...). */
+  error: string | null;
 }
 
 /** Qué hacer con una sesión al llegar un evento. */
@@ -56,6 +58,10 @@ export function efectoDe(evento: EventoLia): Efecto {
         : null;
     case "Stop":
       return "termino";
+    // El turno terminó por un error de la API (límite de uso, servidores
+    // saturados...): Claude ya no está trabajando. El aviso lo muestra App.
+    case "StopFailure":
+      return "inactivo";
     case "SessionEnd":
       return "eliminar";
     default:

@@ -35,6 +35,8 @@ struct EventoHook {
     hook_event_name: String,
     session_id: String,
     notification_type: Option<String>,
+    /// Solo en `StopFailure`: motivo del fallo (`rate_limit`, `overloaded`...).
+    error_type: Option<String>,
 }
 
 /// Lo único que sale del receptor hacia el frontend en `/evento`.
@@ -43,6 +45,7 @@ struct EventoLia {
     evento: String,
     sesion: String,
     notificacion: Option<String>,
+    error: Option<String>,
 }
 
 /// Resultado del arranque, para que el frontend pueda consultarlo.
@@ -135,7 +138,11 @@ fn atender(mut conexion: TcpStream, esperado: &str, app: &AppHandle, pendientes:
                 // la sesión, para poder diagnosticar el orden en que llegan.
                 if cfg!(debug_assertions) {
                     let sesion: String = evento.sesion.chars().take(8).collect();
-                    let tipo = evento.notificacion.as_deref().unwrap_or("");
+                    let tipo = evento
+                        .notificacion
+                        .as_deref()
+                        .or(evento.error.as_deref())
+                        .unwrap_or("");
                     eprintln!("[lia] {} {sesion} {tipo}", evento.evento);
                 }
                 let _ = app.emit(EVENTO_TAURI, evento);
@@ -267,6 +274,10 @@ fn validar_evento(cuerpo: &[u8]) -> Result<EventoLia, u16> {
             .notification_type
             .as_deref()
             .is_none_or(|tipo| es_identificador(tipo, 64))
+        || !hook
+            .error_type
+            .as_deref()
+            .is_none_or(|tipo| es_identificador(tipo, 64))
     {
         return Err(400);
     }
@@ -274,6 +285,7 @@ fn validar_evento(cuerpo: &[u8]) -> Result<EventoLia, u16> {
         evento: hook.hook_event_name,
         sesion: hook.session_id,
         notificacion: hook.notification_type,
+        error: hook.error_type,
     })
 }
 

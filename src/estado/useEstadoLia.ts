@@ -1,21 +1,29 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { EstadoLia } from "../mascot/tipos";
+import { avisoDeError } from "../permisos/textos";
+import type { TextoAviso } from "../permisos/textos";
 import { SESIONES } from "./config";
 import { RegistroSesiones } from "./sesiones";
 import type { EventoLia } from "./sesiones";
 
+export interface Aviso extends TextoAviso {
+  id: number;
+}
+
 /**
  * Estado que debe mostrar Lia según los eventos de Claude Code que llegan
- * del receptor local.
+ * del receptor local, y el aviso pendiente si Claude se detuvo por un error.
  */
-export function useEstadoLia(): EstadoLia {
+export function useEstadoLia() {
   const [estado, setEstado] = useState<EstadoLia>("inactivo");
+  const [aviso, setAviso] = useState<Aviso | null>(null);
 
   useEffect(() => {
     const registro = new RegistroSesiones();
     let finTermino = 0;
+    let siguienteAviso = 1;
 
     const actualizar = () => {
       registro.revisar(Date.now());
@@ -25,6 +33,12 @@ export function useEstadoLia(): EstadoLia {
     let cancelado = false;
     let dejarDeEscuchar: (() => void) | undefined;
     listen<EventoLia>("lia-evento", ({ payload }) => {
+      if (payload.evento === "StopFailure") {
+        setAviso({ id: siguienteAviso++, ...avisoDeError(payload.error) });
+      } else if (payload.evento === "UserPromptSubmit") {
+        // Si se vuelve a escribir a Claude, el aviso anterior ya no aplica.
+        setAviso(null);
+      }
       if (!registro.aplicar(payload, Date.now())) return;
       actualizar();
       if (payload.evento === "Stop") {
@@ -62,5 +76,7 @@ export function useEstadoLia(): EstadoLia {
     };
   }, []);
 
-  return estado;
+  const cerrarAviso = useCallback(() => setAviso(null), []);
+
+  return { estado, aviso, cerrarAviso };
 }

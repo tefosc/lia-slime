@@ -15,6 +15,16 @@
   animation: tarjeta-entrar 160ms ease-out;
 }
 
+.tarjeta-info {
+  border-color: #4baedb;
+  background: #f4fbff;
+}
+
+.tarjeta-texto {
+  font-size: 13px;
+  color: #3d4a44;
+}
+
 .tarjeta-peligro {
   border-color: #e0a800;
   background: #fff8e1;
