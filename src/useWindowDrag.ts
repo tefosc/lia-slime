@@ -20,6 +20,8 @@ interface Grab {
   screenX: number;
   screenY: number;
   dragging: boolean;
+  /** Elemento donde empezó la pulsación, para saber qué se pulsó. */
+  origen: EventTarget | null;
 }
 
 /**
@@ -32,7 +34,7 @@ interface Grab {
  * (`WS_EX_NOACTIVATE`), así que se mueve la ventana con `setPosition`.
  */
 export function useWindowDrag<T extends Element>(
-  onClick?: () => void,
+  onClick?: (origen: EventTarget | null) => void,
 ): DragHandlers<T> {
   const grab = useRef<Grab | null>(null);
   const frame = useRef<number | null>(null);
@@ -63,6 +65,7 @@ export function useWindowDrag<T extends Element>(
         screenX: event.screenX,
         screenY: event.screenY,
         dragging: false,
+        origen: event.target,
       };
       // La captura mantiene los eventos aunque el puntero salga del personaje.
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -90,7 +93,7 @@ export function useWindowDrag<T extends Element>(
     },
     onPointerUp: (event) => {
       const released = release(event);
-      if (released && !released.dragging) onClick?.();
+      if (released && !released.dragging) onClick?.(released.origen);
     },
     onPointerCancel: (event) => {
       release(event);

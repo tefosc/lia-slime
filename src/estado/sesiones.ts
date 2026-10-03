@@ -8,6 +8,10 @@ export interface EventoLia {
   notificacion: string | null;
   /** Solo en `StopFailure`: motivo del fallo (`rate_limit`, `overloaded`...). */
   error: string | null;
+  /** Solo en `PreToolUse`: nombre de la herramienta, sin su entrada. */
+  herramienta: string | null;
+  /** Solo en `Stop`: último mensaje de Claude (texto plano, solo en memoria). */
+  mensaje: string | null;
 }
 
 /** Qué hacer con una sesión al llegar un evento. */

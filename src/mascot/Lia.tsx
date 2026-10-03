@@ -164,7 +164,7 @@ function Extras({ estado }: { estado: EstadoLia }) {
   switch (estado) {
     case "necesita":
       return (
-        <g id="lia-burbuja">
+        <g id="lia-burbuja-alerta">
           <circle
             cx="-48"
             cy="-46"
@@ -216,15 +216,59 @@ function Extras({ estado }: { estado: EstadoLia }) {
   }
 }
 
-interface LiaProps {
-  estado: EstadoLia;
-  /** Clic sin arrastre sobre el personaje. */
-  onClick?: () => void;
+/**
+ * Burbuja ✓ junto a la cabeza, a la derecha (la de alerta va a la izquierda).
+ * Dibujada con formas; el número de resultados sin leer solo aparece si hay
+ * más de uno.
+ */
+function BurbujaResultado({ sinLeer }: { sinLeer: number }) {
+  return (
+    <g id="lia-burbuja" className="lia-burbuja-resultado">
+      <circle cx="54" cy="-40" r="11" fill="#FFFFFF" stroke="#45B084" strokeWidth="1.5" />
+      <path
+        d="M48.5 -40 L52.5 -36 L59.5 -44"
+        fill="none"
+        stroke="#2F8A63"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {sinLeer > 1 && (
+        <g>
+          <circle cx="63" cy="-50" r="6.5" fill="#FF7F9E" />
+          <text
+            x="63"
+            y="-47.3"
+            textAnchor="middle"
+            fontSize="8"
+            fontWeight="700"
+            fill="#FFFFFF"
+            fontFamily="system-ui, sans-serif"
+          >
+            {sinLeer > 9 ? "9+" : sinLeer}
+          </text>
+        </g>
+      )}
+    </g>
+  );
 }
 
-export function Lia({ estado, onClick }: LiaProps) {
+interface LiaProps {
+  estado: EstadoLia;
+  /** Resultados sin leer: con alguno se ve la burbuja ✓. */
+  resultadosSinLeer?: number;
+  /** Clic sin arrastre sobre la burbuja de resultado. */
+  onClickBurbuja?: () => void;
+}
+
+export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const arrastre = useWindowDrag<SVGGElement>(onClick);
+  // Un clic sin arrastre solo hace algo si fue sobre la burbuja de resultado.
+  const arrastre = useWindowDrag<SVGGElement>((origen) => {
+    if (origen instanceof Element && origen.closest("#lia-burbuja")) {
+      onClickBurbuja?.();
+    }
+  });
   useAnimacionLia(svgRef, estado);
 
   // La elevación, la sombra y la pose del pétalo las escribe el motor de
@@ -294,6 +338,7 @@ export function Lia({ estado, onClick }: LiaProps) {
         {/* Sube con el cuerpo, pero no se deforma con él. */}
         <g id="lia-extras">
           <Extras estado={estado} />
+          {resultadosSinLeer > 0 && <BurbujaResultado sinLeer={resultadosSinLeer} />}
         </g>
       </g>
     </svg>

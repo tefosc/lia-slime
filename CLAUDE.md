@@ -31,6 +31,11 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 - `src-tauri/src/cursor.rs` — lee la posición global del cursor (30 Hz si se
   mueve, 4 Hz en reposo, en pausa con la ventana oculta) y la envía como
   `lia-cursor`. La posición solo vive en memoria; nunca se registra.
+- `src-tauri/src/resultados.rs` y `src/resultados/` — resultado al terminar
+  una tarea: último mensaje (campo del evento o transcripción con ruta
+  validada), estadísticas, burbuja, tarjeta y modo privado. En desarrollo se
+  admite además `.pruebas/transcripciones` (ignorado por git) para el
+  simulador.
 - `src-tauri/src/permisos.rs` y `src/permisos/` — solicitudes de permiso: el
   hilo que espera la decisión, la cola y la tarjeta.
 - `scripts/simular-evento.ps1` — envía eventos de prueba al receptor.
@@ -79,7 +84,11 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   puerto local cerrado, y eso retrasaría a Claude Code con Lia cerrada.
 - Privacidad: del evento solo se conservan `hook_event_name`, `session_id` y
   `notification_type`. Nunca registres ni reenvíes otros campos.
-- Permisos (`/permiso`): única excepción. El comando, la ruta o la URL viven
+- Resultados: el último mensaje de Claude solo vive en memoria, se muestra
+  como texto plano (nunca HTML, Markdown ni enlaces) y nunca se registra.
+  Las rutas de transcripción se validan con su forma canónica dentro de
+  `~/.claude/projects`; no relajes esa comprobación.
+- Permisos (`/permiso`): el comando, la ruta o la URL viven
   solo en memoria mientras la solicitud está activa y nunca se registran.
 - Seguridad de los permisos: Lia solo permite o deniega cuando el usuario
   pulsa un botón. Ante tiempo agotado, cierre o fallo responde "sin decisión"

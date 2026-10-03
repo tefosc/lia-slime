@@ -220,6 +220,46 @@ Ten en cuenta:
   `src-tauri/src/permisos.rs` y ajustar `-m` y `timeout` del hook en
   consecuencia.
 
+## Resultado al terminar una tarea
+
+Cuando Claude termina (`Stop`), Lia muestra una burbuja ✓ junto a su cabeza.
+Al pulsarla se abre una tarjeta con estadísticas y el último mensaje de
+Claude. **El hook `Stop` no necesita ningún cambio**: ya envía todo lo
+necesario.
+
+### Qué datos lee Lia y cuáles no
+
+| Dato | ¿Lo usa? | Para qué |
+|---|---|---|
+| Nombre del evento y `session_id` | Sí | Saber el estado y numerar "Conversación N" |
+| Nombre de la herramienta en `PreToolUse` | Sí | Contar herramientas y ediciones |
+| `last_assistant_message` en `Stop` | Sí, salvo en modo privado | Mostrar el último mensaje |
+| La transcripción (`transcript_path`) | Solo si falta el campo anterior, y nunca en modo privado | Plan B para el último mensaje |
+| Entrada de las herramientas (comandos, rutas, contenido) | No | Se descarta al recibir el evento |
+| Tu prompt, `cwd` y demás campos | No | Se descartan |
+
+Reglas para la transcripción:
+
+- Solo se lee si su ruta real, tras resolver enlaces simbólicos, uniones de
+  directorio y `..`, queda dentro de `~/.claude/projects`. Debe ser un
+  archivo `.jsonl` normal. Cualquier otra ruta se rechaza sin abrirla.
+- Solo se leen los últimos 256 KB, y solo los bloques de texto del último
+  mensaje de Claude: nunca el pensamiento, las herramientas ni los metadatos.
+- Si algo falla, la tarjeta muestra solo las estadísticas, sin errores ni
+  rutas.
+
+El mensaje se muestra como texto plano (sin HTML, Markdown ni enlaces
+clicables), se recorta a 2000 caracteres, vive solo en memoria y se borra al
+cerrar la tarjeta o a los 10 minutos.
+
+### Modo privado
+
+El ícono del ojo de la tarjeta activa el modo privado: Lia deja de mostrar y
+de leer los mensajes de Claude, y solo enseña estadísticas. Se guarda en
+`%APPDATA%\dev.lia.mascota\ajustes.json`, que contiene únicamente
+`{"modoPrivado":true}` o `false`. También se puede forzar desde el código con
+`modoPrivado` en `src/resultados/config.ts`.
+
 ## Qué hace Lia con cada evento
 
 | Evento de Claude Code                                                                                                | Estado de la sesión                                                                            |
@@ -253,6 +293,8 @@ Con Lia abierta, desde la carpeta del repositorio:
 .\scripts\simular-evento.ps1 SessionEnd
 .\scripts\simular-evento.ps1 -Permiso 'echo prueba'   # tarjeta de permiso
 .\scripts\simular-evento.ps1 -Peligroso              # tarjeta resaltada
+.\scripts\simular-evento.ps1 -Tarea                  # burbuja de resultado
+.\scripts\simular-evento.ps1 -Tarea -Caso enlace     # ruta rechazada: solo estadísticas
 ```
 
 ## Desactivar

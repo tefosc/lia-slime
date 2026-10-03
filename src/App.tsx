@@ -4,6 +4,8 @@ import { Lia } from "./mascot/Lia";
 import { TarjetaAviso } from "./permisos/TarjetaAviso";
 import { TarjetaPermiso } from "./permisos/TarjetaPermiso";
 import { usePermisos } from "./permisos/usePermisos";
+import { TarjetaResultado } from "./resultados/TarjetaResultado";
+import { useResultados } from "./resultados/useResultados";
 import {
   abrirEspacioTarjeta,
   cerrarEspacioTarjeta,
@@ -15,6 +17,7 @@ import "./App.css";
 function App() {
   const { estado: estadoSesiones, aviso, cerrarAviso } = useEstadoLia();
   const { actual, pendientes, resolver } = usePermisos();
+  const resultados = useResultados();
   // Mientras haya solicitudes pendientes, Lia necesita al usuario.
   const estado = pendientes > 0 ? "necesita" : estadoSesiones;
 
@@ -22,7 +25,8 @@ function App() {
   const [lado, setLado] = useState<Lado | null>(null);
   const ladoActual = useRef<Lado | null>(null);
   const cambios = useRef(Promise.resolve());
-  const hayTarjeta = actual !== null || aviso !== null;
+  const hayTarjeta =
+    actual !== null || aviso !== null || resultados.actual !== null;
 
   useEffect(() => {
     placeAtTopCenter().catch((error: unknown) => {
@@ -54,8 +58,13 @@ function App() {
   return (
     <div className={`escena${lado === "izquierda" ? " escena-izquierda" : ""}`}>
       <div className="lia-caja">
-        <Lia estado={estado} />
+        <Lia
+          estado={estado}
+          resultadosSinLeer={resultados.sinLeer}
+          onClickBurbuja={resultados.alternar}
+        />
       </div>
+      {/* Prioridad: permiso, después aviso de error, después resultado. */}
       {lado &&
         (actual ? (
           <TarjetaPermiso
@@ -64,9 +73,18 @@ function App() {
             pendientes={pendientes}
             onResolver={resolver}
           />
+        ) : aviso ? (
+          <TarjetaAviso key={aviso.id} aviso={aviso} onCerrar={cerrarAviso} />
         ) : (
-          aviso && (
-            <TarjetaAviso key={aviso.id} aviso={aviso} onCerrar={cerrarAviso} />
+          resultados.actual && (
+            <TarjetaResultado
+              key={resultados.actual.id}
+              resultado={resultados.actual}
+              pendientes={resultados.sinLeer}
+              privado={resultados.privado}
+              onCerrar={resultados.marcarLeido}
+              onPrivado={resultados.cambiarPrivado}
+            />
           )
         ))}
     </div>

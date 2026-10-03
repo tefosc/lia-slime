@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { etiquetaDe } from "../estado/etiquetas";
 
 /** Solicitud tal como la emite el receptor de Rust (`lia-permiso`). */
 interface SolicitudRecibida {
@@ -29,7 +30,6 @@ export interface Solicitud {
  */
 export function usePermisos() {
   const [cola, setCola] = useState<Solicitud[]>([]);
-  const etiquetas = useRef(new Map<string, string>());
 
   useEffect(() => {
     const quitar = (id: number) =>
@@ -46,16 +46,11 @@ export function usePermisos() {
     };
 
     escuchar<SolicitudRecibida>("lia-permiso", (s) => {
-      let etiqueta = etiquetas.current.get(s.sesion);
-      if (!etiqueta) {
-        etiqueta = `Conversación ${etiquetas.current.size + 1}`;
-        etiquetas.current.set(s.sesion, etiqueta);
-      }
       const solicitud: Solicitud = {
         id: s.id,
         herramienta: s.herramienta,
         detalle: s.detalle,
-        etiqueta,
+        etiqueta: etiquetaDe(s.sesion),
         expira: Date.now() + s.segundos * 1000,
       };
       setCola((actual) => [...actual, solicitud]);

@@ -16,6 +16,12 @@
   .\scripts\simular-evento.ps1 PreToolUse -SinToken        # debe dar 401
   .\scripts\simular-evento.ps1 PreToolUse -CuerpoInvalido  # debe dar 400
 
+  # Resultados al terminar una tarea (luego pulsa la burbuja ✓):
+  .\scripts\simular-evento.ps1 -Tarea                      # mensaje en el evento
+  .\scripts\simular-evento.ps1 -Tarea -Caso transcripcion  # desde la transcripción
+  .\scripts\simular-evento.ps1 -Tarea -Caso enlace         # solo estadísticas
+  .\scripts\simular-evento.ps1 -Tarea -Caso corta          # sin burbuja
+
   # Solicitudes de permiso (esperan la decisión en la tarjeta de Lia):
   .\scripts\simular-evento.ps1 -Permiso 'echo prueba'
   .\scripts\simular-evento.ps1 -Peligroso
@@ -42,8 +48,90 @@ param(
   # Envía la petición sin la cabecera de autorización.
   [switch]$SinToken,
   # Envía un cuerpo que no es JSON válido.
-  [switch]$CuerpoInvalido
+  [switch]$CuerpoInvalido,
+  # En PreToolUse: nombre de la herramienta.
+  [string]$Herramienta = 'Read',
+  # Tarea completa: UserPromptSubmit, varias herramientas y Stop con el caso
+  # elegido. Genera burbuja de resultado salvo en el caso 'corta'.
+  [switch]$Tarea,
+  # Cómo llega el último mensaje en Stop:
+  #   campo        last_assistant_message en el evento (lo normal)
+  #   transcripcion transcripción falsa válida en el directorio de pruebas
+  #   fuera        transcripción fuera de lo permitido        -> solo estadísticas
+  #   puntos       ruta con .. que sale del directorio        -> solo estadísticas
+  #   enlace       unión de directorio que apunta fuera       -> solo estadísticas
+  #   inexistente  archivo que no existe                      -> solo estadísticas
+  #   basura       archivo con líneas sin sentido             -> solo estadísticas
+  #   corta        respuesta sin herramientas al instante     -> sin burbuja
+  [ValidateSet('campo', 'transcripcion', 'fuera', 'puntos', 'enlace', 'inexistente', 'basura', 'corta')]
+  [string]$Caso = 'campo'
 )
+
+# Directorio de pruebas (ignorado por git): solo lo acepta una Lia compilada
+# en modo desarrollo. Lo de .pruebas\fuera queda fuera de lo permitido.
+$raizPruebas = Join-Path (Split-Path $PSScriptRoot) '.pruebas'
+$pruebas = Join-Path $raizPruebas 'transcripciones'
+$fuera = Join-Path $raizPruebas 'fuera'
+$mensajeDePrueba = "¡Hola! Este es un mensaje de prueba de Claude.`nTiene dos líneas y un enlace que no debe ser clicable: https://ejemplo.com`n<b>Y HTML que no debe interpretarse</b>"
+
+function Escribir-Transcripcion([string]$ruta, [string]$texto) {
+  New-Item -ItemType Directory -Force -Path (Split-Path $ruta) | Out-Null
+  $lineas = @(
+    (@{ type = 'user'; message = @{ role = 'user'; content = 'pregunta de prueba' } } | ConvertTo-Json -Compress -Depth 6),
+    (@{ type = 'assistant'; message = @{ id = 'msg_prueba'; role = 'assistant'; content = @(@{ type = 'thinking'; thinking = 'esto no debe verse' }) } } | ConvertTo-Json -Compress -Depth 6),
+    (@{ type = 'assistant'; message = @{ id = 'msg_prueba'; role = 'assistant'; content = @(@{ type = 'text'; text = $texto }) } } | ConvertTo-Json -Compress -Depth 6),
+    '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","te'
+  )
+  # La última línea queda cortada a propósito: Lia debe tolerarla.
+  [IO.File]::WriteAllLines($ruta, $lineas)
+}
+
+function Ruta-De-Caso([string]$caso) {
+  switch ($caso) {
+    'transcripcion' {
+      $r = Join-Path $pruebas 'valida.jsonl'; Escribir-Transcripcion $r $mensajeDePrueba; return $r
+    }
+    'fuera' {
+      $r = Join-Path $fuera 'fuera.jsonl'; Escribir-Transcripcion $r 'NO DEBE VERSE (fuera)'; return $r
+    }
+    'puntos' {
+      Escribir-Transcripcion (Join-Path $raizPruebas 'puntos.jsonl') 'NO DEBE VERSE (puntos)'
+      return (Join-Path $pruebas '..\puntos.jsonl')
+    }
+    'enlace' {
+      # Depende de Windows: una unión de directorio no necesita permisos de
+      # administrador, a diferencia de un enlace simbólico.
+      $destino = $fuera
+      Escribir-Transcripcion (Join-Path $destino 'enlazado.jsonl') 'NO DEBE VERSE (enlace)'
+      $union = Join-Path $pruebas 'enlace'
+      New-Item -ItemType Directory -Force -Path $pruebas | Out-Null
+      if (-not (Test-Path $union)) { New-Item -ItemType Junction -Path $union -Target $destino | Out-Null }
+      return (Join-Path $union 'enlazado.jsonl')
+    }
+    'inexistente' { return (Join-Path $pruebas 'no-existe.jsonl') }
+    'basura' {
+      $r = Join-Path $pruebas 'basura.jsonl'
+      New-Item -ItemType Directory -Force -Path $pruebas | Out-Null
+      [IO.File]::WriteAllText($r, "esto no es json`n{`"type`":42}`n" + ([char]0) + "binario`n{`"type`":`"assistant`",`"message`":`"no es objeto`"}")
+      return $r
+    }
+    default { return (Join-Path $pruebas 'valida.jsonl') }
+  }
+}
+
+if ($Tarea) {
+  $yo = $MyInvocation.MyCommand.Path
+  & $yo UserPromptSubmit -Sesion $Sesion
+  if ($Caso -ne 'corta') {
+    foreach ($h in 'Read', 'Read', 'Edit', 'Bash', 'Edit', 'Grep') {
+      & $yo PreToolUse -Sesion $Sesion -Herramienta $h | Out-Null
+    }
+    Start-Sleep -Seconds 2
+  }
+  & $yo Stop -Sesion $Sesion -Caso $Caso
+  "Caso '$Caso' enviado."
+  exit 0
+}
 
 if ($Peligroso) { $Permiso = 'rm -rf ./build && del /s /q C:\proyecto\.env' }
 $esPermiso = [bool]$Permiso
@@ -69,6 +157,18 @@ if ($CuerpoInvalido) {
   $datos = [ordered]@{ session_id = $Sesion; hook_event_name = $Evento }
   if ($Notificacion) { $datos.notification_type = $Notificacion }
   if ($Evento -eq 'StopFailure') { $datos.error_type = $Motivo }
+  if ($Evento -eq 'PreToolUse') {
+    $datos.tool_name = $Herramienta
+    $datos.tool_input = @{ command = 'comando de prueba que Lia no debe conservar' }
+  }
+  if ($Evento -eq 'Stop') {
+    if ($Caso -eq 'campo') {
+      $datos.last_assistant_message = $mensajeDePrueba
+      $datos.transcript_path = Ruta-De-Caso 'transcripcion'
+    } elseif ($Caso -ne 'corta') {
+      $datos.transcript_path = Ruta-De-Caso $Caso
+    }
+  }
   # Relleno parecido al de un hook real, para comprobar que Lia lo descarta.
   $datos.cwd = 'C:\ruta\de\prueba'
   $datos.prompt = 'texto de prueba que Lia no debe conservar'

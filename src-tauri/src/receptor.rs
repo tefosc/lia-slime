@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::permisos::{self, Pendientes};
+use crate::resultados::{self, AjustesCompartidos};
 
 /// Puerto fijo del receptor. Si está ocupado no se prueba con otro.
 pub const PUERTO: u16 = 47615;
@@ -26,7 +27,9 @@ const EVENTO_TAURI: &str = "lia-evento";
 /// Archivo con la cabecera de autorización, en el formato que lee `curl -H @`.
 const ARCHIVO_CABECERA: &str = "cabecera-hook.txt";
 const CABECERAS_MAXIMO: usize = 8 * 1024;
-const CUERPO_MAXIMO: usize = 64 * 1024;
+/// Un `Stop` con un mensaje largo de Claude puede pasar de 64 KB: si se
+/// rechazara, Lia se quedaría en "trabajando".
+const CUERPO_MAXIMO: usize = 1024 * 1024;
 const ESPERA_SOCKET: Duration = Duration::from_millis(500);
 
 /// Campos que se leen del JSON de un evento de monitoreo. serde ignora el resto.
@@ -37,6 +40,12 @@ struct EventoHook {
     notification_type: Option<String>,
     /// Solo en `StopFailure`: motivo del fallo (`rate_limit`, `overloaded`...).
     error_type: Option<String>,
+    /// En `PreToolUse`: solo se usa el nombre, nunca la entrada.
+    tool_name: Option<String>,
+    /// En `Stop`: texto final de Claude (ver resultados.rs).
+    last_assistant_message: Option<String>,
+    /// En `Stop`: plan B si no viene el campo anterior.
+    transcript_path: Option<String>,
 }
 
 /// Lo único que sale del receptor hacia el frontend en `/evento`.
@@ -46,6 +55,10 @@ struct EventoLia {
     sesion: String,
     notificacion: Option<String>,
     error: Option<String>,
+    /// Solo en `PreToolUse`: nombre de la herramienta.
+    herramienta: Option<String>,
+    /// Solo en `Stop`: último mensaje de Claude, limpio y recortado.
+    mensaje: Option<String>,
 }
 
 /// Resultado del arranque, para que el frontend pueda consultarlo.
@@ -60,8 +73,12 @@ pub fn error_receptor(estado: State<'_, EstadoReceptor>) -> Option<String> {
 
 /// Arranca el receptor. Nunca hace fallar a la app: si algo sale mal, Lia
 /// sigue abierta y el error queda disponible en `EstadoReceptor`.
-pub fn iniciar(app: AppHandle, pendientes: Pendientes) -> EstadoReceptor {
-    match arrancar(app, pendientes) {
+pub fn iniciar(
+    app: AppHandle,
+    pendientes: Pendientes,
+    ajustes: AjustesCompartidos,
+) -> EstadoReceptor {
+    match arrancar(app, pendientes, ajustes) {
         Ok(()) => EstadoReceptor { error: None },
         Err(error) => {
             eprintln!("[lia] receptor de eventos desactivado: {error}");
@@ -70,7 +87,11 @@ pub fn iniciar(app: AppHandle, pendientes: Pendientes) -> EstadoReceptor {
     }
 }
 
-fn arrancar(app: AppHandle, pendientes: Pendientes) -> Result<(), String> {
+fn arrancar(
+    app: AppHandle,
+    pendientes: Pendientes,
+    ajustes: AjustesCompartidos,
+) -> Result<(), String> {
     // Primero el puerto: si está ocupado no se toca el token en uso.
     let escucha = TcpListener::bind((Ipv4Addr::LOCALHOST, PUERTO)).map_err(|e| {
         format!(
@@ -87,7 +108,7 @@ fn arrancar(app: AppHandle, pendientes: Pendientes) -> Result<(), String> {
         .name("lia-receptor".into())
         .spawn(move || {
             for conexion in escucha.incoming().flatten() {
-                atender(conexion, &esperado, &app, &pendientes);
+                atender(conexion, &esperado, &app, &pendientes, &ajustes);
             }
         })
         .map_err(|e| format!("no se pudo crear el hilo del receptor ({e})"))?;
@@ -127,12 +148,18 @@ enum Ruta {
 
 /// Atiende una conexión. Las solicitudes de permiso se pasan a su propio
 /// hilo, que responde cuando haya decisión; el resto se responde aquí mismo.
-fn atender(mut conexion: TcpStream, esperado: &str, app: &AppHandle, pendientes: &Pendientes) {
+fn atender(
+    mut conexion: TcpStream,
+    esperado: &str,
+    app: &AppHandle,
+    pendientes: &Pendientes,
+    ajustes: &AjustesCompartidos,
+) {
     let _ = conexion.set_read_timeout(Some(ESPERA_SOCKET));
     let _ = conexion.set_write_timeout(Some(ESPERA_SOCKET));
 
     let codigo = match leer(&mut conexion, esperado) {
-        Ok((Ruta::Evento, cuerpo)) => match validar_evento(&cuerpo) {
+        Ok((Ruta::Evento, cuerpo)) => match validar_evento(&cuerpo, app, ajustes) {
             Ok(evento) => {
                 // Solo en desarrollo, y solo nombre del evento y principio de
                 // la sesión, para poder diagnosticar el orden en que llegan.
@@ -266,7 +293,11 @@ fn leer(conexion: &mut TcpStream, esperado: &str) -> Result<(Ruta, Vec<u8>), u16
     Ok((ruta, cuerpo))
 }
 
-fn validar_evento(cuerpo: &[u8]) -> Result<EventoLia, u16> {
+fn validar_evento(
+    cuerpo: &[u8],
+    app: &AppHandle,
+    ajustes: &AjustesCompartidos,
+) -> Result<EventoLia, u16> {
     let hook: EventoHook = serde_json::from_slice(cuerpo).map_err(|_| 400u16)?;
     if !es_identificador(&hook.hook_event_name, 64)
         || !es_identificador(&hook.session_id, 128)
@@ -281,11 +312,32 @@ fn validar_evento(cuerpo: &[u8]) -> Result<EventoLia, u16> {
     {
         return Err(400);
     }
+    let herramienta = if hook.hook_event_name == "PreToolUse" {
+        hook.tool_name.filter(|nombre| es_identificador(nombre, 128))
+    } else {
+        None
+    };
+    let mensaje = if hook.hook_event_name == "Stop" {
+        let (mensaje, origen) = resultados::ultimo_mensaje(
+            app,
+            ajustes,
+            hook.last_assistant_message,
+            hook.transcript_path,
+        );
+        if cfg!(debug_assertions) {
+            eprintln!("[lia] Stop: {}", origen.describir());
+        }
+        mensaje
+    } else {
+        None
+    };
     Ok(EventoLia {
         evento: hook.hook_event_name,
         sesion: hook.session_id,
         notificacion: hook.notification_type,
         error: hook.error_type,
+        herramienta,
+        mensaje,
     })
 }
 
