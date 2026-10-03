@@ -24,9 +24,23 @@ const PETALO_BORDE = "#F28FB2";
 const PETALO_CONTORNO =
   "M0 0 C-12 -8 -14 -22 -6 -27 L0 -22 L6 -27 C14 -22 12 -8 0 0 Z";
 
-/** Espiral de los ojos mareados, centrada en el origen. */
-const ESPIRAL =
-  "M0.5 0 a1.4 1.4 0 0 1 -2.8 0 a2.9 2.9 0 0 1 5.8 0 a4.4 4.4 0 0 1 -8.8 0 a5.6 5.6 0 0 1 10.4 -2.6";
+/**
+ * Espiral de los ojos mareados, centrada en el origen: el radio crece de
+ * forma lineal con el ángulo (2,2 vueltas hasta un radio de 5,5).
+ */
+function trazoEspiral(vueltas: number, radioFinal: number): string {
+  const pasos = 48;
+  const puntos: string[] = [];
+  for (let i = 0; i <= pasos; i++) {
+    const angulo = 2 * Math.PI * vueltas * (i / pasos);
+    const radio = radioFinal * (i / pasos);
+    const x = (radio * Math.cos(angulo)).toFixed(2);
+    const y = (radio * Math.sin(angulo)).toFixed(2);
+    puntos.push(`${i === 0 ? "M" : "L"}${x} ${y}`);
+  }
+  return puntos.join(" ");
+}
+const ESPIRAL = trazoEspiral(2.2, 5.5);
 
 const SOMBRA_BASE = sombraPara(POSES.inactivo.sombra);
 const PETALO_BASE = `translate(${POSES.inactivo.petalo.x},${POSES.inactivo.petalo.y}) rotate(${POSES.inactivo.petalo.giro})`;
@@ -70,21 +84,29 @@ function Ojos({ estado }: { estado: EstadoLia }) {
             strokeLinecap="round"
             opacity="0"
           />
-          {/* Mareada: espirales que el motor hace girar. */}
-          <g
-            id="lia-ojos-mareo"
-            opacity="0"
-            fill="none"
-            stroke={TINTA}
-            strokeWidth="1.7"
-            strokeLinecap="round"
-          >
-            <g transform="translate(-15,2)">
-              <path id="lia-espiral-izq" d={ESPIRAL} />
-            </g>
-            <g transform="translate(15,2)">
-              <path id="lia-espiral-der" d={ESPIRAL} />
-            </g>
+          {/* Mareada: ojos blancos con una espiral en lugar de la pupila,
+              que el motor hace girar. */}
+          <g id="lia-ojos-mareo" opacity="0">
+            {[-15, 15].map((x) => (
+              <g key={x} transform={`translate(${x},2)`}>
+                <ellipse
+                  rx="7"
+                  ry="8.5"
+                  fill="#FFFFFF"
+                  stroke={TINTA}
+                  strokeWidth="1.2"
+                />
+                <path
+                  id={x < 0 ? "lia-espiral-izq" : "lia-espiral-der"}
+                  d={ESPIRAL}
+                  fill="none"
+                  stroke={TINTA}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </g>
+            ))}
           </g>
         </>
       );
@@ -160,7 +182,7 @@ function Boca({ estado }: { estado: EstadoLia }) {
           />
           <path
             id="lia-boca-mareo"
-            d="M-9 17 Q-6 13 -3 17 T3 17 T9 17"
+            d="M-9 17 Q-6 11 -3 17 T3 17 T9 17"
             stroke={TINTA}
             strokeWidth="1.8"
             fill="none"
@@ -338,12 +360,11 @@ interface LiaProps {
 
 export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const { tocar, acariciar, marear } = useAnimacionLia(svgRef, estado);
+  const { tocar, acariciar } = useAnimacionLia(svgRef, estado);
   const cajaDelCuerpo = () =>
     svgRef.current?.querySelector("#lia-cuerpo")?.getBoundingClientRect();
   // Un clic sin arrastre sobre la burbuja abre el resultado y no cuenta como
-  // toque; sobre el cuerpo es un toque a Lia. Dar vueltas al arrastrarla la
-  // marea.
+  // toque; sobre el cuerpo es un toque a Lia.
   const arrastre = useWindowDrag<SVGGElement>(({ origen, x }) => {
     if (!(origen instanceof Element)) return;
     if (origen.closest("#lia-burbuja")) {
@@ -356,7 +377,7 @@ export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps)
     // Lado del clic: -1 en el borde izquierdo del cuerpo, 1 en el derecho.
     const centro = cuerpo.left + cuerpo.width / 2;
     tocar(Math.max(-1, Math.min(1, (x - centro) / (cuerpo.width / 2))));
-  }, marear);
+  });
 
   // Caricias: frotar el cursor sobre la cabeza sin pulsar ningún botón.
   const detectarCaricia = useRef(crearDetectorDeCaricias(acariciar)).current;
@@ -491,7 +512,7 @@ export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps)
                   opacity="0"
                 />
               ))}
-              <g id="lia-estrellas" opacity="0">
+              <g id="lia-estrellas-mareo" opacity="0">
                 {[0, 1, 2].map((i) => (
                   <path
                     key={i}

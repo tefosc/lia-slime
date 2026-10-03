@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "verificar": "node src/mascot/detectorMareo.verificar.ts",
     "tauri": "tauri"
   },
   "dependencies": {

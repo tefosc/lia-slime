@@ -31,6 +31,16 @@ export function marcarTarjeta(valor: boolean): void {
   enviarZonas();
 }
 
+/** Hay una tarjeta visible o a punto de abrirse. */
+export function hayTarjetaVisible(): boolean {
+  return hayTarjeta;
+}
+
+/** Hay un botón pulsado sobre Lia (clic o arrastre en curso). */
+export function hayArrastre(): boolean {
+  return arrastrando;
+}
+
 function elipseDe(caja: DOMRect, margen: number): Forma {
   return {
     tipo: "elipse",

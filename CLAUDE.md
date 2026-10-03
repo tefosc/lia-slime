@@ -16,6 +16,7 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 - `pnpm tauri dev` — abre la mascota en modo desarrollo.
 - `pnpm tauri build` — genera el instalador.
 - `pnpm build` — comprueba tipos (`tsc`) y compila solo el frontend.
+- `pnpm verificar` — comprueba el detector de mareo con muestras sintéticas.
 
 ## Estructura
 
@@ -86,9 +87,16 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   normal. No quites estas protecciones: la ventana no debe quedar atrapada.
 - El pétalo y la sombra no son zona activa: los clics sobre ellos pasan.
 - Las reacciones (toque, sorpresa y enojo por clics; alegría al frotar la
-  cabeza; mareo al arrastrarla en círculos) solo cambian la cara en
+  cabeza; mareo al girar el cursor a su alrededor) solo cambian la cara en
   `inactivo`; los estados de Claude Code mandan siempre. Sus parámetros están
   en `TOQUES`, `CARICIAS` y `MAREO` de `useAnimacionLia.ts`.
+- Mareo: `src/mascot/detectorMareo.ts` es una función pura que cuenta las
+  vueltas del cursor; se verifica con `pnpm verificar` (Node 22.18 o superior
+  ejecuta el TypeScript directamente, sin runner de pruebas). En desarrollo,
+  `window.__lia.simularVueltas(n, sentido, velocidad)` lo alimenta con
+  muestras sintéticas; no existe en la compilación final.
+- Prioridad entre reacciones: el enojo impide el mareo, un clic lo
+  interrumpe, y un arrastre o una tarjeta visible lo cancelan.
 
 ## Receptor de eventos (dependencias de Windows)
 

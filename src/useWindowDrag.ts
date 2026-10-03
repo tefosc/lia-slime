@@ -1,13 +1,10 @@
 import { useRef } from "react";
 import type { PointerEvent } from "react";
 import { getCurrentWindow, PhysicalPosition } from "@tauri-apps/api/window";
-import { MAREO } from "./mascot/useAnimacionLia";
 import { marcarArrastre } from "./zonas";
 
 /** Distancia en píxeles CSS a partir de la cual un clic pasa a ser arrastre. */
 const UMBRAL_ARRASTRE = 4;
-/** Distancia mínima, en px, entre dos puntos para medir la dirección. */
-const PASO_GIRO = 6;
 /** Clase que cambia el cursor a "grabbing" mientras se arrastra. */
 const CLASE_ARRASTRE = "arrastrando";
 
@@ -35,12 +32,6 @@ interface Grab {
   dragging: boolean;
   /** Elemento donde empezó la pulsación, para saber qué se pulsó. */
   origen: EventTarget | null;
-  /** Para detectar vueltas: último punto, última dirección y giro acumulado. */
-  giroX: number;
-  giroY: number;
-  direccion: number | null;
-  giro: number;
-  giroT: number;
 }
 
 /**
@@ -55,8 +46,6 @@ interface Grab {
  */
 export function useWindowDrag<T extends Element>(
   onClick?: (clic: Clic) => void,
-  /** Se llama cuando el arrastre completa las vueltas configuradas. */
-  onVueltas?: () => void,
 ): DragHandlers<T> {
   const grab = useRef<Grab | null>(null);
   const frame = useRef<number | null>(null);
@@ -91,11 +80,6 @@ export function useWindowDrag<T extends Element>(
         screenY: event.screenY,
         dragging: false,
         origen: event.target,
-        giroX: event.screenX,
-        giroY: event.screenY,
-        direccion: null,
-        giro: 0,
-        giroT: event.timeStamp,
       };
       // Mientras el botón está pulsado, la ventana no debe pasar a ignorar
       // el mouse aunque el puntero salga de Lia.
@@ -124,32 +108,6 @@ export function useWindowDrag<T extends Element>(
       };
       // Como mucho un movimiento de ventana por fotograma.
       frame.current ??= requestAnimationFrame(flush);
-
-      // Vueltas: se suma cuánto gira la dirección del movimiento. Dar
-      // círculos acumula giro siempre hacia el mismo lado; un zigzag se
-      // cancela solo. El giro se olvida poco a poco si se deja de girar.
-      const dx = event.screenX - current.giroX;
-      const dy = event.screenY - current.giroY;
-      if (Math.hypot(dx, dy) >= PASO_GIRO) {
-        const direccion = Math.atan2(dy, dx);
-        const dt = (event.timeStamp - current.giroT) / 1000;
-        current.giro *= Math.exp(-dt / MAREO.memoria);
-        if (current.direccion !== null) {
-          let cambio = direccion - current.direccion;
-          if (cambio > Math.PI) cambio -= 2 * Math.PI;
-          if (cambio < -Math.PI) cambio += 2 * Math.PI;
-          current.giro += cambio;
-        }
-        current.direccion = direccion;
-        current.giroX = event.screenX;
-        current.giroY = event.screenY;
-        current.giroT = event.timeStamp;
-        // Un 10 % de margen compensa lo que se olvida mientras se gira.
-        if (Math.abs(current.giro) >= MAREO.vueltas * 2 * Math.PI * 0.9) {
-          current.giro = 0;
-          onVueltas?.();
-        }
-      }
     },
     onPointerUp: (event) => {
       const released = release(event);
