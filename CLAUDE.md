@@ -29,8 +29,12 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   el evento `lia-evento`) y `config.ts` (tiempos).
 - `src-tauri/src/receptor.rs` — receptor local de eventos en `127.0.0.1:47615`.
 - `src-tauri/src/cursor.rs` — lee la posición global del cursor (30 Hz si se
-  mueve, 4 Hz en reposo, en pausa con la ventana oculta) y la envía como
-  `lia-cursor`. La posición solo vive en memoria; nunca se registra.
+  mueve o está cerca de la ventana, 10 Hz en reposo, en pausa con la ventana
+  oculta) y la envía como `lia-cursor`. También decide el click-through: la
+  ventana solo recibe el mouse en las zonas activas que mide `src/zonas.ts`
+  (cuerpo, burbuja y tarjetas); fuera, los clics pasan a la app de debajo.
+  Un hilo vigilante devuelve la ventana al modo normal si el bucle se para.
+  La posición solo vive en memoria; nunca se registra.
 - `src-tauri/src/resultados.rs` y `src/resultados/` — resultado al terminar
   una tarea: último mensaje (campo del evento o transcripción con ruta
   validada), estadísticas, burbuja, tarjeta y modo privado. En desarrollo se
@@ -71,6 +75,18 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 - `document.hidden` casi nunca es verdadero en una ventana siempre encima, así
   que la pausa por visibilidad ahorra poco en la práctica.
 - Para probar estados sin Claude Code se usa `scripts/simular-evento.ps1`.
+
+## Click-through (dependencias de Windows)
+
+- Tauri no reenvía eventos de movimiento mientras la ventana ignora el mouse
+  (`set_ignore_cursor_events`), así que la decisión se toma en Rust con el
+  bucle global del cursor, no en la página.
+- Fallo seguro: con una tarjeta visible o durante un arrastre la ventana
+  nunca ignora; si el bucle no late en 1 s, el vigilante la devuelve al modo
+  normal. No quites estas protecciones: la ventana no debe quedar atrapada.
+- El pétalo y la sombra no son zona activa: los clics sobre ellos pasan.
+- Las reacciones a los clics (toque, sorpresa, enojo) solo cambian la cara en
+  `inactivo`; los estados de Claude Code mandan siempre.
 
 ## Receptor de eventos (dependencias de Windows)
 

@@ -6,6 +6,12 @@
   cursor: pointer;
 }
 
+/* Mientras se arrastra a Lia. */
+#lia-personaje.arrastrando,
+#lia-personaje.arrastrando .lia-burbuja-resultado {
+  cursor: grabbing;
+}
+
 #lia-personaje {
   cursor: grab;
   /* Evita que el gesto táctil o de lápiz cancele el arrastre. */

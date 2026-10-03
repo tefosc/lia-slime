@@ -35,13 +35,25 @@ function Ojos({ estado }: { estado: EstadoLia }) {
   switch (estado) {
     case "inactivo":
       return (
+        // Los ojos de sorpresa están superpuestos y ocultos: el motor de
+        // animación cruza su opacidad al reaccionar a los toques.
         <>
-          <ellipse cx="-15" cy="2" rx="6.5" ry="8.5" fill={TINTA} />
-          <ellipse cx="15" cy="2" rx="6.5" ry="8.5" fill={TINTA} />
-          <circle cx="-13" cy="-1" r="2.6" fill="#fff" />
-          <circle cx="17" cy="-1" r="2.6" fill="#fff" />
-          <circle cx="-17" cy="5" r="1.3" fill="#fff" />
-          <circle cx="13" cy="5" r="1.3" fill="#fff" />
+          <g id="lia-ojos-normal">
+            <ellipse cx="-15" cy="2" rx="6.5" ry="8.5" fill={TINTA} />
+            <ellipse cx="15" cy="2" rx="6.5" ry="8.5" fill={TINTA} />
+            <circle cx="-13" cy="-1" r="2.6" fill="#fff" />
+            <circle cx="17" cy="-1" r="2.6" fill="#fff" />
+            <circle cx="-17" cy="5" r="1.3" fill="#fff" />
+            <circle cx="13" cy="5" r="1.3" fill="#fff" />
+          </g>
+          <g id="lia-ojos-sorpresa" opacity="0">
+            <ellipse cx="-15" cy="1" rx="7.5" ry="10" fill={TINTA} />
+            <ellipse cx="15" cy="1" rx="7.5" ry="10" fill={TINTA} />
+            <circle cx="-12.5" cy="-3" r="3.4" fill="#fff" />
+            <circle cx="17.5" cy="-3" r="3.4" fill="#fff" />
+            <circle cx="-18" cy="5" r="1.6" fill="#fff" />
+            <circle cx="12" cy="5" r="1.6" fill="#fff" />
+          </g>
         </>
       );
     case "trabajando":
@@ -86,13 +98,35 @@ function Boca({ estado }: { estado: EstadoLia }) {
   switch (estado) {
     case "inactivo":
       return (
-        <path
-          d="M-6 15 Q0 21 6 15"
-          stroke={TINTA}
-          strokeWidth="1.8"
-          fill="none"
-          strokeLinecap="round"
-        />
+        <>
+          <path
+            id="lia-boca-normal"
+            d="M-6 15 Q0 21 6 15"
+            stroke={TINTA}
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* Bocas de las reacciones, ocultas hasta que el motor las muestra. */}
+          <ellipse
+            id="lia-boca-sorpresa"
+            cx="0"
+            cy="18"
+            rx="3"
+            ry="3.5"
+            fill={TINTA}
+            opacity="0"
+          />
+          <path
+            id="lia-boca-enojo"
+            d="M-7 20 Q0 14 7 20"
+            stroke={TINTA}
+            strokeWidth="1.9"
+            fill="none"
+            strokeLinecap="round"
+            opacity="0"
+          />
+        </>
       );
     case "trabajando":
       return (
@@ -264,12 +298,24 @@ interface LiaProps {
 export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   // Un clic sin arrastre solo hace algo si fue sobre la burbuja de resultado.
-  const arrastre = useWindowDrag<SVGGElement>((origen) => {
-    if (origen instanceof Element && origen.closest("#lia-burbuja")) {
+  const { tocar } = useAnimacionLia(svgRef, estado);
+  // Un clic sin arrastre sobre la burbuja abre el resultado y no cuenta como
+  // toque; sobre el cuerpo es un toque a Lia.
+  const arrastre = useWindowDrag<SVGGElement>(({ origen, x }) => {
+    if (!(origen instanceof Element)) return;
+    if (origen.closest("#lia-burbuja")) {
       onClickBurbuja?.();
+      return;
     }
+    if (!origen.closest("#lia-flotante")) return;
+    const cuerpo = svgRef.current
+      ?.querySelector("#lia-cuerpo")
+      ?.getBoundingClientRect();
+    if (!cuerpo) return;
+    // Lado del clic: -1 en el borde izquierdo del cuerpo, 1 en el derecho.
+    const centro = cuerpo.left + cuerpo.width / 2;
+    tocar(Math.max(-1, Math.min(1, (x - centro) / (cuerpo.width / 2))));
   });
-  useAnimacionLia(svgRef, estado);
 
   // La elevación, la sombra y la pose del pétalo las escribe el motor de
   // animación (useAnimacionLia). Aquí solo van los valores de reposo de
@@ -320,6 +366,40 @@ export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps)
             <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
             <ellipse cx="27" cy="13" rx="5.5" ry="3" />
           </g>
+          {/* Partes del enojo, ocultas hasta que el motor las muestra. Solo
+              existen en `inactivo`: en los demás estados la cara no cambia. */}
+          {estado === "inactivo" && (
+            <>
+              <g id="lia-mejillas-enojo" fill="#FF7F9E" opacity="0">
+                <ellipse cx="-27" cy="13" rx="5.5" ry="3" fillOpacity="0.95" />
+                <ellipse cx="27" cy="13" rx="5.5" ry="3" fillOpacity="0.95" />
+              </g>
+              <path
+                id="lia-cejas-enojo"
+                d="M-23 -10 L-8 -4 M23 -10 L8 -4"
+                stroke={TINTA}
+                strokeWidth="2.4"
+                fill="none"
+                strokeLinecap="round"
+                opacity="0"
+              />
+              {/* Marca de enojo: cuatro trazos curvos que laten. */}
+              <g
+                id="lia-marca-enojo"
+                opacity="0"
+                transform="translate(-36,-31) scale(0)"
+                fill="none"
+                stroke="#E8745A"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+              >
+                <path d="M-5.5 -1.5 Q-1.5 -1.5 -1.5 -5.5" />
+                <path d="M1.5 -5.5 Q1.5 -1.5 5.5 -1.5" />
+                <path d="M5.5 1.5 Q1.5 1.5 1.5 5.5" />
+                <path d="M-1.5 5.5 Q-1.5 1.5 -5.5 1.5" />
+              </g>
+            </>
+          )}
           {/* Gota de esfuerzo: oculta salvo cuando el motor la anima. */}
           <g id="lia-gota" opacity="0">
             <path

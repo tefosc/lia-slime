@@ -1,15 +1,25 @@
 import { useRef } from "react";
 import type { PointerEvent } from "react";
 import { getCurrentWindow, PhysicalPosition } from "@tauri-apps/api/window";
+import { marcarArrastre } from "./zonas";
 
 /** Distancia en píxeles CSS a partir de la cual un clic pasa a ser arrastre. */
 const UMBRAL_ARRASTRE = 4;
+/** Clase que cambia el cursor a "grabbing" mientras se arrastra. */
+const CLASE_ARRASTRE = "arrastrando";
 
 interface DragHandlers<T extends Element> {
   onPointerDown: (event: PointerEvent<T>) => void;
   onPointerMove: (event: PointerEvent<T>) => void;
   onPointerUp: (event: PointerEvent<T>) => void;
   onPointerCancel: (event: PointerEvent<T>) => void;
+}
+
+/** Clic sin arrastre: qué se pulsó y dónde, en píxeles CSS de la ventana. */
+export interface Clic {
+  origen: EventTarget | null;
+  x: number;
+  y: number;
 }
 
 interface Grab {
@@ -27,14 +37,15 @@ interface Grab {
 /**
  * Arrastre manual de la ventana con eventos de puntero. Si el puntero se
  * suelta sin haber superado el umbral, se considera un clic y se llama a
- * `onClick`.
+ * `onClick` con el elemento y el punto pulsados; un arrastre nunca cuenta
+ * como clic.
  *
  * Depende de Windows: el arrastre nativo de Tauri (`data-tauri-drag-region` o
  * `startDragging`) no funciona cuando la ventana usa `focusable: false`
  * (`WS_EX_NOACTIVATE`), así que se mueve la ventana con `setPosition`.
  */
 export function useWindowDrag<T extends Element>(
-  onClick?: (origen: EventTarget | null) => void,
+  onClick?: (clic: Clic) => void,
 ): DragHandlers<T> {
   const grab = useRef<Grab | null>(null);
   const frame = useRef<number | null>(null);
@@ -53,6 +64,9 @@ export function useWindowDrag<T extends Element>(
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    event.currentTarget.classList.remove(CLASE_ARRASTRE);
+    // Al soltar, la ventana puede volver a ignorar el mouse fuera de Lia.
+    if (released) marcarArrastre(false);
     return released;
   };
 
@@ -67,6 +81,9 @@ export function useWindowDrag<T extends Element>(
         dragging: false,
         origen: event.target,
       };
+      // Mientras el botón está pulsado, la ventana no debe pasar a ignorar
+      // el mouse aunque el puntero salga de Lia.
+      marcarArrastre(true);
       // La captura mantiene los eventos aunque el puntero salga del personaje.
       event.currentTarget.setPointerCapture(event.pointerId);
     },
@@ -80,6 +97,7 @@ export function useWindowDrag<T extends Element>(
         );
         if (distance < UMBRAL_ARRASTRE) return;
         current.dragging = true;
+        event.currentTarget.classList.add(CLASE_ARRASTRE);
       }
       // La ventana no tiene bordes, así que su esquina es la posición del
       // puntero en pantalla menos el punto de agarre, en píxeles físicos.
@@ -93,7 +111,9 @@ export function useWindowDrag<T extends Element>(
     },
     onPointerUp: (event) => {
       const released = release(event);
-      if (released && !released.dragging) onClick?.(released.origen);
+      if (released && !released.dragging) {
+        onClick?.({ origen: released.origen, x: released.x, y: released.y });
+      }
     },
     onPointerCancel: (event) => {
       release(event);

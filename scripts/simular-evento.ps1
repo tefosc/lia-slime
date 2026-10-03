@@ -22,6 +22,10 @@
   .\scripts\simular-evento.ps1 -Tarea -Caso enlace         # solo estadísticas
   .\scripts\simular-evento.ps1 -Tarea -Caso corta          # sin burbuja
 
+  # Fallo del bucle del cursor (la ventana debe volver a capturar el mouse):
+  .\scripts\simular-evento.ps1 -FalloCursor
+  .\scripts\simular-evento.ps1 -ReanudarCursor
+
   # Solicitudes de permiso (esperan la decisión en la tarjeta de Lia):
   .\scripts\simular-evento.ps1 -Permiso 'echo prueba'
   .\scripts\simular-evento.ps1 -Peligroso
@@ -64,8 +68,25 @@ param(
   #   basura       archivo con líneas sin sentido             -> solo estadísticas
   #   corta        respuesta sin herramientas al instante     -> sin burbuja
   [ValidateSet('campo', 'transcripcion', 'fuera', 'puntos', 'enlace', 'inexistente', 'basura', 'corta')]
-  [string]$Caso = 'campo'
+  [string]$Caso = 'campo',
+  # Solo con Lia en modo desarrollo: detiene el bucle del cursor para simular
+  # un fallo. La ventana debe volver a recibir el mouse en ~1 s.
+  [switch]$FalloCursor,
+  # Vuelve a poner en marcha el bucle del cursor tras -FalloCursor.
+  [switch]$ReanudarCursor
 )
+
+if ($FalloCursor -or $ReanudarCursor) {
+  $ruta = if ($FalloCursor) { 'dev/detener-cursor' } else { 'dev/reanudar-cursor' }
+  $cab = Join-Path $env:APPDATA 'dev.lia.mascota\cabecera-hook.txt'
+  $codigo = '' | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' "http://127.0.0.1:47615/$ruta"
+  switch ($codigo) {
+    '204' { if ($FalloCursor) { 'Bucle del cursor detenido (fallo simulado).' } else { 'Bucle del cursor reanudado.' } }
+    '404' { 'Lia no acepta esta orden: no es una compilación de desarrollo.' }
+    default { "Sin respuesta de Lia ($codigo)." }
+  }
+  exit 0
+}
 
 # Directorio de pruebas (ignorado por git): solo lo acepta una Lia compilada
 # en modo desarrollo. Lo de .pruebas\fuera queda fuera de lo permitido.

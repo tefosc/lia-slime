@@ -12,6 +12,7 @@ import {
   placeAtTopCenter,
 } from "./window";
 import type { Lado } from "./window";
+import { enviarZonas, marcarTarjeta } from "./zonas";
 import "./App.css";
 
 function App() {
@@ -33,6 +34,20 @@ function App() {
       console.error("No se pudo posicionar la ventana:", error);
     });
   }, []);
+
+  // Zonas activas para el click-through: con una tarjeta pendiente la ventana
+  // nunca ignora el mouse; el resto se mide del dibujo real varias veces por
+  // segundo, porque el cuerpo se mueve con las animaciones.
+  useEffect(() => {
+    marcarTarjeta(hayTarjeta);
+  }, [hayTarjeta]);
+  useEffect(() => {
+    const medicion = window.setInterval(enviarZonas, 250);
+    return () => window.clearInterval(medicion);
+  }, []);
+  useEffect(() => {
+    enviarZonas();
+  });
 
   // Los cambios de tamaño se encadenan para que abrir y cerrar no se pisen.
   useEffect(() => {

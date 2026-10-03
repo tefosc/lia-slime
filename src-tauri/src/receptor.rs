@@ -17,6 +17,7 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
+use crate::cursor;
 use crate::permisos::{self, Pendientes};
 use crate::resultados::{self, AjustesCompartidos};
 
@@ -144,6 +145,9 @@ fn guardar_cabecera(app: &AppHandle, token: &str) -> Result<(), String> {
 enum Ruta {
     Evento,
     Permiso,
+    /// Solo en compilaciones de desarrollo: detiene (true) o reanuda (false)
+    /// el bucle del cursor para probar el vigilante.
+    DevCursor(bool),
 }
 
 /// Atiende una conexión. Las solicitudes de permiso se pasan a su propio
@@ -186,6 +190,10 @@ fn atender(
                     codigo
                 }
             }
+        }
+        Ok((Ruta::DevCursor(detener), _)) => {
+            cursor::simular_fallo(app, detener);
+            204
         }
         Err(codigo) => codigo,
     };
@@ -252,6 +260,8 @@ fn leer(conexion: &mut TcpStream, esperado: &str) -> Result<(Ruta, Vec<u8>), u16
     let ruta = match ruta {
         "/evento" => Ruta::Evento,
         "/permiso" => Ruta::Permiso,
+        "/dev/detener-cursor" if cfg!(debug_assertions) => Ruta::DevCursor(true),
+        "/dev/reanudar-cursor" if cfg!(debug_assertions) => Ruta::DevCursor(false),
         _ => return Err(404),
     };
     if metodo != "POST" {

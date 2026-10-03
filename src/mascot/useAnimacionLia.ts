@@ -55,8 +55,12 @@ const CENTRO_CUERPO = { x: 82 / 164, y: 110 / 164 };
 export const MIRADA = {
   /** Lecturas por segundo del cursor mientras se mueve (bucle en Rust). */
   frecuenciaActiva: 30,
-  /** Lecturas por segundo cuando el cursor lleva un rato quieto. */
-  frecuenciaReposo: 4,
+  /**
+   * Lecturas por segundo cuando el cursor lleva un rato quieto y está lejos
+   * de Lia. Es el retraso máximo (100 ms) con que la ventana nota que el
+   * cursor se acerca.
+   */
+  frecuenciaReposo: 10,
   /** Segundos sin movimiento para pasar a la frecuencia de reposo. */
   tiempoParaReposo: 2,
   /** Desplazamiento máximo de los ojos hacia el cursor, en px. */
@@ -73,6 +77,49 @@ export const MIRADA = {
   distanciaMaxima: 600,
   /** Segundos con el cursor quieto para que la mirada vuelva al centro. */
   tiempoParaCentrar: 10,
+};
+
+/**
+ * Toques: zona en la que la ventana recibe el mouse y reacciones de Lia a
+ * los clics. Distancias en px de pantalla (CSS), tiempos en segundos.
+ */
+export const TOQUES = {
+  /** Margen alrededor del cuerpo que también cuenta como zona activa. */
+  margenZonaActiva: 6,
+  /**
+   * Con el cursor dentro de la ventana más este margen, el bucle del cursor
+   * va a la frecuencia alta aunque esté quieto, para detectar sin retraso la
+   * entrada y la salida de la zona activa.
+   */
+  margenFrecuenciaAlta: 60,
+  /**
+   * Si el bucle del cursor no da señales en este tiempo, la ventana vuelve a
+   * recibir el mouse (fallo seguro).
+   */
+  tiempoVigilancia: 1,
+  /** Clics en `ventanaSorpresa` segundos para la cara de sorpresa. */
+  clicsParaSorpresa: 3,
+  ventanaSorpresa: 1.5,
+  /** Cuánto dura la sorpresa. */
+  duracionSorpresa: 1.2,
+  /** Clics en `ventanaEnojo` segundos para el enojo. */
+  clicsParaEnojo: 5,
+  ventanaEnojo: 2,
+  /** Segundos sin clics para que Lia se calme. */
+  duracionCalma: 3,
+  /** Cada clic durante el enojo lo alarga esto, hasta `duracionMaximaEnojo`. */
+  extensionEnojo: 1.5,
+  duracionMaximaEnojo: 8,
+  /** Fuerza del rebote de gelatina al tocarla (1 = normal). */
+  intensidadRebote: 1,
+  /** Desplazamiento (px) e inclinación (grados) máximos del rebote. */
+  desplazamientoRebote: 2.5,
+  inclinacionRebote: 3,
+  /** Sacudida del pétalo al tocarla, en grados. */
+  sacudidaPetalo: 8,
+  /** Cuánto se infla el cuerpo en el enojo (0.05 = 5 %) y cuánto tiembla (px). */
+  infladoEnojo: 0.05,
+  temblorEnojo: 0.8,
 };
 
 export const ESFUERZO = {
@@ -200,9 +247,15 @@ function buscar(svg: SVGSVGElement, id: string): SVGElement | null {
 export function useAnimacionLia(
   svgRef: RefObject<SVGSVGElement | null>,
   estado: EstadoLia,
-): void {
+): { tocar: (lado: number) => void } {
   const estadoActual = useRef(estado);
   const alCambiar = useRef<(() => void) | null>(null);
+  const alTocar = useRef<((lado: number) => void) | null>(null);
+  /**
+   * Toque sobre el cuerpo. `lado` va de -1 (borde izquierdo) a 1 (derecho):
+   * Lia se aplasta hacia el lado contrario.
+   */
+  const tocar = useRef((lado: number) => alTocar.current?.(lado)).current;
 
   useEffect(() => {
     if (estadoActual.current === estado) return;
@@ -213,6 +266,20 @@ export function useAnimacionLia(
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
+
+    // Partes de las caras de sorpresa y enojo: solo existen en `inactivo`,
+    // así que se buscan en cada cambio de estado.
+    const caras: Record<string, SVGElement | null> = {};
+    const IDS_REACCION = [
+      "lia-ojos-normal",
+      "lia-ojos-sorpresa",
+      "lia-boca-normal",
+      "lia-boca-sorpresa",
+      "lia-boca-enojo",
+      "lia-cejas-enojo",
+      "lia-mejillas-enojo",
+      "lia-marca-enojo",
+    ];
 
     const sombraEl = buscar(svg, "lia-sombra");
     const flotanteEl = buscar(svg, "lia-flotante");
@@ -264,6 +331,22 @@ export function useAnimacionLia(
     const inclinacion = nuevaMirada();
     const resortesMirada = [miradaX, miradaY, inclinacion];
     resortes.push(...resortesMirada);
+
+    // Reacciones a los toques.
+    // Rebote de gelatina: empuje lateral (-1 a 1) y sacudida del pétalo (grados).
+    const empuje = new Resorte(0, 260, 12);
+    const sacudida = new Resorte(0, 320, 7);
+    // Cuánto se ve cada cara (0 a 1), sin rebote para que no parpadee.
+    const sorpresa = new Resorte(0, 900, 60);
+    const enojo = new Resorte(0, 120, 20);
+    resortes.push(empuje, sacudida, sorpresa, enojo);
+    let reaccion: "ninguna" | "sorpresa" | "enojo" = "ninguna";
+    let finReaccion = 0;
+    let inicioEnojo = 0;
+    /** Fuerza del temblor del enojo (0 a 1): cada clic la renueva. */
+    let temblorEnojo = 0;
+    /** Momentos de los últimos toques. Solo en memoria; nunca se guardan. */
+    let toques: number[] = [];
 
     /** Cursor respecto al centro del cuerpo, en px; null si no se conoce. */
     let cursor: { x: number; y: number } | null = null;
@@ -321,6 +404,11 @@ export function useAnimacionLia(
       // Son elementos nuevos: lo escrito en los anteriores ya no vale.
       for (const clave of ["ojos-d", "ojos-grosor", "boca-d"]) {
         escritos.delete(clave);
+      }
+      for (const id of IDS_REACCION) {
+        caras[id] = buscar(svg, id);
+        escritos.delete(id);
+        escritos.delete(`${id}-t`);
       }
     };
 
@@ -395,7 +483,26 @@ export function useAnimacionLia(
       } else {
         pesos.respira = peso(pesos.respira, e === "inactivo" ? 1 : 0);
       }
-      pesos.mece = peso(pesos.mece, e === "inactivo" ? 1 : 0);
+      // Reacciones: las caras de sorpresa y enojo solo valen en `inactivo`.
+      // Si Claude Code cambia el estado, la reacción termina en el acto.
+      if (reaccion !== "ninguna" && (e !== "inactivo" || tiempo >= finReaccion)) {
+        reaccion = "ninguna";
+      }
+      sorpresa.objetivo = reaccion === "sorpresa" ? 1 : 0;
+      enojo.objetivo = reaccion === "enojo" ? 1 : 0;
+      // La sorpresa usa un resorte rígido: dos medios pasos lo mantienen estable.
+      sorpresa.paso(dt / 2);
+      sorpresa.paso(dt / 2);
+      enojo.paso(dt);
+      empuje.paso(dt);
+      sacudida.paso(dt);
+      temblorEnojo = acercar(temblorEnojo, 0, dt, 0.7);
+
+      // Enojada, el pétalo se queda rígido: deja de mecerse.
+      pesos.mece = peso(
+        pesos.mece,
+        e === "inactivo" && reaccion !== "enojo" ? 1 : 0,
+      );
       // Ojos que siguen: solo los redondos. Inclinación: completa en reposo y
       // en alerta, a la mitad mientras trabaja o celebra.
       pesos.ojos = peso(pesos.ojos, e === "inactivo" || e === "necesita" ? 1 : 0);
@@ -437,8 +544,9 @@ export function useAnimacionLia(
       petaloGiro.paso(dt);
       aplaste.paso(dt);
 
-      if (e === "inactivo" && !quieto) {
-        if (parpadeoInicio < 0 && tiempo >= proximoParpadeo) {
+      if (e === "inactivo") {
+        // Con movimiento reducido no parpadea sola, pero sí al tocarla.
+        if (!quieto && parpadeoInicio < 0 && tiempo >= proximoParpadeo) {
           parpadeoInicio = tiempo;
         }
       } else {
@@ -448,13 +556,51 @@ export function useAnimacionLia(
     };
 
     const dibujar = () => {
-      // Mirada: de px de pantalla a unidades del viewBox.
-      const ojosX = (miradaX.valor * pesos.ojos) / PX_POR_UNIDAD;
-      const ojosDY = (miradaY.valor * pesos.ojos) / PX_POR_UNIDAD;
-      const giroCuerpo = MIRADA.maxInclinacion * inclinacion.valor * pesos.inclina;
+      const quieto = reducido.matches;
+      const sorprendida = Math.min(1, Math.max(0, sorpresa.valor));
+      const enojada = Math.min(1, Math.max(0, enojo.valor));
+
+      // Mirada: de px de pantalla a unidades del viewBox. Enojada, aparta la
+      // mirada: los ojos van hacia el lado contrario al cursor.
+      const apartar = 1 - 2 * enojada;
+      const ojosX = (miradaX.valor * pesos.ojos * apartar) / PX_POR_UNIDAD;
+      const ojosDY = (miradaY.valor * pesos.ojos * apartar) / PX_POR_UNIDAD;
+      // El rebote del toque se suma a la inclinación hacia el cursor.
+      const giroCuerpo =
+        MIRADA.maxInclinacion * inclinacion.valor * pesos.inclina +
+        TOQUES.inclinacionRebote * empuje.valor;
       const inclinaX =
-        (MIRADA.maxDesplazamientoCuerpo * inclinacion.valor * pesos.inclina) /
+        (MIRADA.maxDesplazamientoCuerpo * inclinacion.valor * pesos.inclina +
+          TOQUES.desplazamientoRebote * empuje.valor +
+          (quieto
+            ? 0
+            : TOQUES.temblorEnojo *
+              Math.sin(TAU * tiempo * 11) *
+              enojada *
+              temblorEnojo)) /
         PX_POR_UNIDAD;
+      // Enojada se infla; sin movimiento reducido.
+      const inflado = quieto ? 1 : 1 + TOQUES.infladoEnojo * enojada;
+
+      // Caras de sorpresa y enojo: se muestran u ocultan con opacidad.
+      const opacidad = (id: string, valor: number) =>
+        escribir(caras[id], id, "opacity", valor.toFixed(2));
+      opacidad("lia-ojos-normal", 1 - sorprendida);
+      opacidad("lia-ojos-sorpresa", sorprendida);
+      opacidad("lia-boca-normal", 1 - Math.max(sorprendida, enojada));
+      opacidad("lia-boca-sorpresa", sorprendida * (1 - enojada));
+      opacidad("lia-boca-enojo", enojada);
+      opacidad("lia-cejas-enojo", enojada);
+      opacidad("lia-mejillas-enojo", enojada);
+      opacidad("lia-marca-enojo", enojada);
+      // La marca de enojo "late" suavemente.
+      const latido = quieto ? 1 : 1 + 0.12 * Math.sin(TAU * tiempo * 1.6);
+      escribir(
+        caras["lia-marca-enojo"],
+        "lia-marca-enojo-t",
+        "transform",
+        `translate(-36,-31) scale(${(enojada * latido).toFixed(2)})`,
+      );
 
       const fuerza = Math.min(1, Math.max(0, tension.valor));
       const bote = Math.abs(Math.sin((Math.PI * tiempo) / SALTAR.periodo));
@@ -474,8 +620,8 @@ export function useAnimacionLia(
         SALTAR.estiron * (bote - 0.4) * pesos.salta +
         // Gelatina del esfuerzo: sx y sy van en contrafase.
         ESFUERZO.amplitud * Math.sin(TAU * tiempo * ESFUERZO.frecuencia) * fuerza;
-      const sy = 1 + deformacion;
-      const sx = 1 - deformacion * 0.8;
+      const sy = (1 + deformacion) * inflado;
+      const sx = (1 - deformacion * 0.8) * inflado;
       // Temblor horizontal, a otra frecuencia para que no se vea mecánico.
       const temblor =
         ESFUERZO.temblorX *
@@ -512,6 +658,8 @@ export function useAnimacionLia(
           pesos.flota;
       const petGiro =
         petaloGiro.valor +
+        // Sacudida al tocarla.
+        sacudida.valor +
         // Sacudida del esfuerzo: sigue al temblor con algo de retraso.
         ESFUERZO.petalo *
           Math.sin(TAU * tiempo * ESFUERZO.frecuencia - 1.2) *
@@ -587,6 +735,8 @@ export function useAnimacionLia(
     /** Con movimiento reducido, el bucle se detiene al llegar a la pose. */
     const enReposo = () =>
       reducido.matches &&
+      reaccion === "ninguna" &&
+      parpadeoInicio < 0 &&
       resortes.every((r) => r.enReposo) &&
       Object.values(pesos).every((p) => p < 0.001);
 
@@ -596,6 +746,7 @@ export function useAnimacionLia(
       pesos.salta > 0.01 ||
       pesos.agita > 0.01 ||
       gotaInicio >= 0 ||
+      (reaccion === "enojo" && temblorEnojo > 0.05) ||
       // Por debajo de este umbral el temblor ya no se aprecia.
       tension.valor > 0.02 ||
       Math.abs(cara.valor - cara.objetivo) > 0.02 ||
@@ -649,11 +800,62 @@ export function useAnimacionLia(
       // empieza siempre con la cara relajada.
       reiniciarEsfuerzo();
       reiniciarCara();
+      // Los estados de Claude Code mandan: cualquier cambio corta la reacción.
+      reaccion = "ninguna";
+      toques = [];
+      for (const r of [sorpresa, enojo]) {
+        r.valor = 0;
+        r.objetivo = 0;
+        r.velocidad = 0;
+      }
       if (!reducido.matches) {
         aplaste.impulso(POP.aplaste);
         if (estadoActual.current === "termino") {
           aplaste.impulso(POP.celebracionAplaste);
           elevacion.impulso(POP.celebracionSalto);
+        }
+      }
+      pedir();
+    };
+
+    // Toque sobre el cuerpo. En cualquier estado hay rebote y sacudida del
+    // pétalo; las caras de sorpresa y enojo solo en `inactivo`.
+    alTocar.current = (lado: number) => {
+      const quieto = reducido.matches;
+      if (!quieto) {
+        // Se aplasta hacia el lado contrario al punto del clic.
+        const sentido = lado >= 0 ? -1 : 1;
+        const fuerza = TOQUES.intensidadRebote;
+        empuje.impulso(sentido * 27 * fuerza);
+        aplaste.impulso(-0.7 * fuerza);
+        sacudida.impulso(sentido * TOQUES.sacudidaPetalo * 24 * fuerza);
+      }
+      if (estadoActual.current === "inactivo") {
+        parpadeoInicio = tiempo;
+        toques = toques.filter((t) => tiempo - t <= TOQUES.ventanaEnojo);
+        toques.push(tiempo);
+        const recientes = (ventana: number) =>
+          toques.filter((t) => tiempo - t <= ventana).length;
+        if (reaccion === "enojo") {
+          // Cada clic renueva el temblor y alarga el enojo, hasta el máximo.
+          temblorEnojo = 1;
+          finReaccion = Math.min(
+            inicioEnojo + TOQUES.duracionMaximaEnojo,
+            Math.max(finReaccion, tiempo) + TOQUES.extensionEnojo,
+          );
+        } else if (recientes(TOQUES.ventanaEnojo) >= TOQUES.clicsParaEnojo) {
+          reaccion = "enojo";
+          inicioEnojo = tiempo;
+          temblorEnojo = 1;
+          finReaccion = tiempo + TOQUES.duracionCalma;
+        } else if (
+          reaccion !== "sorpresa" &&
+          recientes(TOQUES.ventanaSorpresa) >= TOQUES.clicsParaSorpresa
+        ) {
+          reaccion = "sorpresa";
+          finReaccion = tiempo + TOQUES.duracionSorpresa;
+          // Saltito de susto.
+          if (!quieto) elevacion.impulso(45);
         }
       }
       pedir();
@@ -699,6 +901,8 @@ export function useAnimacionLia(
       frecuenciaActiva: MIRADA.frecuenciaActiva,
       frecuenciaReposo: MIRADA.frecuenciaReposo,
       tiempoParaReposo: MIRADA.tiempoParaReposo,
+      margenFrecuenciaAlta: TOQUES.margenFrecuenciaAlta,
+      tiempoVigilancia: TOQUES.tiempoVigilancia,
     }).catch(() => {
       // Fuera de Tauri no hay bucle del cursor.
     });
@@ -713,9 +917,12 @@ export function useAnimacionLia(
       cancelado = true;
       dejarCursor?.();
       cursor = null;
+      alTocar.current = null;
       document.removeEventListener("visibilitychange", alCambiarVisibilidad);
       reducido.removeEventListener("change", alCambiarReducido);
       alCambiar.current = null;
     };
   }, [svgRef]);
+
+  return { tocar };
 }

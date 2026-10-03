@@ -3,7 +3,7 @@ mod permisos;
 mod receptor;
 mod resultados;
 
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,10 +19,23 @@ pub fn run() {
             cursor::iniciar(app.handle().clone());
             Ok(())
         })
+        // Al cerrar, la ventana vuelve al modo normal (recibe el mouse).
+        .on_window_event(|ventana, evento| {
+            if matches!(
+                evento,
+                WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed
+            ) {
+                if let Some(principal) = ventana.app_handle().get_webview_window(ventana.label())
+                {
+                    cursor::restaurar(&principal);
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             receptor::error_receptor,
             permisos::resolver_permiso,
             cursor::configurar_cursor,
+            cursor::definir_zonas,
             resultados::modo_privado,
             resultados::establecer_modo_privado
         ])
