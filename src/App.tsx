@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useEstadoLia } from "./estado/useEstadoLia";
 import { Lia } from "./mascot/Lia";
 import { TarjetaAviso } from "./permisos/TarjetaAviso";
@@ -30,9 +31,15 @@ function App() {
     actual !== null || aviso !== null || resultados.actual !== null;
 
   useEffect(() => {
-    placeAtTopCenter().catch((error: unknown) => {
-      console.error("No se pudo posicionar la ventana:", error);
-    });
+    // Al arrancar con Windows, Lia espera unos segundos antes de aparecer
+    // para no competir con el inicio del sistema.
+    invoke<number>("retraso_inicial")
+      .catch(() => 0)
+      .then((ms) => new Promise((seguir) => window.setTimeout(seguir, ms)))
+      .then(placeAtTopCenter)
+      .catch((error: unknown) => {
+        console.error("No se pudo posicionar la ventana:", error);
+      });
   }, []);
 
   // Zonas activas para el click-through: con una tarjeta pendiente la ventana

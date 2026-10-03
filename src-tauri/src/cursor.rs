@@ -311,7 +311,7 @@ fn bucle(app: AppHandle) {
             if cambio {
                 ultima = Some((x, y));
                 ultimo_movimiento = Instant::now();
-                let _ = app.emit(EVENTO, Cursor { x, y });
+                let _ = app.emit_to(VENTANA, EVENTO, Cursor { x, y });
             }
         }
 

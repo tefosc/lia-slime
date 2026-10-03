@@ -8,6 +8,43 @@ permiso para que las apruebes o deniegues con un clic.
 > Estas instrucciones son para **Windows**. Usan `curl.exe`, incluido en
 > Windows 10 y 11, y la carpeta `%APPDATA%`.
 
+## Instalación desde Ajustes (recomendada)
+
+No hace falta editar nada a mano. En el icono de Lia de la bandeja del
+sistema, abre **Ajustes...** y pulsa **Instalar o actualizar hooks**:
+
+1. Lia lee tu `settings.json` de usuario de Claude Code (respeta
+   `CLAUDE_CONFIG_DIR` si la tienes definida) y te muestra la ruta exacta.
+2. Te enseña un diff de **solo la sección `hooks`**: lo que se añadiría y lo
+   que se quitaría. El resto del archivo no se muestra ni se modifica.
+3. Nada cambia hasta que pulsas **Confirmar**. **Cancelar** no toca nada.
+4. Antes de escribir guarda un respaldo en la misma carpeta, con el nombre
+   `settings.json.lia-respaldo-AAAAMMDD-HHMMSS` (hora UTC), y conserva los 5
+   más recientes.
+5. Escribe de forma atómica y verifica el resultado; si algo falla, restaura
+   el archivo anterior.
+
+Garantías:
+
+- Solo se tocan las entradas de Lia: las que apuntan a su receptor local
+  (`127.0.0.1:47615/evento` o `/permiso`). Los hooks de otras herramientas y
+  los tuyos se conservan tal cual.
+- Las entradas de Lia que hayas pegado a mano con esta guía se reconocen y
+  se reemplazan, así que no quedan eventos duplicados.
+- Si el archivo no es JSON válido, o cambia mientras miras la vista previa,
+  Lia no escribe nada y te lo dice.
+- Instalar dos veces deja el mismo resultado.
+- **Quitar hooks** sigue el mismo flujo y elimina solo lo de Lia.
+- Claude Code vigila sus archivos de configuración y aplica los cambios de
+  hooks sin reiniciar, también en las sesiones abiertas.
+
+Lia solo modifica el archivo de usuario. Si tu equipo tiene configuración
+administrada (`C:\Program Files\ClaudeCode\managed-settings.json`), esta
+prevalece y Ajustes te avisa.
+
+El resto de esta guía explica qué hace cada hook y cómo ponerlos a mano si
+lo prefieres.
+
 ## Cómo funciona
 
 - Al arrancar, Lia genera un token aleatorio y lo guarda en

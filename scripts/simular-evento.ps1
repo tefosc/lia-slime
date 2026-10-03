@@ -73,15 +73,22 @@ param(
   # un fallo. La ventana debe volver a recibir el mouse en ~1 s.
   [switch]$FalloCursor,
   # Vuelve a poner en marcha el bucle del cursor tras -FalloCursor.
-  [switch]$ReanudarCursor
+  [switch]$ReanudarCursor,
+  # Solo con Lia en modo desarrollo: oculta a Lia o la cierra, igual que las
+  # opciones de la bandeja.
+  [switch]$Ocultar,
+  [switch]$Salir,
+  # Abre la ventana de Ajustes.
+  [switch]$Ajustes
 )
 
-if ($FalloCursor -or $ReanudarCursor) {
-  $ruta = if ($FalloCursor) { 'dev/detener-cursor' } else { 'dev/reanudar-cursor' }
+if ($FalloCursor -or $ReanudarCursor -or $Ocultar -or $Salir -or $Ajustes) {
+  $ruta = if ($FalloCursor) { 'dev/detener-cursor' } elseif ($ReanudarCursor) { 'dev/reanudar-cursor' } elseif ($Ocultar) { 'dev/ocultar' } elseif ($Ajustes) { 'dev/ajustes' } else { 'dev/salir' }
+  $hecho = if ($FalloCursor) { 'Bucle del cursor detenido (fallo simulado).' } elseif ($ReanudarCursor) { 'Bucle del cursor reanudado.' } elseif ($Ocultar) { 'Lia oculta.' } elseif ($Ajustes) { 'Ajustes abierto.' } else { 'Lia cerrándose.' }
   $cab = Join-Path $env:APPDATA 'dev.lia.mascota\cabecera-hook.txt'
   $codigo = '' | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' "http://127.0.0.1:47615/$ruta"
   switch ($codigo) {
-    '204' { if ($FalloCursor) { 'Bucle del cursor detenido (fallo simulado).' } else { 'Bucle del cursor reanudado.' } }
+    '204' { $hecho }
     '404' { 'Lia no acepta esta orden: no es una compilación de desarrollo.' }
     default { "Sin respuesta de Lia ($codigo)." }
   }

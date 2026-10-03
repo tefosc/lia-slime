@@ -11,12 +11,14 @@
 use std::fs;
 use std::io::{Read, Write};
 use std::net::{Ipv4Addr, TcpListener, TcpStream};
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
+use crate::bandeja::{self, VENTANA_LIA};
 use crate::cursor;
 use crate::permisos::{self, Pendientes};
 use crate::resultados::{self, AjustesCompartidos};
@@ -72,14 +74,45 @@ pub fn error_receptor(estado: State<'_, EstadoReceptor>) -> Option<String> {
     estado.error.clone()
 }
 
+/// Token vigente del receptor, ya con el prefijo `Bearer`. Se comparte para
+/// poder regenerarlo desde Ajustes sin reiniciar.
+#[derive(Clone, Default)]
+pub struct Token(Arc<RwLock<String>>);
+
+impl Token {
+    fn esperado(&self) -> String {
+        self.0.read().map(|t| t.clone()).unwrap_or_default()
+    }
+}
+
+/// Genera un token nuevo, lo guarda en el archivo que leen los hooks y lo
+/// pone en uso. Los hooks no cambian: leen el token de ese archivo.
+pub fn regenerar_token(app: &AppHandle, token: &Token) -> Result<(), String> {
+    let nuevo = generar_token()?;
+    guardar_cabecera(app, &nuevo)?;
+    let mut actual = token
+        .0
+        .write()
+        .map_err(|_| "no se pudo actualizar el token".to_string())?;
+    *actual = format!("Bearer {nuevo}");
+    Ok(())
+}
+
+/// Ruta del archivo del token con barras normales, como va en los hooks.
+pub fn ruta_cabecera(app: &AppHandle) -> Option<String> {
+    let ruta = app.path().app_data_dir().ok()?.join(ARCHIVO_CABECERA);
+    Some(ruta.to_string_lossy().replace('\\', "/"))
+}
+
 /// Arranca el receptor. Nunca hace fallar a la app: si algo sale mal, Lia
 /// sigue abierta y el error queda disponible en `EstadoReceptor`.
 pub fn iniciar(
     app: AppHandle,
     pendientes: Pendientes,
     ajustes: AjustesCompartidos,
+    token: Token,
 ) -> EstadoReceptor {
-    match arrancar(app, pendientes, ajustes) {
+    match arrancar(app, pendientes, ajustes, token) {
         Ok(()) => EstadoReceptor { error: None },
         Err(error) => {
             eprintln!("[lia] receptor de eventos desactivado: {error}");
@@ -92,6 +125,7 @@ fn arrancar(
     app: AppHandle,
     pendientes: Pendientes,
     ajustes: AjustesCompartidos,
+    token: Token,
 ) -> Result<(), String> {
     // Primero el puerto: si está ocupado no se toca el token en uso.
     let escucha = TcpListener::bind((Ipv4Addr::LOCALHOST, PUERTO)).map_err(|e| {
@@ -101,14 +135,14 @@ fn arrancar(
         )
     })?;
 
-    let token = generar_token()?;
-    guardar_cabecera(&app, &token)?;
-    let esperado = format!("Bearer {token}");
+    regenerar_token(&app, &token)?;
 
     thread::Builder::new()
         .name("lia-receptor".into())
         .spawn(move || {
             for conexion in escucha.incoming().flatten() {
+                // Se lee en cada conexión: el token puede regenerarse.
+                let esperado = token.esperado();
                 atender(conexion, &esperado, &app, &pendientes, &ajustes);
             }
         })
@@ -148,6 +182,10 @@ enum Ruta {
     /// Solo en compilaciones de desarrollo: detiene (true) o reanuda (false)
     /// el bucle del cursor para probar el vigilante.
     DevCursor(bool),
+    /// Solo en desarrollo: ocultar a Lia o salir, como desde la bandeja.
+    DevOcultar,
+    DevSalir,
+    DevAjustes,
 }
 
 /// Atiende una conexión. Las solicitudes de permiso se pasan a su propio
@@ -176,7 +214,9 @@ fn atender(
                         .unwrap_or("");
                     eprintln!("[lia] {} {sesion} {tipo}", evento.evento);
                 }
-                let _ = app.emit(EVENTO_TAURI, evento);
+                // Solo la ventana de Lia recibe el evento. Si genera un
+                // resultado o un aviso, es ella quien pide reaparecer.
+                let _ = app.emit_to(VENTANA_LIA, EVENTO_TAURI, evento);
                 204
             }
             Err(codigo) => codigo,
@@ -193,6 +233,18 @@ fn atender(
         }
         Ok((Ruta::DevCursor(detener), _)) => {
             cursor::simular_fallo(app, detener);
+            204
+        }
+        Ok((Ruta::DevOcultar, _)) => {
+            bandeja::ocultar_lia(app);
+            204
+        }
+        Ok((Ruta::DevSalir, _)) => {
+            bandeja::salir(app);
+            204
+        }
+        Ok((Ruta::DevAjustes, _)) => {
+            crate::ajustes::abrir_ventana(app);
             204
         }
         Err(codigo) => codigo,
@@ -262,6 +314,9 @@ fn leer(conexion: &mut TcpStream, esperado: &str) -> Result<(Ruta, Vec<u8>), u16
         "/permiso" => Ruta::Permiso,
         "/dev/detener-cursor" if cfg!(debug_assertions) => Ruta::DevCursor(true),
         "/dev/reanudar-cursor" if cfg!(debug_assertions) => Ruta::DevCursor(false),
+        "/dev/ocultar" if cfg!(debug_assertions) => Ruta::DevOcultar,
+        "/dev/salir" if cfg!(debug_assertions) => Ruta::DevSalir,
+        "/dev/ajustes" if cfg!(debug_assertions) => Ruta::DevAjustes,
         _ => return Err(404),
     };
     if metodo != "POST" {

@@ -17,6 +17,7 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 - `pnpm tauri build` — genera el instalador.
 - `pnpm build` — comprueba tipos (`tsc`) y compila solo el frontend.
 - `pnpm verificar` — comprueba el detector de mareo con muestras sintéticas.
+- `cargo test` (dentro de `src-tauri/`) — pruebas de la instalación de hooks.
 
 ## Estructura
 
@@ -76,6 +77,34 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 - `document.hidden` casi nunca es verdadero en una ventana siempre encima, así
   que la pausa por visibilidad ahorra poco en la práctica.
 - Para probar estados sin Claude Code se usa `scripts/simular-evento.ps1`.
+
+## Aplicación: bandeja, Ajustes e instalación de hooks
+
+- `src-tauri/src/bandeja.rs` — icono de la bandeja, mostrar y ocultar a Lia,
+  y salida limpia. Depende de Windows: para mostrar sin robar el foco y para
+  ocultar se usa `ShowWindow` de user32 directamente (`SW_SHOWNOACTIVATE`),
+  porque `show()` de Tauri activa la ventana y mezclarlo con `hide()` los
+  desincroniza.
+- `src-tauri/src/ajustes.rs` y `src/ajustes/` — ventana de Ajustes (segunda
+  página, `ajustes.html`) y sus comandos.
+- `src-tauri/src/hooks_config.rs` — funciones puras sobre el `settings.json`
+  de Claude Code: reconocer lo de Lia, instalar, quitar y diff.
+  `src-tauri/src/hooks_archivo.rs` — lectura y escritura segura. Pruebas con
+  `cargo test` y ejemplos en `src-tauri/tests/datos/`.
+- Reglas al tocar el `settings.json` de Claude Code (no las relajes): solo
+  el archivo de usuario; solo las entradas de Lia; vista previa con diff de
+  solo la sección `hooks` y confirmación explícita; comprobación de cambios
+  externos, respaldo verificado, escritura atómica, verificación y
+  restauración; nunca registrar su contenido.
+- Para probar sin tocar el archivo real: `LIA_CONFIG_DIR` apunta a otra
+  carpeta de configuración. Solo existe en compilaciones de desarrollo.
+- Plugins oficiales: `tauri-plugin-single-instance` (una sola Lia) y
+  `tauri-plugin-autostart` (inicio con Windows, clave Run del usuario). Al
+  arrancar con Windows (`--inicio-automatico`) el receptor y la ventana
+  esperan unos segundos.
+- Solo en desarrollo, el receptor acepta órdenes en `/dev/...` (ocultar,
+  salir, abrir Ajustes, detener el bucle del cursor) para probar sin la
+  bandeja: `scripts/simular-evento.ps1 -Ocultar`, `-Salir`, `-Ajustes`.
 
 ## Click-through (dependencias de Windows)
 

@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use serde_json::Value;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Manager};
 
 /// Bytes que se leen del final de la transcripción.
 const COLA_TRANSCRIPCION: u64 = 256 * 1024;
@@ -61,14 +61,9 @@ impl Ajustes {
     }
 }
 
-#[tauri::command]
-pub fn modo_privado(ajustes: State<'_, AjustesCompartidos>) -> bool {
-    ajustes.privado()
-}
-
-/// Cambia el modo privado y lo guarda. Devuelve el valor vigente.
-#[tauri::command]
-pub fn establecer_modo_privado(valor: bool, ajustes: State<'_, AjustesCompartidos>) -> bool {
+/// Cambia el modo privado y lo guarda. Los comandos que lo exponen están en
+/// bandeja.rs, que además mantiene al día la casilla del menú.
+pub fn guardar_privado(ajustes: &Ajustes, valor: bool) {
     ajustes.privado.store(valor, Ordering::Relaxed);
     if let Some(archivo) = &ajustes.archivo {
         if let Some(carpeta) = archivo.parent() {
@@ -76,7 +71,6 @@ pub fn establecer_modo_privado(valor: bool, ajustes: State<'_, AjustesCompartido
         }
         let _ = fs::write(archivo, format!("{{\"modoPrivado\":{valor}}}\n"));
     }
-    valor
 }
 
 /// Origen del mensaje, solo para el registro de desarrollo (sin contenido).

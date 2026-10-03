@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, State};
 
+use crate::bandeja::{self, VENTANA_LIA};
 use crate::receptor::{es_identificador, responder};
 
 /// Tiempo máximo que Lia espera una decisión antes de devolver la solicitud
@@ -152,7 +153,10 @@ fn esperar(
 ) {
     let id = solicitud.id;
     let limite = Instant::now() + ESPERA_PERMISO;
-    let _ = app.emit(EVENTO_NUEVO, solicitud);
+    // Con una solicitud pendiente, Lia reaparece si estaba oculta (sin tomar
+    // el foco). Solo su ventana recibe el detalle de la solicitud.
+    bandeja::mostrar_lia(&app);
+    let _ = app.emit_to(VENTANA_LIA, EVENTO_NUEVO, solicitud);
 
     let respuesta = loop {
         match decision.recv_timeout(SONDEO) {
@@ -188,7 +192,7 @@ fn esperar(
         };
         eprintln!("[lia] solicitud #{id}: {resultado}");
     }
-    let _ = app.emit(EVENTO_FIN, FinSolicitud { id });
+    let _ = app.emit_to(VENTANA_LIA, EVENTO_FIN, FinSolicitud { id });
 }
 
 /// Mira sin consumir si el otro extremo cerró la conexión.

@@ -17,7 +17,13 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# tray-icon: icono en la bandeja del sistema.
+tauri = { version = "2", features = ["tray-icon"] }
+# Plugins oficiales de Tauri (tauri-apps/plugins-workspace), serie 2.
+# Una sola instancia: evita dos receptores peleando por el mismo puerto.
+tauri-plugin-single-instance = "2"
+# Inicio con Windows (clave de usuario, sin permisos de administrador).
+tauri-plugin-autostart = "2"
 serde = { version = "1", features = ["derive"] }
 # preserve_order: al reescribir el settings.json de Claude Code no se
 # reordenan sus claves.

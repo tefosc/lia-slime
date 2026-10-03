@@ -36,6 +36,8 @@ export function useEstadoLia() {
       if (payload.evento === "StopFailure") {
         const id = siguienteAviso++;
         setAviso({ id, ...avisoDeError(payload.error, id) });
+        // Si Lia estaba oculta, reaparece para mostrar el aviso.
+        invoke("mostrar").catch(() => {});
       } else if (payload.evento === "UserPromptSubmit") {
         // Si se vuelve a escribir a Claude, el aviso anterior ya no aplica.
         setAviso(null);

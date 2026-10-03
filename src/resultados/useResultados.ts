@@ -60,6 +60,8 @@ export function useResultados() {
         if (!resultado) return;
         setCola((actual) => [...actual, resultado]);
         if (RESULTADOS.autoAbrir) setAbierta(true);
+        // Si Lia estaba oculta, reaparece para avisar del resultado.
+        invoke("mostrar").catch(() => {});
       }
     })
       .then((fn) => (cancelado ? fn() : (dejar = fn)))
@@ -75,6 +77,17 @@ export function useResultados() {
       // Fuera de Tauri se queda el valor de la configuración.
     });
 
+    // El modo privado también se cambia desde la bandeja y desde Ajustes.
+    let dejarPrivado: (() => void) | undefined;
+    listen<boolean>("lia-privado", ({ payload }) => {
+      setPrivado(payload);
+      if (payload) {
+        setCola((actual) => actual.map((r) => ({ ...r, mensaje: null })));
+      }
+    })
+      .then((fn) => (cancelado ? fn() : (dejarPrivado = fn)))
+      .catch(() => {});
+
     // Caducidad: lo vencido sale de la cola y su texto se pierde.
     const revision = window.setInterval(() => {
       const ahora = Date.now();
@@ -88,6 +101,7 @@ export function useResultados() {
     return () => {
       cancelado = true;
       dejar?.();
+      dejarPrivado?.();
       window.clearInterval(revision);
     };
   }, []);

@@ -491,6 +491,8 @@ export function useAnimacionLia(
     let anterior: number | null = null;
     let cuadro = 0;
     let espera = 0;
+    /** Lia está oculta desde la bandeja. */
+    let oculta = false;
     let parpadeoInicio = -1;
     let proximoParpadeo = azar(PARPADEO.esperaMin, PARPADEO.esperaMax);
 
@@ -1041,7 +1043,7 @@ export function useAnimacionLia(
     // WebView2 aunque no se dibuje nada. Por eso se espera con un
     // temporizador y solo se pide el fotograma cuando toca.
     const pedir = (retraso = 0) => {
-      if (cuadro !== 0 || espera !== 0 || document.hidden) return;
+      if (cuadro !== 0 || espera !== 0 || document.hidden || oculta) return;
       if (retraso > 1) {
         espera = window.setTimeout(() => {
           espera = 0;
@@ -1234,7 +1236,7 @@ export function useAnimacionLia(
     }
 
     const alCambiarVisibilidad = () => {
-      if (document.hidden) {
+      if (document.hidden || oculta) {
         detener();
         // Al ocultarse se limpia el esfuerzo para no volver con una gota o
         // un temblor atascados.
@@ -1247,6 +1249,22 @@ export function useAnimacionLia(
       pedir();
     };
     const alCambiarReducido = () => pedir();
+
+    // Lia oculta desde la bandeja: el bucle se detiene igual que con
+    // document.hidden, y vuelve al mostrarse.
+    let anulado = false;
+    let dejarVisible: (() => void) | undefined;
+    listen<{ visible: boolean }>("lia-visible", ({ payload }) => {
+      oculta = !payload.visible;
+      alCambiarVisibilidad();
+    })
+      .then((dejar) => {
+        if (anulado) dejar();
+        else dejarVisible = dejar;
+      })
+      .catch(() => {
+        // Fuera de Tauri no hay bandeja.
+      });
 
     // Cursor: llega de Rust en px CSS respecto a la esquina de la ventana. Se
     // pasa al centro del cuerpo con la posición real del SVG, que cambia si
@@ -1294,6 +1312,8 @@ export function useAnimacionLia(
       detener();
       cancelado = true;
       dejarCursor?.();
+      anulado = true;
+      dejarVisible?.();
       cursor = null;
       alTocar.current = null;
       alAcariciar.current = null;
