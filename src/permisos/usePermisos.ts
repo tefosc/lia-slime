@@ -16,7 +16,7 @@ export interface Solicitud {
   herramienta: string;
   /** Comando, ruta o URL. Solo vive en memoria mientras está en la cola. */
   detalle: string;
-  /** "Sesión 1", "Sesión 2"...: sin rutas ni nombres. */
+  /** "Conversación 1", "Conversación 2"...: sin rutas ni nombres. */
   etiqueta: string;
   /** Momento (ms) en que Lia dejará de esperar y Claude Code decidirá. */
   expira: number;
@@ -48,7 +48,7 @@ export function usePermisos() {
     escuchar<SolicitudRecibida>("lia-permiso", (s) => {
       let etiqueta = etiquetas.current.get(s.sesion);
       if (!etiqueta) {
-        etiqueta = `Sesión ${etiquetas.current.size + 1}`;
+        etiqueta = `Conversación ${etiquetas.current.size + 1}`;
         etiquetas.current.set(s.sesion, etiqueta);
       }
       const solicitud: Solicitud = {

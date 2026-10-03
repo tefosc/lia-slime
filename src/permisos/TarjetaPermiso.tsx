@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { esPeligroso } from "./peligro";
+import { describirAccion } from "./textos";
 import type { Solicitud } from "./usePermisos";
 import "./permisos.css";
 
@@ -42,8 +43,8 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
       ? `${unaLinea.slice(0, RESUMEN_MAXIMO - 1)}…`
       : unaLinea;
   const peligroso = esPeligroso(solicitud.detalle);
-  // A partir de unos 36 caracteres la línea ya no cabe en la tarjeta.
-  const largo = unaLinea.length > 36 || solicitud.detalle.includes("\n");
+  // A partir de unos 34 caracteres la línea ya no cabe en el recuadro.
+  const largo = unaLinea.length > 34 || solicitud.detalle.includes("\n");
 
   const decidir = (permitir: boolean) => {
     if (!activos || resuelta.current) return;
@@ -52,37 +53,46 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
   };
 
   return (
-    <div className={`tarjeta${peligroso ? " tarjeta-peligro" : ""}`} role="dialog">
+    <div
+      className={`tarjeta${peligroso ? " tarjeta-peligro" : ""}`}
+      role="dialog"
+      aria-label="Solicitud de permiso de Claude Code"
+    >
       <div className="tarjeta-cabecera">
-        <span className="tarjeta-herramienta">{solicitud.herramienta}</span>
-        <span className="tarjeta-sesion">{solicitud.etiqueta}</span>
+        <span className="tarjeta-titulo">{describirAccion(solicitud.herramienta)}</span>
         {pendientes > 1 && (
-          <span className="tarjeta-cola" title="Solicitudes en espera">
-            +{pendientes - 1}
-          </span>
+          <span className="tarjeta-cola">{pendientes - 1} más en espera</span>
         )}
-        <span className="tarjeta-tiempo">{restante} s</span>
       </div>
 
       {peligroso && (
-        <div className="tarjeta-aviso">Atención: parece una acción peligrosa</div>
+        <div className="tarjeta-aviso">Cuidado: esto podría borrar o exponer datos</div>
       )}
 
-      {expandido ? (
-        <pre className="tarjeta-detalle">{solicitud.detalle || "(sin detalles)"}</pre>
-      ) : (
-        <div className="tarjeta-resumen">{resumen || "(sin detalles)"}</div>
-      )}
-      {largo && (
-        <button
-          type="button"
-          tabIndex={-1}
-          className="tarjeta-expandir"
-          onClick={() => setExpandido((valor) => !valor)}
-        >
-          {expandido ? "Ver menos" : "Ver completo"}
-        </button>
-      )}
+      {solicitud.detalle &&
+        (expandido ? (
+          <pre className="tarjeta-detalle">{solicitud.detalle}</pre>
+        ) : (
+          <div className="tarjeta-resumen" title="Detalle de la acción">
+            {resumen}
+          </div>
+        ))}
+      <div className="tarjeta-pie">
+        <span>
+          {solicitud.etiqueta} · si no eliges, se preguntará en la terminal en{" "}
+          <span className="tarjeta-tiempo">{restante} s</span>
+        </span>
+        {largo && (
+          <button
+            type="button"
+            tabIndex={-1}
+            className="tarjeta-expandir"
+            onClick={() => setExpandido((valor) => !valor)}
+          >
+            {expandido ? "Ver menos" : "Ver todo"}
+          </button>
+        )}
+      </div>
 
       <div className="tarjeta-botones">
         <button
@@ -92,7 +102,7 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
           disabled={!activos}
           onClick={() => decidir(false)}
         >
-          Denegar
+          No permitir
         </button>
         <button
           type="button"

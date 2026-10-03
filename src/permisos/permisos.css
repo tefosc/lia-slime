@@ -39,34 +39,55 @@
   gap: 6px;
 }
 
-.tarjeta-herramienta {
+.tarjeta-titulo {
+  font-size: 14px;
   font-weight: 700;
-}
-
-.tarjeta-sesion {
-  color: #5c6b64;
-  font-size: 12px;
+  line-height: 1.25;
 }
 
 .tarjeta-cola {
-  padding: 0 6px;
+  flex: none;
+  margin-left: auto;
+  padding: 1px 7px;
   border-radius: 8px;
   background: #ffd95a;
   font-size: 11px;
   font-weight: 700;
 }
 
-.tarjeta-tiempo {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
+.tarjeta-pie {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   color: #5c6b64;
-  font-size: 12px;
+  font-size: 11px;
+}
+
+.tarjeta-pie > span {
+  flex: 1;
+}
+
+.tarjeta-tiempo {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .tarjeta-aviso {
   font-size: 12px;
   font-weight: 700;
   color: #8a5a00;
+}
+
+.tarjeta-resumen,
+.tarjeta-detalle {
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(69, 176, 132, 0.1);
+}
+
+.tarjeta-peligro .tarjeta-resumen,
+.tarjeta-peligro .tarjeta-detalle {
+  background: rgba(224, 168, 0, 0.14);
 }
 
 .tarjeta-resumen {
@@ -90,7 +111,7 @@
 }
 
 .tarjeta-expandir {
-  align-self: flex-start;
+  flex: none;
   padding: 0;
   border: none;
   background: none;
