@@ -1,4 +1,6 @@
 mod cursor;
+mod hooks_archivo;
+mod hooks_config;
 mod permisos;
 mod receptor;
 mod resultados;

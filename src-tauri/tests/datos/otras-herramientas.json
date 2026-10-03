@@ -1,0 +1,55 @@
+{
+  "permissions": {
+    "allow": ["Bash(ls:*)"]
+  },
+  "env": {
+    "CLAVE_DE_EJEMPLO": "SECRETO-DE-PRUEBA"
+  },
+  "model": "opus",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/herramienta/inicio.js"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/herramienta/guardia.js",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash C:/herramienta/validar.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://localhost:8080/hooks/lectura"
+          }
+        ]
+      }
+    ]
+  },
+  "theme": "dark"
+}

@@ -1,0 +1,72 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "async": true,
+            "timeout": 5,
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "async": true,
+            "timeout": 5,
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          { "type": "command", "command": "node C:/herramienta/fin.js" }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 75,
+            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
+          },
+          {
+            "type": "command",
+            "timeout": 75,
+            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://127.0.0.1:47615/evento" } ] },
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://localhost:47615/evento" } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://127.0.0.1:47615/evento" } ] }
+    ],
+    "PreToolUse": [
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://127.0.0.1:47615/evento" } ] }
+    ],
+    "PostToolUse": [
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://127.0.0.1:47615/evento" } ] }
+    ],
+    "PostToolUseFailure": [
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://127.0.0.1:47615/evento" } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://127.0.0.1:47615/evento" } ] }
+    ],
+    "StopFailure": [
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://127.0.0.1:47615/evento" } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "async": true, "timeout": 5, "command": "curl.exe -s -o NUL http://127.0.0.1:47615/evento" } ] }
+    ]
+  }
+}

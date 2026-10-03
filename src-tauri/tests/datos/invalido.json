@@ -1,0 +1,5 @@
+{
+  "model": "opus",
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "node fin.js" }

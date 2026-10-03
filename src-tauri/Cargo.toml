@@ -19,7 +19,9 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# preserve_order: al reescribir el settings.json de Claude Code no se
+# reordenan sus claves.
+serde_json = { version = "1", features = ["preserve_order"] }
 # Token aleatorio del receptor de eventos (crate oficial de rust-random).
 getrandom = "0.4"
 
