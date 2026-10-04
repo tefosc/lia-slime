@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { estadoAudio, medirSonido, sonar } from "../audio/sonidos";
 import { hayTarjetaVisible, hayArrastre } from "../zonas";
 import {
   alimentarDetector,
@@ -196,6 +197,62 @@ export const MAREO = {
   balanceoPetalo: 20,
 };
 
+/**
+ * Sueño por inactividad: sin eventos de Claude Code ni toques, Lia se
+ * adormece, después se derrite en un charquito y la ventana se oculta.
+ * Tiempos en segundos; mover el cursor no cuenta como actividad.
+ */
+export const SUENO = {
+  /** Segundos sin actividad para adormecerse (se ajusta en Ajustes). */
+  tiempoParaAdormecer: 120,
+  /** Segundos sin actividad, desde la última, para derretirse y ocultarse. */
+  tiempoParaOcultar: 180,
+  /** Respiración dormida: periodo y cuánto más profunda que la normal. */
+  periodoRespiracion: 5.6,
+  amplitudRespiracion: 1.7,
+  /** Grados que cae el pétalo al dormirse, y los que se suman al derretirse. */
+  caidaPetalo: 50,
+  petaloDerretida: 38,
+  /** Cada cuánto sale una "z". */
+  periodoZ: 2.8,
+  /** Derretida: cuánto se ensancha y cuánto se aplasta el cuerpo. */
+  estirarX: 0.15,
+  aplastarY: 0.38,
+  /** Momento en que el cuerpo ya derretido pasa a charquito, y cuánto tarda. */
+  inicioCharco: 1.5,
+  duracionCharco: 0.6,
+  /** Momento en que el charquito empieza a desvanecerse, y cuánto tarda. */
+  inicioFundido: 3,
+  duracionFundido: 0.5,
+  /** Cuánto tarda en volver a formarse al despertar. */
+  duracionDespertar: 0.9,
+  /** Con movimiento reducido solo hay un fundido de esta duración. */
+  fundidoReducido: 0.5,
+};
+
+/** Fases del sueño. `oculta` es solo la ocultación por inactividad. */
+export type FaseSueno =
+  | "despierta"
+  | "adormecida"
+  | "derritiendo"
+  | "oculta"
+  | "despertando";
+
+export interface OpcionesSueno {
+  /** Ocultarse por inactividad está activado. */
+  activa: boolean;
+  tiempoParaAdormecer: number;
+  tiempoParaOcultar: number;
+  /**
+   * Hay algo que impide dormirse: una solicitud o una tarjeta pendiente, un
+   * resultado sin leer o una sesión que no está en reposo.
+   */
+  bloqueada: boolean;
+  /** Cambia con cada evento de Claude Code: cuenta como actividad. */
+  pulso: number;
+  onFase?: (fase: FaseSueno) => void;
+}
+
 export const ESFUERZO = {
   /** Amplitud de la gelatina: cuánto cambia la escala (0.025 = 2.5 %). */
   amplitud: 0.025,
@@ -303,6 +360,12 @@ function enteroAzar(min: number, max: number): number {
   return Math.floor(azar(min, max + 1));
 }
 
+/** Acerca `valor` a `objetivo` a ritmo constante, como mucho `paso`. */
+function lineal(valor: number, objetivo: number, paso: number): number {
+  const falta = objetivo - valor;
+  return Math.abs(falta) <= paso ? objetivo : valor + Math.sign(falta) * paso;
+}
+
 /** Curva suave de 0 a 1, sin arranque ni frenada bruscos. */
 function suave(t: number): number {
   const c = Math.min(1, Math.max(0, t));
@@ -324,11 +387,14 @@ export interface AccionesLia {
   tocar: (lado: number) => void;
   /** El cursor está frotando la cabeza. */
   acariciar: () => void;
+  /** El cursor pasa por encima de Lia: la despierta si está adormecida. */
+  rozar: () => void;
 }
 
 export function useAnimacionLia(
   svgRef: RefObject<SVGSVGElement | null>,
   estado: EstadoLia,
+  opcionesSueno: OpcionesSueno,
 ): AccionesLia {
   const estadoActual = useRef(estado);
   const alCambiar = useRef<(() => void) | null>(null);
@@ -340,6 +406,17 @@ export function useAnimacionLia(
   const tocar = useRef((lado: number) => alTocar.current?.(lado)).current;
   const alAcariciar = useRef<(() => void) | null>(null);
   const acariciar = useRef(() => alAcariciar.current?.()).current;
+  const alRozar = useRef<(() => void) | null>(null);
+  const rozar = useRef(() => alRozar.current?.()).current;
+  const suenoActual = useRef(opcionesSueno);
+  suenoActual.current = opcionesSueno;
+  const alHaberActividad = useRef<(() => void) | null>(null);
+
+  // Un evento de Claude Code, o un cambio en lo que impide dormirse, cuenta
+  // como actividad: reinicia el temporizador y despierta a Lia.
+  useEffect(() => {
+    alHaberActividad.current?.();
+  }, [opcionesSueno.pulso, opcionesSueno.bloqueada, opcionesSueno.activa]);
 
   useEffect(() => {
     if (estadoActual.current === estado) return;
@@ -376,6 +453,10 @@ export function useAnimacionLia(
       "lia-estrella-0",
       "lia-estrella-1",
       "lia-estrella-2",
+      "lia-ojos-dormida",
+      "lia-boca-dormida",
+      "lia-z-0",
+      "lia-z-1",
     ];
 
     const sombraEl = buscar(svg, "lia-sombra");
@@ -384,6 +465,10 @@ export function useAnimacionLia(
     const ojosEl = buscar(svg, "lia-ojos");
     const petaloEl = buscar(svg, "lia-petalo");
     const gotaEl = buscar(svg, "lia-gota");
+    const personajeEl = buscar(svg, "lia-personaje");
+    const caraEl = buscar(svg, "lia-cara");
+    const charquitoEl = buscar(svg, "lia-charquito");
+    const ondaEl = buscar(svg, "lia-onda");
     // La cara de esfuerzo solo existe en `trabajando`: se busca en cada
     // cambio de estado.
     let ojosEsfuerzoEl: SVGElement | null = null;
@@ -443,6 +528,22 @@ export function useAnimacionLia(
     // baje y se apague con suavidad.
     const mareo = new Resorte(0, 40, 13);
     resortes.push(feliz, mareo);
+    // Sueño: cuánto se ve la cara dormida (0 a 1) y cuánto está derretido el
+    // cuerpo (0 a 1; al volver a formarse rebota un poco por debajo de 0).
+    const dormida = new Resorte(0, 60, 16);
+    const derretida = new Resorte(0, 14, 7.5);
+    resortes.push(dormida, derretida);
+    let fase: FaseSueno = "despierta";
+    let inicioFase = 0;
+    /** Paso del cuerpo derretido al charquito, y desvanecido final (0 a 1). */
+    let charco = 0;
+    let fundido = 0;
+    let ondaInicio = -100;
+    let faseRespira = 0;
+    let saltoHecho = false;
+    let sonidoDespertar = false;
+    /** Última actividad, en ms. Solo en memoria; nunca se guarda. */
+    let ultimaActividad = performance.now();
     /** Ronroneo (0 a 1): sigue a las caricias recientes, en cualquier estado. */
     let mimo = 0;
     let ultimaCaricia = -10;
@@ -548,6 +649,70 @@ export function useAnimacionLia(
       el.setAttribute(atributo, valor);
     };
 
+    const cambiarFase = (nueva: FaseSueno) => {
+      fase = nueva;
+      inicioFase = tiempo;
+      suenoActual.current.onFase?.(nueva);
+    };
+
+    /** Adormecida: se despierta con un pequeño estirón y un parpadeo. */
+    const despertarSuave = () => {
+      cambiarFase("despierta");
+      ultimaActividad = performance.now();
+      if (!reducido.matches) aplaste.impulso(0.6);
+      parpadeoInicio = tiempo;
+      pedir();
+    };
+
+    const empezarDerretir = () => {
+      cambiarFase("derritiendo");
+      // Resorte lento y casi sin rebote: tarda alrededor de 1,5 s.
+      derretida.rigidez = 14;
+      derretida.amortiguacion = 7.5;
+      reaccion = "ninguna";
+      sonar("derretirse");
+      pedir();
+    };
+
+    /** Vuelve a formarse, desde el charquito o a medio derretir. */
+    const empezarDespertar = () => {
+      cambiarFase("despertando");
+      // Resorte rápido con rebote: se pasa un poco y vuelve.
+      derretida.rigidez = 170;
+      derretida.amortiguacion = 11;
+      saltoHecho = false;
+      sonidoDespertar = false;
+      // Desde el charquito la cara reaparece ya despierta.
+      if (derretida.valor > 0.7) {
+        dormida.valor = 0;
+        dormida.velocidad = 0;
+      }
+      ultimaActividad = performance.now();
+      pedir();
+    };
+
+    /** Deja a Lia despierta y entera, sin animación. */
+    const reiniciarSueno = () => {
+      if (fase !== "despierta") cambiarFase("despierta");
+      for (const r of [dormida, derretida]) {
+        r.valor = 0;
+        r.objetivo = 0;
+        r.velocidad = 0;
+      }
+      charco = 0;
+      fundido = 0;
+      ultimaActividad = performance.now();
+    };
+
+    /** Termina la secuencia: la ventana se oculta como desde la bandeja. */
+    const ocultarse = () => {
+      cambiarFase("oculta");
+      invoke("ocultar").catch(() => {
+        // Fuera de Tauri no hay ventana que ocultar.
+        reiniciarSueno();
+      });
+    };
+
     const fijarObjetivos = () => {
       const pose = POSES[estadoActual.current];
       elevacion.objetivo = pose.elevacion;
@@ -563,6 +728,79 @@ export function useAnimacionLia(
       const quieto = reducido.matches;
       const peso = (actual: number, objetivo: number) =>
         acercar(actual, quieto ? 0 : objetivo, dt, 4);
+
+      // Sueño por inactividad.
+      const enFase = tiempo - inicioFase;
+      let objetivoCharco = fase === "oculta" ? charco : 0;
+      let objetivoFundido = fase === "oculta" ? fundido : 0;
+      if (fase === "derritiendo") {
+        if (hayArrastre()) {
+          empezarDespertar();
+        } else if (quieto) {
+          // Movimiento reducido: un fundido simple, sin derretirse.
+          objetivoFundido = 1;
+          if (enFase >= SUENO.fundidoReducido + 0.1) ocultarse();
+        } else {
+          derretida.objetivo = 1;
+          if (enFase >= SUENO.inicioCharco) {
+            objetivoCharco = 1;
+            if (ondaInicio < inicioFase) ondaInicio = tiempo;
+          }
+          if (enFase >= SUENO.inicioFundido) objetivoFundido = 1;
+          if (enFase >= SUENO.inicioFundido + SUENO.duracionFundido + 0.1) {
+            ocultarse();
+          }
+        }
+      } else if (fase === "despertando") {
+        derretida.objetivo = 0;
+        if (!sonidoDespertar && enFase >= 0.05) {
+          sonidoDespertar = true;
+          sonar("despertar");
+        }
+        // Ya formada: parpadea y da un saltito.
+        if (!saltoHecho && enFase >= 0.5) {
+          saltoHecho = true;
+          parpadeoInicio = tiempo;
+          if (!quieto) elevacion.impulso(40);
+        }
+        if (enFase >= SUENO.duracionDespertar) {
+          cambiarFase("despierta");
+          ultimaActividad = performance.now();
+        }
+      } else if (fase !== "oculta") {
+        derretida.objetivo = 0;
+      }
+      dormida.objetivo =
+        fase === "adormecida" || fase === "derritiendo" || fase === "oculta"
+          ? 1
+          : 0;
+      dormida.paso(dt);
+      derretida.paso(dt);
+      const despertando = fase === "despertando";
+      charco = lineal(
+        charco,
+        objetivoCharco,
+        dt / (despertando ? 0.25 : SUENO.duracionCharco),
+      );
+      fundido = lineal(
+        fundido,
+        objetivoFundido,
+        dt /
+          (quieto
+            ? SUENO.fundidoReducido
+            : despertando
+              ? 0.15
+              : SUENO.duracionFundido),
+      );
+      // Dormida respira más lento: la fase se acumula para que el cambio de
+      // ritmo no dé saltos.
+      faseRespira +=
+        (TAU * dt) /
+        mezclar(
+          RESPIRAR.periodo,
+          SUENO.periodoRespiracion,
+          Math.min(1, Math.max(0, dormida.valor)),
+        );
 
       if (e === "trabajando" && !quieto) {
         if (tiempo >= finFase) {
@@ -663,7 +901,9 @@ export function useAnimacionLia(
       // Enojada, el pétalo se queda rígido: deja de mecerse.
       pesos.mece = peso(
         pesos.mece,
-        e === "inactivo" && reaccion !== "enojo" ? 1 : 0,
+        e === "inactivo" && reaccion !== "enojo" && fase === "despierta"
+          ? 1
+          : 0,
       );
       // Ojos que siguen: solo los redondos. Inclinación: completa en reposo y
       // en alerta, a la mitad mientras trabaja o celebra.
@@ -675,7 +915,13 @@ export function useAnimacionLia(
 
       // Objetivo de la mirada: hacia el cursor, o al centro si lleva mucho
       // quieto o el sistema pide movimiento reducido.
-      if (cursor && !quieto && tiempo - ultimoCursor < MIRADA.tiempoParaCentrar) {
+      // Dormida no sigue al cursor.
+      if (
+        cursor &&
+        !quieto &&
+        fase === "despierta" &&
+        tiempo - ultimoCursor < MIRADA.tiempoParaCentrar
+      ) {
         const distancia = Math.hypot(cursor.x, cursor.y);
         const limitada = Math.min(distancia, MIRADA.distanciaMaxima);
         // Curva suave: crece rápido cerca y se aplana lejos.
@@ -708,7 +954,12 @@ export function useAnimacionLia(
 
       if (e === "inactivo") {
         // Con movimiento reducido no parpadea sola, pero sí al tocarla.
-        if (!quieto && parpadeoInicio < 0 && tiempo >= proximoParpadeo) {
+        if (
+          !quieto &&
+          fase === "despierta" &&
+          parpadeoInicio < 0 &&
+          tiempo >= proximoParpadeo
+        ) {
           parpadeoInicio = tiempo;
         }
       } else {
@@ -726,6 +977,10 @@ export function useAnimacionLia(
       // La cara mareada aparece entera enseguida; la intensidad gobierna el
       // movimiento.
       const caraMareada = Math.min(1, mareada / 0.25);
+      // Sueño: cara dormida y cuerpo derretido.
+      const sueno = Math.min(1, Math.max(0, dormida.valor));
+      const derretido = Math.min(1.1, Math.max(-0.4, derretida.valor));
+      const fundiendo = Math.min(1, Math.max(0, derretido));
 
       // Mirada: de px de pantalla a unidades del viewBox. Enojada, aparta la
       // mirada: los ojos van hacia el lado contrario al cursor.
@@ -791,8 +1046,56 @@ export function useAnimacionLia(
         escribir(caras[id], id, "opacity", valor.toFixed(2));
       opacidad(
         "lia-ojos-normal",
-        1 - Math.max(sorprendida, contenta, caraMareada),
+        1 - Math.max(sorprendida, contenta, caraMareada, sueno),
       );
+      opacidad("lia-ojos-dormida", sueno);
+      opacidad("lia-boca-dormida", sueno);
+      // Al derretirse, la cara se desvanece antes que el cuerpo.
+      escribir(
+        caraEl,
+        "cara-op",
+        "opacity",
+        (1 - Math.min(1, fundiendo * 1.5)).toFixed(2),
+      );
+      // Las "z" suben y se desvanecen una tras otra.
+      for (let i = 0; i < 2; i++) {
+        const id = `lia-z-${i}`;
+        const avance = (tiempo / SUENO.periodoZ + i * 0.5) % 1;
+        const visible =
+          quieto || fase === "despertando"
+            ? 0
+            : sueno * (1 - Math.min(1, fundiendo * 2)) * Math.sin(Math.PI * avance);
+        opacidad(id, visible);
+        if (visible > 0.01) {
+          escribir(
+            caras[id],
+            `${id}-t`,
+            "transform",
+            `translate(${(30 + 12 * avance + 2 * Math.sin(TAU * avance)).toFixed(1)},${(-40 - 24 * avance).toFixed(1)}) scale(${(0.6 + 0.7 * avance).toFixed(2)})`,
+          );
+        }
+      }
+      // Charquito: aparece al fundirse el cuerpo, con una onda que se
+      // expande una sola vez.
+      escribir(charquitoEl, "charquito-op", "opacity", charco.toFixed(2));
+      const avanceOnda = tiempo - ondaInicio;
+      const hayOnda = avanceOnda >= 0 && avanceOnda < 1;
+      escribir(
+        ondaEl,
+        "onda-op",
+        "opacity",
+        (hayOnda ? 0.6 * (1 - avanceOnda) : 0).toFixed(2),
+      );
+      if (hayOnda) {
+        escribir(
+          ondaEl,
+          "onda-t",
+          "transform",
+          `translate(0,40) scale(${(0.75 + 0.35 * suave(avanceOnda)).toFixed(3)}) translate(0,-40)`,
+        );
+      }
+      escribir(personajeEl, "personaje-op", "opacity", (1 - fundido).toFixed(2));
+      escribir(flotanteEl, "flotante-op", "opacity", (1 - charco).toFixed(2));
       opacidad("lia-ojos-sorpresa", sorprendida);
       opacidad("lia-ojos-feliz", contenta);
       opacidad("lia-mejillas-feliz", contenta);
@@ -800,7 +1103,7 @@ export function useAnimacionLia(
       opacidad("lia-boca-mareo", caraMareada);
       opacidad(
         "lia-boca-normal",
-        1 - Math.max(sorprendida, enojada, caraMareada),
+        1 - Math.max(sorprendida, enojada, caraMareada, sueno),
       );
 
       // Corazones: suben, se balancean un poco y se desvanecen.
@@ -891,14 +1194,25 @@ export function useAnimacionLia(
       const deformacion =
         aplaste.valor +
         RESPIRAR.amplitud *
-          Math.sin((TAU * tiempo) / RESPIRAR.periodo) *
+          mezclar(1, SUENO.amplitudRespiracion, sueno) *
+          Math.sin(faseRespira) *
           pesos.respira +
         // En el salto se estira arriba y se aplasta al tocar el suelo.
         SALTAR.estiron * (bote - 0.4) * pesos.salta +
         // Gelatina del esfuerzo: sx y sy van en contrafase.
         ESFUERZO.amplitud * Math.sin(TAU * tiempo * ESFUERZO.frecuencia) * fuerza;
-      const sy = (1 + deformacion + aplasteMareo) * inflado;
-      const sx = (1 - (deformacion + aplasteMareo) * 0.8) * inflado;
+      // Derretida se aplasta y se ensancha con la base como ancla; al pasar
+      // a charquito se aplasta todavía más mientras se desvanece.
+      const sy =
+        (1 + deformacion + aplasteMareo) *
+        inflado *
+        (1 - SUENO.aplastarY * derretido) *
+        (1 - 0.45 * charco);
+      const sx =
+        (1 - (deformacion + aplasteMareo) * 0.8) *
+        inflado *
+        (1 + SUENO.estirarX * derretido) *
+        (1 + 0.1 * charco);
       // Temblor horizontal, a otra frecuencia para que no se vea mecánico.
       const temblor =
         ESFUERZO.temblorX *
@@ -918,10 +1232,10 @@ export function useAnimacionLia(
         `translate(0,${(-altura).toFixed(1)})`,
       );
 
-      const tamano = Math.max(
-        0.4,
-        sombra.valor - SOMBRA_POR_ALTURA * (salto + flote),
-      );
+      // La sombra se ensancha al derretirse.
+      const tamano =
+        Math.max(0.4, sombra.valor - SOMBRA_POR_ALTURA * (salto + flote)) *
+        (1 + 0.3 * fundiendo);
       const s = sombraPara(tamano);
       escribir(sombraEl, "sombra-cy", "cy", s.cy.toFixed(1));
       escribir(sombraEl, "sombra-rx", "rx", s.rx.toFixed(1));
@@ -937,6 +1251,9 @@ export function useAnimacionLia(
         petaloGiro.valor +
         // Sacudida al tocarla.
         sacudida.valor +
+        // Dormida, el pétalo cae; derretida, queda apoyado encima.
+        SUENO.caidaPetalo * sueno +
+        SUENO.petaloDerretida * fundiendo +
         // Mareada: primero una vuelta lenta sobre su base y después un
         // balanceo amplio.
         giroPetaloMareo +
@@ -1016,6 +1333,9 @@ export function useAnimacionLia(
     const enReposo = () =>
       reducido.matches &&
       reaccion === "ninguna" &&
+      fase !== "derritiendo" &&
+      fase !== "despertando" &&
+      (fundido < 0.001 || fase === "oculta") &&
       parpadeoInicio < 0 &&
       resortes.every((r) => r.enReposo) &&
       Object.values(pesos).every((p) => p < 0.001);
@@ -1023,6 +1343,8 @@ export function useAnimacionLia(
     /** El movimiento rápido necesita 60 fps; para el lento bastan 20. */
     const esRapido = () =>
       parpadeoInicio >= 0 ||
+      fase === "derritiendo" ||
+      fase === "despertando" ||
       pesos.salta > 0.01 ||
       pesos.agita > 0.01 ||
       gotaInicio >= 0 ||
@@ -1079,6 +1401,8 @@ export function useAnimacionLia(
     };
 
     alCambiar.current = () => {
+      if (fase === "adormecida") despertarSuave();
+      ultimaActividad = performance.now();
       fijarObjetivos();
       buscarCara();
       // Al cambiar de estado no debe quedar una gota ni una oleada a medias;
@@ -1108,6 +1432,11 @@ export function useAnimacionLia(
     // pétalo; las caras de sorpresa y enojo solo en `inactivo`.
     alTocar.current = (lado: number) => {
       const quieto = reducido.matches;
+      // Un toque es actividad: la despierta en cualquier fase del sueño.
+      ultimaActividad = performance.now();
+      if (fase === "adormecida") despertarSuave();
+      else if (fase === "derritiendo") empezarDespertar();
+      const antes = reaccion;
       if (!quieto) {
         // Se aplasta hacia el lado contrario al punto del clic.
         const sentido = lado >= 0 ? -1 : 1;
@@ -1149,6 +1478,15 @@ export function useAnimacionLia(
           if (!quieto) elevacion.impulso(45);
         }
       }
+      // Sonido: el de la reacción que empieza o, si no, el del toque.
+      // Enojada no hace el sonido del toque.
+      if (reaccion === "enojo") {
+        if (antes !== "enojo") sonar("enojo");
+      } else if (reaccion === "sorpresa" && antes !== "sorpresa") {
+        sonar("sorpresa");
+      } else {
+        sonar("toque");
+      }
       pedir();
     };
 
@@ -1157,6 +1495,8 @@ export function useAnimacionLia(
     // un ronroneo suave, sin cambiar la cara.
     alAcariciar.current = () => {
       ultimaCaricia = tiempo;
+      ultimaActividad = performance.now();
+      if (fase === "adormecida") despertarSuave();
       if (estadoActual.current === "inactivo" && reaccion !== "mareo") {
         if (reaccion !== "feliz") {
           proximoCorazon = tiempo + 0.15;
@@ -1176,6 +1516,7 @@ export function useAnimacionLia(
       if (
         estadoActual.current !== "inactivo" ||
         reaccion === "enojo" ||
+        fase !== "despierta" ||
         hayArrastre() ||
         hayTarjetaVisible()
       ) {
@@ -1192,6 +1533,7 @@ export function useAnimacionLia(
         reaccion = "mareo";
         inicioMareo = tiempo;
         toques = [];
+        sonar("mareo");
       }
       if (quieto) {
         // Movimiento reducido: espiral estática durante un momento.
@@ -1232,8 +1574,52 @@ export function useAnimacionLia(
             ? { vueltas: ultimo.vueltas, mareada: ultimo.mareada }
             : { vueltas: 0, mareada: false };
         },
+        // Reproduce un sonido y mide cómo se genera (duración y pico).
+        probarSonido: async (nombre) => {
+          sonar(nombre);
+          return { ...(await medirSonido(nombre)), contexto: estadoAudio() };
+        },
       };
     }
+
+    // Pasar el cursor por encima la despierta si está adormecida.
+    alRozar.current = () => {
+      if (fase === "adormecida") despertarSuave();
+    };
+
+    alHaberActividad.current = () => {
+      ultimaActividad = performance.now();
+      if (fase === "adormecida") despertarSuave();
+      else if (fase === "derritiendo") empezarDespertar();
+    };
+
+    // Temporizador de inactividad. No cuenta mientras haya algo pendiente,
+    // una sesión trabajando, una reacción en curso o un arrastre.
+    const vigilancia = window.setInterval(() => {
+      if (oculta || document.hidden || fase === "oculta") return;
+      if (fase === "derritiendo" || fase === "despertando") return;
+      const opciones = suenoActual.current;
+      const ahora = performance.now();
+      if (
+        !opciones.activa ||
+        opciones.bloqueada ||
+        estadoActual.current !== "inactivo" ||
+        reaccion !== "ninguna" ||
+        hayArrastre() ||
+        hayTarjetaVisible()
+      ) {
+        ultimaActividad = ahora;
+        if (fase === "adormecida") despertarSuave();
+        return;
+      }
+      const sinActividad = (ahora - ultimaActividad) / 1000;
+      if (fase === "adormecida") {
+        if (sinActividad >= opciones.tiempoParaOcultar) empezarDerretir();
+      } else if (sinActividad >= opciones.tiempoParaAdormecer) {
+        cambiarFase("adormecida");
+        pedir();
+      }
+    }, 1000);
 
     const alCambiarVisibilidad = () => {
       if (document.hidden || oculta) {
@@ -1256,7 +1642,15 @@ export function useAnimacionLia(
     let dejarVisible: (() => void) | undefined;
     listen<{ visible: boolean }>("lia-visible", ({ payload }) => {
       oculta = !payload.visible;
+      if (oculta) {
+        // Ocultada desde la bandeja a medio dormirse: vuelve entera.
+        if (fase !== "oculta") reiniciarSueno();
+      } else {
+        ultimaActividad = performance.now();
+      }
       alCambiarVisibilidad();
+      // Si se había ocultado por inactividad, vuelve a formarse.
+      if (!oculta && fase === "oculta") empezarDespertar();
     })
       .then((dejar) => {
         if (anulado) dejar();
@@ -1317,6 +1711,9 @@ export function useAnimacionLia(
       cursor = null;
       alTocar.current = null;
       alAcariciar.current = null;
+      alRozar.current = null;
+      alHaberActividad.current = null;
+      window.clearInterval(vigilancia);
       if (import.meta.env.DEV) delete window.__lia;
       document.removeEventListener("visibilitychange", alCambiarVisibilidad);
       reducido.removeEventListener("change", alCambiarReducido);
@@ -1324,5 +1721,5 @@ export function useAnimacionLia(
     };
   }, [svgRef]);
 
-  return { tocar, acariciar };
+  return { tocar, acariciar, rozar };
 }

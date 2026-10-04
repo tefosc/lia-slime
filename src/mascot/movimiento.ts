@@ -14,8 +14,8 @@ export class Resorte {
   valor: number;
   objetivo: number;
   velocidad = 0;
-  readonly rigidez: number;
-  readonly amortiguacion: number;
+  rigidez: number;
+  amortiguacion: number;
 
   constructor(valor: number, rigidez: number, amortiguacion: number) {
     this.valor = valor;

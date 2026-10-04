@@ -4,6 +4,7 @@ import { useWindowDrag } from "../useWindowDrag";
 import { crearDetectorDeCaricias } from "./caricias";
 import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
+import type { OpcionesSueno } from "./useAnimacionLia";
 import {
   bocaEsfuerzo,
   ESFUERZO,
@@ -80,6 +81,16 @@ function Ojos({ estado }: { estado: EstadoLia }) {
             d="M-22 5 Q-15 -6 -8 5 M8 5 Q15 -6 22 5"
             stroke={TINTA}
             strokeWidth="2.6"
+            fill="none"
+            strokeLinecap="round"
+            opacity="0"
+          />
+          {/* Dormida: ojos cerrados hacia abajo. */}
+          <path
+            id="lia-ojos-dormida"
+            d="M-21 4 Q-15 9 -9 4 M9 4 Q15 9 21 4"
+            stroke={TINTA}
+            strokeWidth="2.4"
             fill="none"
             strokeLinecap="round"
             opacity="0"
@@ -176,6 +187,15 @@ function Boca({ estado }: { estado: EstadoLia }) {
             d="M-7 20 Q0 14 7 20"
             stroke={TINTA}
             strokeWidth="1.9"
+            fill="none"
+            strokeLinecap="round"
+            opacity="0"
+          />
+          <path
+            id="lia-boca-dormida"
+            d="M-3 17 Q0 19 3 17"
+            stroke={TINTA}
+            strokeWidth="1.8"
             fill="none"
             strokeLinecap="round"
             opacity="0"
@@ -356,11 +376,18 @@ interface LiaProps {
   resultadosSinLeer?: number;
   /** Clic sin arrastre sobre la burbuja de resultado. */
   onClickBurbuja?: () => void;
+  /** Sueño por inactividad: tiempos y lo que lo impide. */
+  sueno: OpcionesSueno;
 }
 
-export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps) {
+export function Lia({
+  estado,
+  resultadosSinLeer = 0,
+  onClickBurbuja,
+  sueno,
+}: LiaProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const { tocar, acariciar } = useAnimacionLia(svgRef, estado);
+  const { tocar, acariciar, rozar } = useAnimacionLia(svgRef, estado, sueno);
   const cajaDelCuerpo = () =>
     svgRef.current?.querySelector("#lia-cuerpo")?.getBoundingClientRect();
   // Un clic sin arrastre sobre la burbuja abre el resultado y no cuenta como
@@ -383,6 +410,7 @@ export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps)
   const detectarCaricia = useRef(crearDetectorDeCaricias(acariciar)).current;
   const alMoverPuntero = (evento: PointerEvent<SVGGElement>) => {
     arrastre.onPointerMove(evento);
+    rozar();
     if (evento.buttons !== 0) return;
     const cuerpo = cajaDelCuerpo();
     if (cuerpo) {
@@ -406,6 +434,32 @@ export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps)
       {/* El arrastre va en este grupo: solo responde lo que está pintado. */}
       <g id="lia-personaje" {...arrastre} onPointerMove={alMoverPuntero}>
         <ellipse id="lia-sombra" cx="0" fill="#000" {...SOMBRA_BASE} />
+        {/* Charquito en el que queda al derretirse por inactividad: oculto
+            hasta que el motor lo muestra. No recibe el mouse. */}
+        <g id="lia-charquito" opacity="0" pointerEvents="none">
+          <ellipse
+            id="lia-onda"
+            cx="0"
+            cy="40"
+            rx="58"
+            ry="10"
+            fill="none"
+            stroke="#74D0A8"
+            strokeWidth="0.8"
+            opacity="0"
+          />
+          <ellipse
+            cx="0"
+            cy="40"
+            rx="46"
+            ry="7"
+            fill="#9BE3C3"
+            stroke="#45B084"
+            strokeWidth="1"
+          />
+          <ellipse cx="0" cy="39" rx="32" ry="3.5" fill="#B8EDD6" />
+          <ellipse cx="-17" cy="38" rx="6" ry="1.4" fill="#FFFFFF" />
+        </g>
         <g id="lia-flotante">
           <path
             id="lia-cuerpo"
@@ -429,55 +483,58 @@ export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps)
             />
             <circle cx="-33" cy="0" r="2.5" fill="#fff" />
           </g>
-          <g id="lia-ojos">
-            <Ojos estado={estado} />
+          {/* La cara entera se desvanece al derretirse. */}
+          <g id="lia-cara">
+            <g id="lia-ojos">
+              <Ojos estado={estado} />
+            </g>
+            <g id="lia-boca">
+              <Boca estado={estado} />
+            </g>
+            <g id="lia-mejillas" fill="#FF9EB5" opacity={POSES[estado].mejillas}>
+              <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
+              <ellipse cx="27" cy="13" rx="5.5" ry="3" />
+            </g>
+            {/* Partes del enojo, ocultas hasta que el motor las muestra. Solo
+                existen en `inactivo`: en los demás estados la cara no cambia. */}
+            {estado === "inactivo" && (
+              <>
+                {/* Mejillas más sonrosadas al recibir caricias. */}
+                <g id="lia-mejillas-feliz" fill="#FF9EB5" opacity="0">
+                  <ellipse cx="-27" cy="13" rx="6.5" ry="3.6" />
+                  <ellipse cx="27" cy="13" rx="6.5" ry="3.6" />
+                </g>
+                <g id="lia-mejillas-enojo" fill="#FF7F9E" opacity="0">
+                  <ellipse cx="-27" cy="13" rx="5.5" ry="3" fillOpacity="0.95" />
+                  <ellipse cx="27" cy="13" rx="5.5" ry="3" fillOpacity="0.95" />
+                </g>
+                <path
+                  id="lia-cejas-enojo"
+                  d="M-23 -10 L-8 -4 M23 -10 L8 -4"
+                  stroke={TINTA}
+                  strokeWidth="2.4"
+                  fill="none"
+                  strokeLinecap="round"
+                  opacity="0"
+                />
+                {/* Marca de enojo: cuatro trazos curvos que laten. */}
+                <g
+                  id="lia-marca-enojo"
+                  opacity="0"
+                  transform="translate(-36,-31) scale(0)"
+                  fill="none"
+                  stroke="#E8745A"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                >
+                  <path d="M-5.5 -1.5 Q-1.5 -1.5 -1.5 -5.5" />
+                  <path d="M1.5 -5.5 Q1.5 -1.5 5.5 -1.5" />
+                  <path d="M5.5 1.5 Q1.5 1.5 1.5 5.5" />
+                  <path d="M-1.5 5.5 Q-1.5 1.5 -5.5 1.5" />
+                </g>
+              </>
+            )}
           </g>
-          <g id="lia-boca">
-            <Boca estado={estado} />
-          </g>
-          <g id="lia-mejillas" fill="#FF9EB5" opacity={POSES[estado].mejillas}>
-            <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
-            <ellipse cx="27" cy="13" rx="5.5" ry="3" />
-          </g>
-          {/* Partes del enojo, ocultas hasta que el motor las muestra. Solo
-              existen en `inactivo`: en los demás estados la cara no cambia. */}
-          {estado === "inactivo" && (
-            <>
-              {/* Mejillas más sonrosadas al recibir caricias. */}
-              <g id="lia-mejillas-feliz" fill="#FF9EB5" opacity="0">
-                <ellipse cx="-27" cy="13" rx="6.5" ry="3.6" />
-                <ellipse cx="27" cy="13" rx="6.5" ry="3.6" />
-              </g>
-              <g id="lia-mejillas-enojo" fill="#FF7F9E" opacity="0">
-                <ellipse cx="-27" cy="13" rx="5.5" ry="3" fillOpacity="0.95" />
-                <ellipse cx="27" cy="13" rx="5.5" ry="3" fillOpacity="0.95" />
-              </g>
-              <path
-                id="lia-cejas-enojo"
-                d="M-23 -10 L-8 -4 M23 -10 L8 -4"
-                stroke={TINTA}
-                strokeWidth="2.4"
-                fill="none"
-                strokeLinecap="round"
-                opacity="0"
-              />
-              {/* Marca de enojo: cuatro trazos curvos que laten. */}
-              <g
-                id="lia-marca-enojo"
-                opacity="0"
-                transform="translate(-36,-31) scale(0)"
-                fill="none"
-                stroke="#E8745A"
-                strokeWidth="1.9"
-                strokeLinecap="round"
-              >
-                <path d="M-5.5 -1.5 Q-1.5 -1.5 -1.5 -5.5" />
-                <path d="M1.5 -5.5 Q1.5 -1.5 5.5 -1.5" />
-                <path d="M5.5 1.5 Q1.5 1.5 1.5 5.5" />
-                <path d="M-1.5 5.5 Q-1.5 1.5 -5.5 1.5" />
-              </g>
-            </>
-          )}
           {/* Gota de esfuerzo: oculta salvo cuando el motor la anima. */}
           <g id="lia-gota" opacity="0">
             <path
@@ -508,6 +565,20 @@ export function Lia({ estado, resultadosSinLeer = 0, onClickBurbuja }: LiaProps)
                   fill="#FF7F9E"
                   stroke="#F2648A"
                   strokeWidth="0.6"
+                  strokeLinejoin="round"
+                  opacity="0"
+                />
+              ))}
+              {/* Las "z" del sueño, dibujadas con trazos. */}
+              {[0, 1].map((i) => (
+                <path
+                  key={i}
+                  id={`lia-z-${i}`}
+                  d="M-3 -3 L3 -3 L-3 3 L3 3"
+                  fill="none"
+                  stroke="#5F8F7C"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
                   strokeLinejoin="round"
                   opacity="0"
                 />

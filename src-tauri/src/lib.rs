@@ -57,7 +57,7 @@ pub fn run() {
 
             let bandeja = bandeja::crear(
                 &handle,
-                ajustes_guardados.privado(),
+                &ajustes_guardados.preferencias(),
                 ajustes::inicio_automatico_activo(&handle),
             )?;
             app.manage(bandeja);
@@ -103,6 +103,9 @@ pub fn run() {
             cursor::configurar_cursor,
             cursor::definir_zonas,
             bandeja::mostrar,
+            bandeja::ocultar,
+            bandeja::preferencias,
+            bandeja::guardar_preferencias,
             bandeja::lia_esta_visible,
             bandeja::modo_privado,
             bandeja::establecer_modo_privado,

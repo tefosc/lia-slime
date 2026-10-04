@@ -1,4 +1,5 @@
-//! Icono de la bandeja del sistema, mostrar y ocultar a Lia, y salida limpia.
+//! Icono de la bandeja del sistema, mostrar y ocultar a Lia, preferencias y
+//! salida limpia.
 //!
 //! Depende de Windows: la bandeja es el área de notificación de la barra de
 //! tareas; un clic izquierdo en el icono muestra u oculta a Lia y el derecho
@@ -15,17 +16,20 @@ use tauri::{AppHandle, Emitter, Manager, State, Wry};
 use crate::ajustes;
 use crate::cursor;
 use crate::permisos::Pendientes;
-use crate::resultados::{self, AjustesCompartidos};
+use crate::resultados::{AjustesCompartidos, Preferencias};
 
 /// Etiqueta de la ventana de Lia.
 pub const VENTANA_LIA: &str = "main";
 const EVENTO_VISIBLE: &str = "lia-visible";
 const EVENTO_PRIVADO: &str = "lia-privado";
+const EVENTO_PREFERENCIAS: &str = "lia-preferencias";
 
 /// Elementos del menú que cambian mientras la app está abierta.
 pub struct Bandeja {
     mostrar: MenuItem<Wry>,
     privado: CheckMenuItem<Wry>,
+    inactividad: CheckMenuItem<Wry>,
+    sonidos: CheckMenuItem<Wry>,
     inicio: CheckMenuItem<Wry>,
 }
 
@@ -34,23 +38,64 @@ struct Visible {
     visible: bool,
 }
 
-pub fn crear(app: &AppHandle, privado: bool, inicio_automatico: bool) -> tauri::Result<Bandeja> {
-    let mostrar = MenuItem::with_id(app, "mostrar", "Ocultar Lia", true, None::<&str>)?;
-    let privado = CheckMenuItem::with_id(app, "privado", "Modo privado", true, privado, None::<&str>)?;
-    let ajustes_item = MenuItem::with_id(app, "ajustes", "Ajustes...", true, None::<&str>)?;
+fn con_sonido(preferencias: &Preferencias) -> bool {
+    preferencias.sonidos_avisos || preferencias.sonidos_juego
+}
+
+pub fn crear(
+    app: &AppHandle,
+    preferencias: &Preferencias,
+    inicio_automatico: bool,
+) -> tauri::Result<Bandeja> {
+    let sin_atajo = None::<&str>;
+    let mostrar = MenuItem::with_id(app, "mostrar", "Ocultar Lia", true, sin_atajo)?;
+    let privado = CheckMenuItem::with_id(
+        app,
+        "privado",
+        "Modo privado",
+        true,
+        preferencias.modo_privado,
+        sin_atajo,
+    )?;
+    let inactividad = CheckMenuItem::with_id(
+        app,
+        "inactividad",
+        "Ocultarse por inactividad",
+        true,
+        preferencias.ocultar_por_inactividad,
+        sin_atajo,
+    )?;
+    let sonidos = CheckMenuItem::with_id(
+        app,
+        "sonidos",
+        "Sonidos",
+        true,
+        con_sonido(preferencias),
+        sin_atajo,
+    )?;
+    let ajustes_item = MenuItem::with_id(app, "ajustes", "Ajustes...", true, sin_atajo)?;
     let inicio = CheckMenuItem::with_id(
         app,
         "inicio",
         "Iniciar con Windows",
         true,
         inicio_automatico,
-        None::<&str>,
+        sin_atajo,
     )?;
-    let salir_item = MenuItem::with_id(app, "salir", "Salir", true, None::<&str>)?;
-    let separador = PredefinedMenuItem::separator(app)?;
+    let salir_item = MenuItem::with_id(app, "salir", "Salir", true, sin_atajo)?;
     let menu = Menu::with_items(
         app,
-        &[&mostrar, &privado, &ajustes_item, &inicio, &separador, &salir_item],
+        &[
+            &mostrar,
+            &PredefinedMenuItem::separator(app)?,
+            &privado,
+            &inactividad,
+            &sonidos,
+            &inicio,
+            &PredefinedMenuItem::separator(app)?,
+            &ajustes_item,
+            &salir_item,
+        ],
     )?;
 
     let mut constructor = TrayIconBuilder::with_id("lia")
@@ -58,20 +103,48 @@ pub fn crear(app: &AppHandle, privado: bool, inicio_automatico: bool) -> tauri::
         .menu(&menu)
         // El clic izquierdo muestra u oculta; el menú queda para el derecho.
         .show_menu_on_left_click(false)
-        .on_menu_event(|app, evento| match evento.id().as_ref() {
-            "mostrar" => alternar_lia(app),
-            "privado" => {
-                let ajustes = app.state::<AjustesCompartidos>();
-                let nuevo = !ajustes.privado();
-                fijar_privado(app, nuevo);
+        .on_menu_event(|app, evento| {
+            let actuales = app.state::<AjustesCompartidos>().preferencias();
+            match evento.id().as_ref() {
+                "mostrar" => alternar_lia(app),
+                "privado" => {
+                    aplicar_preferencias(
+                        app,
+                        Preferencias {
+                            modo_privado: !actuales.modo_privado,
+                            ..actuales
+                        },
+                    );
+                }
+                "inactividad" => {
+                    aplicar_preferencias(
+                        app,
+                        Preferencias {
+                            ocultar_por_inactividad: !actuales.ocultar_por_inactividad,
+                            ..actuales
+                        },
+                    );
+                }
+                // "Sonidos" silencia o activa las dos categorías de golpe.
+                "sonidos" => {
+                    let activar = !con_sonido(&actuales);
+                    aplicar_preferencias(
+                        app,
+                        Preferencias {
+                            sonidos_avisos: activar,
+                            sonidos_juego: activar,
+                            ..actuales
+                        },
+                    );
+                }
+                "ajustes" => ajustes::abrir_ventana(app),
+                "inicio" => {
+                    let activo = ajustes::inicio_automatico_activo(app);
+                    let _ = ajustes::fijar_inicio_automatico(app, !activo);
+                }
+                "salir" => salir(app),
+                _ => {}
             }
-            "ajustes" => ajustes::abrir_ventana(app),
-            "inicio" => {
-                let activo = ajustes::inicio_automatico_activo(app);
-                let _ = ajustes::fijar_inicio_automatico(app, !activo);
-            }
-            "salir" => salir(app),
-            _ => {}
         })
         .on_tray_icon_event(|icono, evento| {
             if let TrayIconEvent::Click {
@@ -91,8 +164,25 @@ pub fn crear(app: &AppHandle, privado: bool, inicio_automatico: bool) -> tauri::
     Ok(Bandeja {
         mostrar,
         privado,
+        inactividad,
+        sonidos,
         inicio,
     })
+}
+
+/// Guarda las preferencias y las refleja en la bandeja y en las ventanas.
+pub fn aplicar_preferencias(app: &AppHandle, nuevas: Preferencias) -> Preferencias {
+    let vigentes = app.state::<AjustesCompartidos>().guardar(nuevas);
+    if let Some(bandeja) = app.try_state::<Bandeja>() {
+        let _ = bandeja.privado.set_checked(vigentes.modo_privado);
+        let _ = bandeja
+            .inactividad
+            .set_checked(vigentes.ocultar_por_inactividad);
+        let _ = bandeja.sonidos.set_checked(con_sonido(&vigentes));
+    }
+    let _ = app.emit(EVENTO_PRIVADO, vigentes.modo_privado);
+    let _ = app.emit(EVENTO_PREFERENCIAS, vigentes.clone());
+    vigentes
 }
 
 fn lia_visible(app: &AppHandle) -> bool {
@@ -109,8 +199,7 @@ fn alternar_lia(app: &AppHandle) {
     }
 }
 
-/// Muestra a Lia sin quitar el foco a la aplicación activa: su ventana no es
-/// enfocable, así que `show` no la activa.
+/// Muestra a Lia sin quitar el foco a la aplicación activa.
 pub fn mostrar_lia(app: &AppHandle) {
     let Some(ventana) = app.get_webview_window(VENTANA_LIA) else {
         return;
@@ -159,7 +248,8 @@ fn fijar_visible(ventana: &tauri::WebviewWindow, visible: bool) {
 }
 
 /// Oculta a Lia. El bucle del cursor se pausa solo al ver la ventana oculta
-/// y la animación se detiene con el evento; el receptor sigue escuchando.
+/// y la animación se detiene con el evento; el receptor sigue escuchando. Es
+/// el mismo camino para la bandeja y para el ocultamiento por inactividad.
 pub fn ocultar_lia(app: &AppHandle) {
     let Some(ventana) = app.get_webview_window(VENTANA_LIA) else {
         return;
@@ -178,16 +268,6 @@ fn avisar_visibilidad(app: &AppHandle, visible: bool) {
     let _ = app.emit_to(VENTANA_LIA, EVENTO_VISIBLE, Visible { visible });
 }
 
-/// Cambia el modo privado y lo refleja en la bandeja y en las ventanas.
-pub fn fijar_privado(app: &AppHandle, valor: bool) {
-    let ajustes = app.state::<AjustesCompartidos>();
-    resultados::guardar_privado(&ajustes, valor);
-    if let Some(bandeja) = app.try_state::<Bandeja>() {
-        let _ = bandeja.privado.set_checked(valor);
-    }
-    let _ = app.emit(EVENTO_PRIVADO, valor);
-}
-
 /// Refleja en la bandeja el estado del inicio automático.
 pub fn marcar_inicio(app: &AppHandle, valor: bool) {
     if let Some(bandeja) = app.try_state::<Bandeja>() {
@@ -200,15 +280,38 @@ pub fn mostrar(app: AppHandle) {
     mostrar_lia(&app);
 }
 
+/// Lo llama Lia al terminar de derretirse por inactividad.
+#[tauri::command]
+pub fn ocultar(app: AppHandle) {
+    ocultar_lia(&app);
+}
+
 #[tauri::command]
 pub fn lia_esta_visible(app: AppHandle) -> bool {
     lia_visible(&app)
 }
 
 #[tauri::command]
+pub fn preferencias(ajustes: State<'_, AjustesCompartidos>) -> Preferencias {
+    ajustes.preferencias()
+}
+
+#[tauri::command]
+pub fn guardar_preferencias(nuevas: Preferencias, app: AppHandle) -> Preferencias {
+    aplicar_preferencias(&app, nuevas)
+}
+
+#[tauri::command]
 pub fn establecer_modo_privado(valor: bool, app: AppHandle) -> bool {
-    fijar_privado(&app, valor);
-    valor
+    let actuales = app.state::<AjustesCompartidos>().preferencias();
+    aplicar_preferencias(
+        &app,
+        Preferencias {
+            modo_privado: valor,
+            ..actuales
+        },
+    )
+    .modo_privado
 }
 
 #[tauri::command]

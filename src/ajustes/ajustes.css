@@ -154,3 +154,24 @@ button:disabled {
   margin: 6px 0;
   cursor: pointer;
 }
+
+.campo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.campo select,
+.campo input[type="range"] {
+  font: inherit;
+}
+
+.campo input[type="range"] {
+  flex: 1;
+  max-width: 260px;
+}
+
+.ajustes input {
+  accent-color: #12b886;
+}

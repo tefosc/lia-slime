@@ -30,6 +30,13 @@
   .\scripts\simular-evento.ps1 -Permiso 'echo prueba'
   .\scripts\simular-evento.ps1 -Peligroso
   .\scripts\simular-evento.ps1 -Permiso 'echo prueba' -CortarTras 5  # cancela
+
+  # Inactividad y sonidos (solo con Lia en modo desarrollo):
+  .\scripts\simular-evento.ps1 -Tiempos 6,12    # se adormece a los 6 s, se oculta a los 12
+  .\scripts\simular-evento.ps1 -Tiempos 0,0     # vuelve a los tiempos de Ajustes
+  .\scripts\simular-evento.ps1 -Mostrar         # como "Mostrar Lia" de la bandeja
+  .\scripts\simular-evento.ps1 -Sonido termino  # suena y Lia anota su duración y su pico
+  .\scripts\simular-evento.ps1 -Audio           # Lia anota el estado del audio
 #>
 param(
   [Parameter(Position = 0)]
@@ -79,12 +86,36 @@ param(
   [switch]$Ocultar,
   [switch]$Salir,
   # Abre la ventana de Ajustes.
-  [switch]$Ajustes
+  [switch]$Ajustes,
+  # Muestra a Lia, como "Mostrar Lia" de la bandeja.
+  [switch]$Mostrar,
+  # Tiempos de inactividad de prueba, en segundos: adormecerse y ocultarse.
+  # Con 0,0 vuelven los de Ajustes.
+  [int[]]$Tiempos,
+  # Reproduce un sonido; Lia anota en su salida la duración y el pico medidos.
+  [ValidateSet('toque', 'sorpresa', 'enojo', 'mareo', 'necesita', 'termino', 'permitir', 'denegar', 'derretirse', 'despertar')]
+  [string]$Sonido,
+  # Lia anota en su salida el estado del contexto de audio.
+  [switch]$Audio
 )
 
-if ($FalloCursor -or $ReanudarCursor -or $Ocultar -or $Salir -or $Ajustes) {
-  $ruta = if ($FalloCursor) { 'dev/detener-cursor' } elseif ($ReanudarCursor) { 'dev/reanudar-cursor' } elseif ($Ocultar) { 'dev/ocultar' } elseif ($Ajustes) { 'dev/ajustes' } else { 'dev/salir' }
-  $hecho = if ($FalloCursor) { 'Bucle del cursor detenido (fallo simulado).' } elseif ($ReanudarCursor) { 'Bucle del cursor reanudado.' } elseif ($Ocultar) { 'Lia oculta.' } elseif ($Ajustes) { 'Ajustes abierto.' } else { 'Lia cerrándose.' }
+if ($Tiempos -or $Sonido -or $Audio) {
+  $orden = if ($Sonido) { @{ orden = 'sonido'; valor = $Sonido } }
+  elseif ($Audio) { @{ orden = 'audio' } }
+  else { @{ orden = 'tiempos'; adormecer = $Tiempos[0]; ocultar = $Tiempos[1] } }
+  $cab = Join-Path $env:APPDATA 'dev.lia.mascota\cabecera-hook.txt'
+  $codigo = ($orden | ConvertTo-Json -Compress) | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' 'http://127.0.0.1:47615/dev/prueba'
+  switch ($codigo) {
+    '204' { 'Orden de prueba enviada.' }
+    '404' { 'Lia no acepta esta orden: no es una compilación de desarrollo.' }
+    default { "Sin respuesta de Lia ($codigo)." }
+  }
+  exit 0
+}
+
+if ($FalloCursor -or $ReanudarCursor -or $Ocultar -or $Salir -or $Ajustes -or $Mostrar) {
+  $ruta = if ($Mostrar) { 'dev/mostrar' } elseif ($FalloCursor) { 'dev/detener-cursor' } elseif ($ReanudarCursor) { 'dev/reanudar-cursor' } elseif ($Ocultar) { 'dev/ocultar' } elseif ($Ajustes) { 'dev/ajustes' } else { 'dev/salir' }
+  $hecho = if ($Mostrar) { 'Lia visible.' } elseif ($FalloCursor) { 'Bucle del cursor detenido (fallo simulado).' } elseif ($ReanudarCursor) { 'Bucle del cursor reanudado.' } elseif ($Ocultar) { 'Lia oculta.' } elseif ($Ajustes) { 'Ajustes abierto.' } else { 'Lia cerrándose.' }
   $cab = Join-Path $env:APPDATA 'dev.lia.mascota\cabecera-hook.txt'
   $codigo = '' | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' "http://127.0.0.1:47615/$ruta"
   switch ($codigo) {

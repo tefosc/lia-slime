@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import {
+  guardarPreferencias,
+  MINUTOS_INACTIVIDAD,
+  usePreferencias,
+} from "../preferencias";
+import type { Preferencias } from "../preferencias";
 
 type EstadoHooks = "no-instalados" | "instalados" | "desactualizados" | "error";
 type Accion = "instalar" | "quitar";
@@ -45,6 +51,15 @@ export function Ajustes() {
   const [ocupado, setOcupado] = useState(false);
   const [privado, setPrivado] = useState(false);
   const [inicio, setInicio] = useState(false);
+  const preferencias = usePreferencias();
+  /** Volumen mientras se arrastra el control; se guarda al soltarlo. */
+  const [volumen, setVolumen] = useState<number | null>(null);
+
+  const cambiar = (cambios: Partial<Preferencias>) => {
+    guardarPreferencias({ ...preferencias, ...cambios }).catch(() =>
+      setAviso({ tipo: "error", texto: "No se pudo guardar la preferencia." }),
+    );
+  };
 
   const refrescar = useCallback(() => {
     invoke<InfoHooks>("estado_hooks")
@@ -232,6 +247,76 @@ export function Ajustes() {
           />
           Modo privado (no leer ni mostrar los mensajes de Claude)
         </label>
+        <label className="casilla">
+          <input
+            type="checkbox"
+            checked={preferencias.ocultarPorInactividad}
+            onChange={(e) => cambiar({ ocultarPorInactividad: e.target.checked })}
+          />
+          Ocultarse por inactividad
+        </label>
+        <label className="campo">
+          Ocultarse después de
+          <select
+            value={preferencias.minutosInactividad}
+            disabled={!preferencias.ocultarPorInactividad}
+            onChange={(e) => cambiar({ minutosInactividad: Number(e.target.value) })}
+          >
+            {MINUTOS_INACTIVIDAD.map((minutos) => (
+              <option key={minutos} value={minutos}>
+                {minutos} minutos
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="nota">
+          Sin eventos de Claude Code ni toques, Lia se adormece, se derrite y se
+          oculta. Vuelve sola con el siguiente evento o desde la bandeja.
+        </p>
+      </section>
+
+      <section>
+        <h2>Sonidos</h2>
+        <label className="casilla">
+          <input
+            type="checkbox"
+            checked={preferencias.sonidosAvisos}
+            onChange={(e) => cambiar({ sonidosAvisos: e.target.checked })}
+          />
+          Avisos (cuando Claude te necesita, termina o respondes a un permiso)
+        </label>
+        <label className="casilla">
+          <input
+            type="checkbox"
+            checked={preferencias.sonidosJuego}
+            onChange={(e) => cambiar({ sonidosJuego: e.target.checked })}
+          />
+          Juego (toques, sorpresa, enojo, mareo, dormirse y despertar)
+        </label>
+        <label className="campo">
+          Volumen
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={Math.round((volumen ?? preferencias.volumen) * 100)}
+            onChange={(e) => setVolumen(Number(e.target.value) / 100)}
+            onPointerUp={() => {
+              if (volumen !== null) cambiar({ volumen });
+              setVolumen(null);
+            }}
+            onKeyUp={() => {
+              if (volumen !== null) cambiar({ volumen });
+              setVolumen(null);
+            }}
+          />
+          <span>{Math.round((volumen ?? preferencias.volumen) * 100)} %</span>
+        </label>
+        <p className="nota">
+          Son sonidos cortos y suaves generados por Lia; no hay archivos de audio.
+          Con Lia oculta solo suenan los avisos.
+        </p>
       </section>
 
       <section>

@@ -3,7 +3,8 @@
 Mascota flotante para Windows que vigila agentes de código (como Claude Code) y
 reacciona a sus eventos. Proyecto de código abierto.
 
-Estado actual: ventana flotante con un círculo menta como placeholder.
+Estado actual: mascota completa (estados, permisos, resultados, reacciones,
+bandeja, Ajustes, sueño por inactividad y sonidos). Falta empaquetar y firmar.
 
 ## Stack
 
@@ -17,7 +18,10 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
 - `pnpm tauri build` — genera el instalador.
 - `pnpm build` — comprueba tipos (`tsc`) y compila solo el frontend.
 - `pnpm verificar` — comprueba el detector de mareo con muestras sintéticas.
-- `cargo test` (dentro de `src-tauri/`) — pruebas de la instalación de hooks.
+- `cargo test` (dentro de `src-tauri/`) — pruebas de la instalación de hooks
+  y de las preferencias.
+- `pnpm tauri build --no-bundle` — compilación de producción sin instalador,
+  para comprobar que lo que es solo de desarrollo no entra.
 
 ## Estructura
 
@@ -44,6 +48,8 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   simulador.
 - `src-tauri/src/permisos.rs` y `src/permisos/` — solicitudes de permiso: el
   hilo que espera la decisión, la cola y la tarjeta.
+- `src/audio/sonidos.ts` — sonidos sintetizados con Web Audio.
+- `src/preferencias.ts` — preferencias del usuario (las guarda Rust).
 - `scripts/simular-evento.ps1` — envía eventos de prueba al receptor.
 - `docs/hooks.md` — cómo conectar los hooks de Claude Code.
 - `src/window.ts` — posicionamiento de la ventana (borde superior central).
@@ -78,6 +84,69 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   que la pausa por visibilidad ahorra poco en la práctica.
 - Para probar estados sin Claude Code se usa `scripts/simular-evento.ps1`.
 
+## Sueño por inactividad
+
+- Sin eventos de Claude Code, toques ni arrastres, y sin tarjetas, Lia se
+  adormece, se derrite en un charquito y la ventana se oculta por el mismo
+  camino que desde la bandeja. Mover el cursor no cuenta como actividad. Los
+  parámetros están en `SUENO` de `useAnimacionLia.ts`; el tiempo lo elige el
+  usuario en Ajustes (2, 3, 5 o 10 minutos; se adormece a los dos tercios).
+- Nunca se duerme con una solicitud de permiso o una tarjeta pendiente, un
+  resultado sin leer, una sesión que no esté en reposo, una reacción en curso
+  o un arrastre: `bloqueada` en `App.tsx` y el temporizador del motor.
+- Vuelve con cualquier evento de Claude Code (solo si se ocultó por
+  inactividad: oculta a mano desde la bandeja, se queda oculta), con un clic
+  en el icono o con "Mostrar Lia". Mientras se vuelve a formar, el dibujo se
+  queda en reposo y el estado pendiente se muestra al terminar.
+- Adormecida, un clic o pasar el cursor por encima la despierta.
+- Con movimiento reducido solo hay ojos cerrados y un fundido.
+- El temporizador vive solo en memoria: no se guarda ni se registra nada.
+
+## Sonidos (dependencias de WebView2)
+
+- Todos se sintetizan con Web Audio en `src/audio/sonidos.ts`: no hay
+  archivos de audio ni dependencias. Ondas seno o triángulo, notas cortas,
+  picos de 0,2 como mucho, limitador y volumen maestro (0,35 por defecto).
+- Dos categorías con su casilla: avisos (necesita, terminó, permitir,
+  denegar) y juego (toque, sorpresa, enojo, mareo, derretirse, despertar).
+  Con la ventana oculta solo suenan los avisos. No hay sonido para
+  `trabajando`, la respiración, el parpadeo ni los eventos de herramientas.
+- Hay separación mínima entre sonidos, un máximo de tres a la vez y el aviso
+  de `necesita` no se repite en 10 s. Tras 30 s de silencio el contexto de
+  audio se suspende.
+- Chromium crea el `AudioContext` suspendido si no hubo un gesto del usuario.
+  Por eso `additionalBrowserArgs` (en `tauri.conf.json` y, con el mismo valor,
+  en la ventana de Ajustes de `ajustes.rs`) pasa
+  `--autoplay-policy=no-user-gesture-required`. Definir ese campo reemplaza
+  los argumentos por defecto de Tauri, así que se repiten delante; las dos
+  ventanas deben usar exactamente los mismos.
+- El compresor de Chromium sube el nivel de lo que no llega al umbral; esa
+  ganancia se midió y se deshace en `LIMITADOR.gananciaPropia`. Si cambias el
+  umbral, vuelve a medirla con `scripts/simular-evento.ps1 -Sonido toque`.
+- No existe una API web para saber si Windows está silenciado o en "No
+  molestar": Lia respeta el volumen del sistema, pero no puede consultarlo.
+
+## Preferencias
+
+- `ajustes.json`, en la carpeta de datos de la app, es lo único que Lia
+  guarda: modo privado, ocultarse por inactividad y sus minutos, volumen y
+  las dos casillas de sonido. Nada de uso, horarios ni contenido.
+- Se cambian desde la bandeja o desde Ajustes; Rust las normaliza, las guarda
+  y avisa a las ventanas con `lia-preferencias`.
+
+## Solo en desarrollo
+
+Nada de esto entra en la compilación de producción (se comprobó buscando en el
+binario y en `dist/`, y pidiendo las rutas a la app compilada):
+
+- Rutas `/dev/...` del receptor (ocultar, mostrar, salir, Ajustes, bucle del
+  cursor y `/dev/prueba`).
+- `window.__lia` (`simularVueltas`, `probarSonido`) y el evento `lia-dev`
+  (tiempos de inactividad acortados, prueba de sonidos).
+- `LIA_CONFIG_DIR` y la carpeta `.pruebas/transcripciones`.
+- Los registros `[lia] ...` de eventos (solo nombre del evento y principio de
+  la sesión).
+
 ## Aplicación: bandeja, Ajustes e instalación de hooks
 
 - `src-tauri/src/bandeja.rs` — icono de la bandeja, mostrar y ocultar a Lia,
@@ -102,9 +171,10 @@ Estado actual: ventana flotante con un círculo menta como placeholder.
   `tauri-plugin-autostart` (inicio con Windows, clave Run del usuario). Al
   arrancar con Windows (`--inicio-automatico`) el receptor y la ventana
   esperan unos segundos.
-- Solo en desarrollo, el receptor acepta órdenes en `/dev/...` (ocultar,
-  salir, abrir Ajustes, detener el bucle del cursor) para probar sin la
-  bandeja: `scripts/simular-evento.ps1 -Ocultar`, `-Salir`, `-Ajustes`.
+- Solo en desarrollo, el receptor acepta órdenes en `/dev/...` para probar
+  sin la bandeja: `scripts/simular-evento.ps1 -Ocultar`, `-Mostrar`, `-Salir`,
+  `-Ajustes`, `-Tiempos 6,12` (inactividad acortada), `-Sonido termino` y
+  `-Audio`.
 
 ## Click-through (dependencias de Windows)
 

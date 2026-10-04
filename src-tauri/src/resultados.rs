@@ -1,4 +1,4 @@
-//! Último mensaje de Claude al terminar una tarea, y modo privado.
+//! Último mensaje de Claude al terminar una tarea, y preferencias del usuario.
 //!
 //! El texto sale de `last_assistant_message` del evento `Stop` o, si no
 //! viene, del final de la transcripción. Reglas de seguridad:
@@ -16,8 +16,9 @@ use std::fs::{self, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{AppHandle, Manager};
 
@@ -33,9 +34,56 @@ const ARCHIVO_AJUSTES: &str = "ajustes.json";
 const ADMITIR_PRUEBAS: bool = cfg!(debug_assertions);
 const DIRECTORIO_PRUEBAS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../.pruebas/transcripciones");
 
-/// Ajustes persistentes: un único booleano.
+/// Preferencias del usuario: lo único que Lia guarda en disco. Son solo
+/// opciones; no hay datos de uso, horarios ni contenido.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Preferencias {
+    pub modo_privado: bool,
+    pub ocultar_por_inactividad: bool,
+    /// Minutos sin actividad para ocultarse: 2, 3, 5 o 10.
+    pub minutos_inactividad: u32,
+    /// Volumen maestro de los sonidos, de 0 a 1.
+    pub volumen: f64,
+    /// Sonidos de aviso: necesita, terminó, permitir y denegar.
+    pub sonidos_avisos: bool,
+    /// Sonidos de juego: toque, sorpresa, enojo, mareo, derretirse, despertar.
+    pub sonidos_juego: bool,
+}
+
+impl Default for Preferencias {
+    fn default() -> Self {
+        Preferencias {
+            modo_privado: false,
+            ocultar_por_inactividad: true,
+            minutos_inactividad: 3,
+            volumen: 0.35,
+            sonidos_avisos: true,
+            sonidos_juego: true,
+        }
+    }
+}
+
+impl Preferencias {
+    /// Deja cada valor dentro de lo permitido.
+    fn normalizar(mut self) -> Self {
+        if ![2, 3, 5, 10].contains(&self.minutos_inactividad) {
+            self.minutos_inactividad = 3;
+        }
+        self.volumen = if self.volumen.is_finite() {
+            self.volumen.clamp(0.0, 1.0)
+        } else {
+            0.35
+        };
+        self
+    }
+}
+
+/// Ajustes persistentes.
 pub struct Ajustes {
+    /// Copia rápida del modo privado, que el receptor consulta en cada `Stop`.
     privado: AtomicBool,
+    preferencias: Mutex<Preferencias>,
     archivo: Option<PathBuf>,
 }
 
@@ -44,14 +92,17 @@ pub type AjustesCompartidos = Arc<Ajustes>;
 impl Ajustes {
     pub fn cargar(app: &AppHandle) -> AjustesCompartidos {
         let archivo = app.path().app_data_dir().ok().map(|d| d.join(ARCHIVO_AJUSTES));
-        let privado = archivo
+        // Un archivo ausente, ilegible o de una versión anterior (solo con
+        // `modoPrivado`) se completa con los valores por defecto.
+        let preferencias = archivo
             .as_ref()
             .and_then(|a| fs::read(a).ok())
-            .and_then(|datos| serde_json::from_slice::<Value>(&datos).ok())
-            .and_then(|v| v.get("modoPrivado").and_then(Value::as_bool))
-            .unwrap_or(false);
+            .and_then(|datos| serde_json::from_slice::<Preferencias>(&datos).ok())
+            .unwrap_or_default()
+            .normalizar();
         Arc::new(Ajustes {
-            privado: AtomicBool::new(privado),
+            privado: AtomicBool::new(preferencias.modo_privado),
+            preferencias: Mutex::new(preferencias),
             archivo,
         })
     }
@@ -59,17 +110,31 @@ impl Ajustes {
     pub fn privado(&self) -> bool {
         self.privado.load(Ordering::Relaxed)
     }
-}
 
-/// Cambia el modo privado y lo guarda. Los comandos que lo exponen están en
-/// bandeja.rs, que además mantiene al día la casilla del menú.
-pub fn guardar_privado(ajustes: &Ajustes, valor: bool) {
-    ajustes.privado.store(valor, Ordering::Relaxed);
-    if let Some(archivo) = &ajustes.archivo {
-        if let Some(carpeta) = archivo.parent() {
-            let _ = fs::create_dir_all(carpeta);
+    pub fn preferencias(&self) -> Preferencias {
+        self.preferencias
+            .lock()
+            .map(|p| p.clone())
+            .unwrap_or_default()
+    }
+
+    /// Guarda las preferencias y devuelve las que quedaron vigentes.
+    pub fn guardar(&self, nuevas: Preferencias) -> Preferencias {
+        let nuevas = nuevas.normalizar();
+        self.privado.store(nuevas.modo_privado, Ordering::Relaxed);
+        if let Ok(mut actuales) = self.preferencias.lock() {
+            *actuales = nuevas.clone();
         }
-        let _ = fs::write(archivo, format!("{{\"modoPrivado\":{valor}}}\n"));
+        if let Some(archivo) = &self.archivo {
+            if let Some(carpeta) = archivo.parent() {
+                let _ = fs::create_dir_all(carpeta);
+            }
+            if let Ok(mut texto) = serde_json::to_string_pretty(&nuevas) {
+                texto.push('\n');
+                let _ = fs::write(archivo, texto);
+            }
+        }
+        nuevas
     }
 }
 
@@ -253,4 +318,54 @@ fn limpiar(texto: &str) -> String {
         .take(MENSAJE_MAXIMO)
         .collect();
     limpio.trim().to_string()
+}
+
+#[cfg(test)]
+mod pruebas {
+    use super::Preferencias;
+
+    #[test]
+    fn un_archivo_antiguo_se_completa_con_los_valores_por_defecto() {
+        let leidas: Preferencias = serde_json::from_str(r#"{"modoPrivado":true}"#).unwrap();
+        assert_eq!(
+            leidas,
+            Preferencias {
+                modo_privado: true,
+                ..Preferencias::default()
+            }
+        );
+    }
+
+    #[test]
+    fn los_valores_fuera_de_rango_se_corrigen() {
+        let leidas: Preferencias =
+            serde_json::from_str(r#"{"minutosInactividad":7,"volumen":4.5}"#).unwrap();
+        let normales = leidas.normalizar();
+        assert_eq!(normales.minutos_inactividad, 3);
+        assert_eq!(normales.volumen, 1.0);
+        let sin_numero = Preferencias {
+            volumen: f64::NAN,
+            ..Preferencias::default()
+        }
+        .normalizar();
+        assert_eq!(sin_numero.volumen, 0.35);
+    }
+
+    #[test]
+    fn solo_se_guardan_opciones() {
+        let texto = serde_json::to_string(&Preferencias::default()).unwrap();
+        let valor: serde_json::Value = serde_json::from_str(&texto).unwrap();
+        let claves: Vec<&str> = valor.as_object().unwrap().keys().map(String::as_str).collect();
+        assert_eq!(
+            claves,
+            [
+                "modoPrivado",
+                "ocultarPorInactividad",
+                "minutosInactividad",
+                "volumen",
+                "sonidosAvisos",
+                "sonidosJuego"
+            ]
+        );
+    }
 }

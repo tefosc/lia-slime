@@ -204,6 +204,11 @@ pub fn establecer_inicio_automatico(valor: bool, app: AppHandle) -> Result<bool,
     fijar_inicio_automatico(&app, valor)
 }
 
+/// Argumentos de WebView2, iguales a `additionalBrowserArgs` de
+/// tauri.conf.json: los que Tauri pone por defecto (al definir los propios se
+/// reemplazan) más el permiso para que los sonidos suenen sin un clic previo.
+const ARGUMENTOS_WEBVIEW: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required";
+
 /// Abre la ventana de Ajustes, o la trae al frente si ya está abierta. Es
 /// una ventana normal, con bordes, que solo existe mientras está abierta.
 pub fn abrir_ventana(app: &AppHandle) {
@@ -223,6 +228,9 @@ pub fn abrir_ventana(app: &AppHandle) {
     .min_inner_size(480.0, 420.0)
     .resizable(true)
     .center()
+    // Depende de WebView2: todas las ventanas comparten el mismo entorno y
+    // deben pedir los mismos argumentos que la ventana de Lia.
+    .additional_browser_args(ARGUMENTOS_WEBVIEW)
     .build();
     if creada.is_err() {
         eprintln!("[lia] no se pudo abrir la ventana de Ajustes");

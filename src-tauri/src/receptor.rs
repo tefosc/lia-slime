@@ -184,8 +184,12 @@ enum Ruta {
     DevCursor(bool),
     /// Solo en desarrollo: ocultar a Lia o salir, como desde la bandeja.
     DevOcultar,
+    DevMostrar,
     DevSalir,
     DevAjustes,
+    /// Solo en desarrollo: orden de prueba para la ventana de Lia (acortar
+    /// los tiempos de inactividad o probar un sonido).
+    DevPrueba,
 }
 
 /// Atiende una conexión. Las solicitudes de permiso se pasan a su propio
@@ -239,6 +243,17 @@ fn atender(
             bandeja::ocultar_lia(app);
             204
         }
+        Ok((Ruta::DevMostrar, _)) => {
+            bandeja::mostrar_lia(app);
+            204
+        }
+        Ok((Ruta::DevPrueba, cuerpo)) => match serde_json::from_slice::<serde_json::Value>(&cuerpo) {
+            Ok(orden) => {
+                let _ = app.emit_to(VENTANA_LIA, "lia-dev", orden);
+                204
+            }
+            Err(_) => 400,
+        },
         Ok((Ruta::DevSalir, _)) => {
             bandeja::salir(app);
             204
@@ -315,6 +330,8 @@ fn leer(conexion: &mut TcpStream, esperado: &str) -> Result<(Ruta, Vec<u8>), u16
         "/dev/detener-cursor" if cfg!(debug_assertions) => Ruta::DevCursor(true),
         "/dev/reanudar-cursor" if cfg!(debug_assertions) => Ruta::DevCursor(false),
         "/dev/ocultar" if cfg!(debug_assertions) => Ruta::DevOcultar,
+        "/dev/mostrar" if cfg!(debug_assertions) => Ruta::DevMostrar,
+        "/dev/prueba" if cfg!(debug_assertions) => Ruta::DevPrueba,
         "/dev/salir" if cfg!(debug_assertions) => Ruta::DevSalir,
         "/dev/ajustes" if cfg!(debug_assertions) => Ruta::DevAjustes,
         _ => return Err(404),

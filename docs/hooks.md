@@ -293,8 +293,10 @@ cerrar la tarjeta o a los 10 minutos.
 
 El ícono del ojo de la tarjeta activa el modo privado: Lia deja de mostrar y
 de leer los mensajes de Claude, y solo enseña estadísticas. Se guarda en
-`%APPDATA%\dev.lia.mascota\ajustes.json`, que contiene únicamente
-`{"modoPrivado":true}` o `false`. También se puede forzar desde el código con
+`%APPDATA%\dev.lia.mascota\ajustes.json`, que contiene únicamente tus
+preferencias: el modo privado, si Lia se oculta por inactividad y a los cuántos
+minutos, el volumen y las dos casillas de sonidos. No guarda datos de uso ni
+contenido. El modo privado también se puede forzar desde el código con
 `modoPrivado` en `src/resultados/config.ts`.
 
 ## Qué hace Lia con cada evento
