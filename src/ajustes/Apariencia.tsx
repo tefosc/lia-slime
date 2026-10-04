@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PALETA_LIBRE, PALETAS, paletaDe } from "../mascotas/paletas";
+import { matizDeHex, PALETA_LIBRE, PALETAS, paletaDe } from "../mascotas/paletas";
 import type { Paleta } from "../mascotas/paletas";
 import type { Preferencias } from "../preferencias";
 
@@ -37,6 +37,15 @@ export function Apariencia({
   const elegida = paletaDe(preferencias.paleta, preferencias.matiz).id;
   const libre = elegida === PALETA_LIBRE;
   const matizActual = matiz ?? preferencias.matiz;
+
+  /** Color escrito a mano; null mientras no se está escribiendo. */
+  const [hex, setHex] = useState<string | null>(null);
+  const hexValido = hex === null || matizDeHex(hex) !== null;
+  const aplicarHex = () => {
+    const nuevo = hex === null ? null : matizDeHex(hex);
+    if (nuevo !== null) cambiar({ paleta: PALETA_LIBRE, matiz: nuevo });
+    setHex(null);
+  };
 
   const soltar = () => {
     if (matiz !== null) cambiar({ paleta: PALETA_LIBRE, matiz });
@@ -85,7 +94,26 @@ export function Apariencia({
             onPointerUp={soltar}
             onKeyUp={soltar}
           />
+          <input
+            className={`hex${hexValido ? "" : " hex-invalido"}`}
+            type="text"
+            aria-label="Color en hexadecimal"
+            maxLength={7}
+            spellCheck={false}
+            value={hex ?? paletaDe(PALETA_LIBRE, matizActual).cuerpo}
+            onChange={(e) => setHex(e.target.value)}
+            onBlur={aplicarHex}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") aplicarHex();
+            }}
+          />
         </label>
+      )}
+      {libre && (
+        <p className="nota">
+          Puedes escribir un color (#RRGGBB): Lia toma su tono y lo suaviza para
+          que la cara y el contorno se sigan viendo bien.
+        </p>
       )}
     </section>
   );

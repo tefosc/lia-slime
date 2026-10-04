@@ -1,4 +1,4 @@
-import { contraste, hslAHex } from "./color.ts";
+import { contraste, hexAHsl, hslAHex } from "./color.ts";
 
 /**
  * Paleta: los colores que cambian de una mascota a otra. Son datos puros;
@@ -138,6 +138,18 @@ export function paletaLibre(matiz: number): Paleta {
     mejillas: "#FF9EB5",
     petalo: PETALO_ESTANDAR,
   };
+}
+
+/**
+ * Matiz de un color escrito a mano ("#RRGGBB" o "RRGGBB"). Devuelve null si
+ * no es un color válido o si es un gris, que no tiene matiz. Del color solo
+ * se toma el matiz: la paleta sigue siendo la del color libre.
+ */
+export function matizDeHex(texto: string): number | null {
+  const hex = /^#?([0-9a-f]{6})$/i.exec(texto.trim())?.[1];
+  if (!hex) return null;
+  const { h, s } = hexAHsl(`#${hex}`);
+  return s < 5 ? null : normalizarMatiz(h);
 }
 
 /**

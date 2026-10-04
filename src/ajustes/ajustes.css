@@ -233,3 +233,16 @@ button.paleta[aria-checked="true"] {
   appearance: none;
   background: #ffffff;
 }
+
+.campo input.hex {
+  width: 78px;
+  padding: 4px 6px;
+  border: 1.5px solid #d5e5dc;
+  border-radius: 7px;
+  font: 13px ui-monospace, Consolas, monospace;
+  text-transform: uppercase;
+}
+
+.campo input.hex-invalido {
+  border-color: #e8745a;
+}

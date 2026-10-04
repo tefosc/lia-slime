@@ -7,6 +7,7 @@ import {
   PALETA_LIBRE,
   PALETAS,
   paletaDe,
+  matizDeHex,
   paletaLibre,
 } from "./paletas.ts";
 
@@ -25,6 +26,13 @@ comprobar("menta conserva los colores originales", paletaDe("menta").contorno ==
 for (const matiz of [NaN, Infinity, -30, 725, 12.6]) {
   const p = paletaDe(PALETA_LIBRE, matiz);
   comprobar(`color libre con matiz ${matiz}`, /^#[0-9A-F]{6}$/.test(p.cuerpo), p.cuerpo);
+}
+
+// Color escrito a mano: solo se acepta un hexadecimal completo con matiz.
+comprobar("hex con almohadilla", matizDeHex("#8FD8F5") === 197, String(matizDeHex("#8FD8F5")));
+comprobar("hex sin almohadilla y en minúsculas", matizDeHex(" ff0000 ") === 0);
+for (const texto of ["", "#fff", "#12345", "rojo", "#GGGGGG", "#808080", "url(x)", "#FF0000;"]) {
+  comprobar(`"${texto}" no es un color con matiz`, matizDeHex(texto) === null);
 }
 
 // Contraste del contorno de las paletas fijas (solo informativo: son las
