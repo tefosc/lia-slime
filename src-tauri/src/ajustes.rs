@@ -237,11 +237,6 @@ pub fn abrir_ventana(app: &AppHandle) {
     }
 }
 
-#[tauri::command]
-pub fn abrir_ajustes(app: AppHandle) {
-    abrir_ventana(&app);
-}
-
 /// En la primera ejecución, si los hooks no están instalados, abre Ajustes
 /// una sola vez. No se hace al arrancar con Windows.
 pub fn abrir_en_primera_ejecucion(app: &AppHandle) {

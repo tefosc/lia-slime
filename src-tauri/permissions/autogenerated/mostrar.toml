@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mostrar"
+description = "Enables the mostrar command without any pre-configured scope."
+commands.allow = ["mostrar"]
+
+[[permission]]
+identifier = "deny-mostrar"
+description = "Denies the mostrar command without any pre-configured scope."
+commands.deny = ["mostrar"]

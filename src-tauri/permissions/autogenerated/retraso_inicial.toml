@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-retraso-inicial"
+description = "Enables the retraso_inicial command without any pre-configured scope."
+commands.allow = ["retraso_inicial"]
+
+[[permission]]
+identifier = "deny-retraso-inicial"
+description = "Denies the retraso_inicial command without any pre-configured scope."
+commands.deny = ["retraso_inicial"]

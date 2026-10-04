@@ -291,7 +291,7 @@ mod pruebas {
     use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    const CABECERA: &str = "C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt";
+    const CABECERA: &str = "C:/Users/prueba/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt";
     const OTRAS: &str = include_str!("../tests/datos/otras-herramientas.json");
     const MANUAL: &str = include_str!("../tests/datos/manual-de-lia.json");
     const INVALIDO: &str = include_str!("../tests/datos/invalido.json");

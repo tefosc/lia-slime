@@ -1,7 +1,23 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "ajustes",
-  "description": "Permisos de la ventana de Ajustes",
-  "windows": ["ajustes"],
-  "permissions": ["core:default"]
+  "description": "Permisos de la ventana de Ajustes: escuchar eventos y los comandos de hooks, token, inicio automático y preferencias.",
+  "windows": [
+    "ajustes"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-estado-hooks",
+    "allow-previsualizar-hooks",
+    "allow-confirmar-hooks",
+    "allow-cancelar-hooks",
+    "allow-regenerar-token",
+    "allow-inicio-automatico",
+    "allow-establecer-inicio-automatico",
+    "allow-preferencias",
+    "allow-guardar-preferencias",
+    "allow-modo-privado",
+    "allow-establecer-modo-privado"
+  ]
 }

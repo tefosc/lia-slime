@@ -98,7 +98,7 @@ pub fn crear(
         ],
     )?;
 
-    let mut constructor = TrayIconBuilder::with_id("lia")
+    let constructor = TrayIconBuilder::with_id("lia")
         .tooltip("Lia")
         .menu(&menu)
         // El clic izquierdo muestra u oculta; el menú queda para el derecho.
@@ -156,10 +156,11 @@ pub fn crear(
                 alternar_lia(icono.app_handle());
             }
         });
-    if let Some(icono) = app.default_window_icon() {
-        constructor = constructor.icon(icono.clone());
-    }
-    constructor.build(app)?;
+    // Icono propio de la bandeja, simplificado para leerse a 16 y 32 px. Se
+    // incrusta ya decodificado al compilar.
+    constructor
+        .icon(tauri::include_image!("icons/bandeja.png"))
+        .build(app)?;
 
     Ok(Bandeja {
         mostrar,
@@ -284,11 +285,6 @@ pub fn mostrar(app: AppHandle) {
 #[tauri::command]
 pub fn ocultar(app: AppHandle) {
     ocultar_lia(&app);
-}
-
-#[tauri::command]
-pub fn lia_esta_visible(app: AppHandle) -> bool {
-    lia_visible(&app)
 }
 
 #[tauri::command]

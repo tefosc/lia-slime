@@ -33,3 +33,21 @@ dist-ssr
 
 # Transcripciones falsas del simulador
 .pruebas/
+
+# Datos locales de Lia: token, ajustes y respaldos de settings.json. Viven en
+# la carpeta de datos de la app, pero no deben entrar aunque se copien aquí.
+cabecera-hook.txt
+/ajustes.json
+ajustes-mostrados
+*.lia-respaldo-*
+settings.local.json
+
+# Certificados y llaves de firma
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+
+# Salidas de compilación (src-tauri/.gitignore cubre target y gen/schemas)
+target/

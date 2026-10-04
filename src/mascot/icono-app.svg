@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-58 -70 116 116" width="1024" height="1024">
+  <!-- Icono de la app: la cara de Lia en reposo, sobre fondo transparente.
+       Misma geometría que src/mascot/Lia.tsx. De aquí salen los iconos de
+       src-tauri/icons con `pnpm tauri icon src/mascot/icono-app.svg`. -->
+  <path d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z" fill="#9BE3C3" stroke="#45B084" stroke-width="1.6"/>
+  <path d="M-42 14 C-34 30 -18 38 0 38 C18 38 34 30 42 14 C28 24 14 26 0 26 C-14 26 -28 24 -42 14 Z" fill="#74D0A8"/>
+  <path d="M-28 -12 C-26 -22 -18 -30 -10 -33" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <circle cx="-33" cy="0" r="2.5" fill="#fff"/>
+  <ellipse cx="-15" cy="2" rx="6.5" ry="8.5" fill="#2B2B2B"/>
+  <ellipse cx="15" cy="2" rx="6.5" ry="8.5" fill="#2B2B2B"/>
+  <circle cx="-13" cy="-1" r="2.6" fill="#fff"/>
+  <circle cx="17" cy="-1" r="2.6" fill="#fff"/>
+  <circle cx="-17" cy="5" r="1.3" fill="#fff"/>
+  <circle cx="13" cy="5" r="1.3" fill="#fff"/>
+  <path d="M-6 15 Q0 21 6 15" stroke="#2B2B2B" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <g fill="#FF9EB5" opacity="0.75">
+    <ellipse cx="-27" cy="13" rx="5.5" ry="3"/>
+    <ellipse cx="27" cy="13" rx="5.5" ry="3"/>
+  </g>
+  <g transform="translate(18,-36) rotate(18)">
+    <path d="M0 0 C-12 -8 -14 -22 -6 -27 L0 -22 L6 -27 C14 -22 12 -8 0 0 Z" fill="#FFC1D6"/>
+    <path d="M0 0 C-6 -4 -9 -9 -9.5 -13 C-5 -10 5 -10 9.5 -13 C9 -9 6 -4 0 0 Z" fill="#F79BBB"/>
+    <path d="M-9 -20 C-10 -24 -8 -26 -6 -27 L0 -22 L6 -27 C8 -26 10 -24 9 -20 C5 -16 -5 -16 -9 -20 Z" fill="#FFE3EC"/>
+    <path d="M0 -2 L0 -13 M0 -6 L-4 -14 M0 -6 L4 -14" stroke="#F28FB2" stroke-width="0.6" fill="none" stroke-linecap="round"/>
+    <path d="M0 0 C-12 -8 -14 -22 -6 -27 L0 -22 L6 -27 C14 -22 12 -8 0 0 Z" fill="none" stroke="#F28FB2" stroke-width="0.8" stroke-linejoin="round"/>
+  </g>
+</svg>

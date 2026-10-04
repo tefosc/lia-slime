@@ -1,12 +1,30 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permisos de la ventana principal de la mascota",
-  "windows": ["main"],
+  "description": "Permisos de la ventana de Lia: escuchar eventos, colocar y redimensionar su ventana, y sus propios comandos. Nada de archivos, shell ni red.",
+  "windows": [
+    "main"
+  ],
   "permissions": [
-    "core:default",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-primary-monitor",
+    "core:window:allow-current-monitor",
+    "core:window:allow-scale-factor",
+    "core:window:allow-outer-position",
+    "core:window:allow-outer-size",
     "core:window:allow-set-position",
     "core:window:allow-set-size",
-    "core:window:allow-show"
+    "core:window:allow-show",
+    "allow-retraso-inicial",
+    "allow-error-receptor",
+    "allow-resolver-permiso",
+    "allow-configurar-cursor",
+    "allow-definir-zonas",
+    "allow-mostrar",
+    "allow-ocultar",
+    "allow-preferencias",
+    "allow-modo-privado",
+    "allow-establecer-modo-privado"
   ]
 }

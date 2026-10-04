@@ -7,7 +7,7 @@
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/prueba/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       },
@@ -17,7 +17,7 @@
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/prueba/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       },
@@ -33,12 +33,12 @@
           {
             "type": "command",
             "timeout": 75,
-            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
+            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/prueba/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
           },
           {
             "type": "command",
             "timeout": 75,
-            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
+            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/prueba/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
           }
         ]
       }

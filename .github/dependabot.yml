@@ -1,0 +1,25 @@
+# Dependabot solo para actualizaciones de SEGURIDAD, con revisión manual.
+#
+# `open-pull-requests-limit: 0` desactiva las actualizaciones de versión
+# rutinarias; los pull requests de seguridad se siguen abriendo si en el
+# repositorio están activadas las "Dependabot security updates"
+# (Settings > Code security). Nada se fusiona solo.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0

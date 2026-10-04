@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-definir-zonas"
+description = "Enables the definir_zonas command without any pre-configured scope."
+commands.allow = ["definir_zonas"]
+
+[[permission]]
+identifier = "deny-definir-zonas"
+description = "Denies the definir_zonas command without any pre-configured scope."
+commands.deny = ["definir_zonas"]

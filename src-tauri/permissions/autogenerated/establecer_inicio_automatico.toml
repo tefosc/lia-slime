@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-establecer-inicio-automatico"
+description = "Enables the establecer_inicio_automatico command without any pre-configured scope."
+commands.allow = ["establecer_inicio_automatico"]
+
+[[permission]]
+identifier = "deny-establecer-inicio-automatico"
+description = "Denies the establecer_inicio_automatico command without any pre-configured scope."
+commands.deny = ["establecer_inicio_automatico"]

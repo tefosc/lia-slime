@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ocultar"
+description = "Enables the ocultar command without any pre-configured scope."
+commands.allow = ["ocultar"]
+
+[[permission]]
+identifier = "deny-ocultar"
+description = "Denies the ocultar command without any pre-configured scope."
+commands.deny = ["ocultar"]

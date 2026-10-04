@@ -4,7 +4,9 @@ Mascota flotante para Windows que vigila agentes de código (como Claude Code) y
 reacciona a sus eventos. Proyecto de código abierto.
 
 Estado actual: mascota completa (estados, permisos, resultados, reacciones,
-bandeja, Ajustes, sueño por inactividad y sonidos). Falta empaquetar y firmar.
+bandeja, Ajustes, sueño por inactividad y sonidos), lista para publicar la
+versión 0.1.0 con instalador NSIS. La firma del instalador es opcional y aún
+no está conectada.
 
 ## Stack
 
@@ -15,7 +17,9 @@ bandeja, Ajustes, sueño por inactividad y sonidos). Falta empaquetar y firmar.
 
 - `pnpm install --frozen-lockfile` — instala dependencias respetando el lockfile.
 - `pnpm tauri dev` — abre la mascota en modo desarrollo.
-- `pnpm tauri build` — genera el instalador.
+- `pnpm tauri build` — genera el instalador NSIS en
+  `src-tauri/target/release/bundle/nsis`.
+- `pnpm licencias` — regenera `docs/licencias-de-terceros.md`.
 - `pnpm build` — comprueba tipos (`tsc`) y compila solo el frontend.
 - `pnpm verificar` — comprueba el detector de mareo con muestras sintéticas.
 - `cargo test` (dentro de `src-tauri/`) — pruebas de la instalación de hooks
@@ -202,7 +206,7 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
 - Escucha solo en `127.0.0.1:47615`; si el puerto está ocupado, informa del
   error y no abre otro.
 - El token se genera en cada arranque y se guarda en
-  `%APPDATA%\dev.lia.mascota\cabecera-hook.txt`. Los permisos son los que
+  `%APPDATA%\io.github.tefosc.lia\cabecera-hook.txt`. Los permisos son los que
   Windows da a `%APPDATA%` (usuario, SYSTEM y administradores).
 - Los hooks son de tipo `command` con `async: true` y usan `curl.exe`. No se
   usan hooks HTTP porque Windows tarda unos 2 s en rechazar una conexión a un
@@ -218,6 +222,39 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
 - Seguridad de los permisos: Lia solo permite o deniega cuando el usuario
   pulsa un botón. Ante tiempo agotado, cierre o fallo responde "sin decisión"
   para que Claude Code muestre su diálogo normal. No cambies esto.
+
+## Publicación: seguridad, instalador y CI
+
+- Identificador de la app: `io.github.tefosc.lia`. De él dependen la carpeta
+  de datos (`%APPDATA%\io.github.tefosc.lia`), el token y los ajustes; si
+  cambia, hay que reinstalar los hooks.
+- Permisos por ventana (`src-tauri/capabilities/`): no se usa `core:default`.
+  Cada ventana lista solo las API de Tauri que usa y sus propios comandos.
+  Los comandos de la app se declaran en `src-tauri/build.rs`: uno nuevo hay
+  que añadirlo ahí y conceder `allow-<comando>` a la ventana que lo llame, o
+  será rechazado.
+- CSP (`app.security.csp`): `default-src 'none'`, scripts y estilos solo
+  propios, sin `eval`, y conexiones solo al IPC de Tauri. No la relajes sin
+  motivo. `devCsp` es más abierta porque Vite necesita estilos en línea y su
+  websocket de recarga.
+- Sin red hacia afuera: no hay `fetch`, cliente HTTP, telemetría ni
+  actualizador. No añadas ninguno.
+- Instalador (depende de Windows): NSIS por usuario (`currentUser`, sin
+  administrador), español e inglés, WebView2 con `downloadBootstrapper`. No se
+  genera MSI. `src-tauri/windows/ganchos.nsh` recuerda quitar los hooks al
+  desinstalar y limpia la clave Run; el desinstalador nunca toca el
+  `settings.json` de Claude Code. El archivo `.nsh` va en UTF-8 con BOM.
+- Iconos: salen de `src/mascot/icono-app.svg` con
+  `pnpm tauri icon src/mascot/icono-app.svg` (borra después las carpetas
+  `android` e `ios`). El de la bandeja es `src-tauri/icons/bandeja.png`,
+  generado de `src/mascot/icono-bandeja.svg` a 64 px.
+- Firma opcional: `signCommand` llama a `scripts/firmar-windows.ps1`, que no
+  firma si falta `LIA_FIRMA_PROVEEDOR`. El script va en UTF-8 con BOM porque
+  lo ejecuta Windows PowerShell 5.1. Ver `docs/firma.md`.
+- CI (`.github/workflows/`): `pruebas.yml` sin secretos; `release.yml` solo
+  con etiquetas `v*`, sin caché, crea la release en borrador. Las acciones se
+  fijan por SHA completo. No uses `pull_request_target`.
+- Antes de publicar una versión: `docs/prueba-instalacion.md`.
 
 ## Reglas de seguridad y dependencias (obligatorias)
 

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-modo-privado"
+description = "Enables the modo_privado command without any pre-configured scope."
+commands.allow = ["modo_privado"]
+
+[[permission]]
+identifier = "deny-modo-privado"
+description = "Denies the modo_privado command without any pre-configured scope."
+commands.deny = ["modo_privado"]

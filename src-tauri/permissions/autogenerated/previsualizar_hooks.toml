@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-previsualizar-hooks"
+description = "Enables the previsualizar_hooks command without any pre-configured scope."
+commands.allow = ["previsualizar_hooks"]
+
+[[permission]]
+identifier = "deny-previsualizar-hooks"
+description = "Denies the previsualizar_hooks command without any pre-configured scope."
+commands.deny = ["previsualizar_hooks"]

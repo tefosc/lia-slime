@@ -48,7 +48,7 @@ lo prefieres.
 ## Cómo funciona
 
 - Al arrancar, Lia genera un token aleatorio y lo guarda en
-  `%APPDATA%\dev.lia.mascota\cabecera-hook.txt`, ya con el formato de cabecera
+  `%APPDATA%\io.github.tefosc.lia\cabecera-hook.txt`, ya con el formato de cabecera
   HTTP que `curl` sabe leer. El token cambia en cada arranque, y como el hook
   lo lee del archivo, `settings.json` no contiene ningún secreto ni hay que
   editarlo de nuevo.
@@ -69,11 +69,11 @@ lo prefieres.
 3. Averigua la ruta del archivo del token con barras normales (`/`):
 
    ```powershell
-   (Join-Path $env:APPDATA 'dev.lia.mascota\cabecera-hook.txt') -replace '\\', '/'
+   (Join-Path $env:APPDATA 'io.github.tefosc.lia\cabecera-hook.txt') -replace '\\', '/'
    ```
 
    El resultado tiene esta forma:
-   `C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt`
+   `C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt`
 
 ## Fragmento para `~/.claude/settings.json`
 
@@ -91,7 +91,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -103,7 +103,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -115,7 +115,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -127,7 +127,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -139,7 +139,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -150,7 +150,7 @@ lugar de duplicar la clave.
           {
             "type": "command",
             "timeout": 75,
-            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
+            "command": "curl.exe -s --connect-timeout 0.3 -m 70 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/permiso"
           }
         ]
       }
@@ -162,7 +162,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -174,7 +174,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -186,7 +186,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -198,7 +198,7 @@ lugar de duplicar la clave.
             "type": "command",
             "async": true,
             "timeout": 5,
-            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
+            "command": "curl.exe -s -o NUL --connect-timeout 0.3 -m 1 -H \"@C:/Users/TU_USUARIO/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt\" -H \"Content-Type: application/json\" --data-binary \"@-\" http://127.0.0.1:47615/evento"
           }
         ]
       }
@@ -293,7 +293,7 @@ cerrar la tarjeta o a los 10 minutos.
 
 El ícono del ojo de la tarjeta activa el modo privado: Lia deja de mostrar y
 de leer los mensajes de Claude, y solo enseña estadísticas. Se guarda en
-`%APPDATA%\dev.lia.mascota\ajustes.json`, que contiene únicamente tus
+`%APPDATA%\io.github.tefosc.lia\ajustes.json`, que contiene únicamente tus
 preferencias: el modo privado, si Lia se oculta por inactividad y a los cuántos
 minutos, el volumen y las dos casillas de sonidos. No guarda datos de uso ni
 contenido. El modo privado también se puede forzar desde el código con

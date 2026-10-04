@@ -103,7 +103,7 @@ if ($Tiempos -or $Sonido -or $Audio) {
   $orden = if ($Sonido) { @{ orden = 'sonido'; valor = $Sonido } }
   elseif ($Audio) { @{ orden = 'audio' } }
   else { @{ orden = 'tiempos'; adormecer = $Tiempos[0]; ocultar = $Tiempos[1] } }
-  $cab = Join-Path $env:APPDATA 'dev.lia.mascota\cabecera-hook.txt'
+  $cab = Join-Path $env:APPDATA 'io.github.tefosc.lia\cabecera-hook.txt'
   $codigo = ($orden | ConvertTo-Json -Compress) | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' 'http://127.0.0.1:47615/dev/prueba'
   switch ($codigo) {
     '204' { 'Orden de prueba enviada.' }
@@ -116,7 +116,7 @@ if ($Tiempos -or $Sonido -or $Audio) {
 if ($FalloCursor -or $ReanudarCursor -or $Ocultar -or $Salir -or $Ajustes -or $Mostrar) {
   $ruta = if ($Mostrar) { 'dev/mostrar' } elseif ($FalloCursor) { 'dev/detener-cursor' } elseif ($ReanudarCursor) { 'dev/reanudar-cursor' } elseif ($Ocultar) { 'dev/ocultar' } elseif ($Ajustes) { 'dev/ajustes' } else { 'dev/salir' }
   $hecho = if ($Mostrar) { 'Lia visible.' } elseif ($FalloCursor) { 'Bucle del cursor detenido (fallo simulado).' } elseif ($ReanudarCursor) { 'Bucle del cursor reanudado.' } elseif ($Ocultar) { 'Lia oculta.' } elseif ($Ajustes) { 'Ajustes abierto.' } else { 'Lia cerrándose.' }
-  $cab = Join-Path $env:APPDATA 'dev.lia.mascota\cabecera-hook.txt'
+  $cab = Join-Path $env:APPDATA 'io.github.tefosc.lia\cabecera-hook.txt'
   $codigo = '' | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' "http://127.0.0.1:47615/$ruta"
   switch ($codigo) {
     '204' { $hecho }
@@ -199,7 +199,7 @@ if (-not $esPermiso -and -not $Evento) {
   exit 1
 }
 
-$cabecera = Join-Path $env:APPDATA 'dev.lia.mascota\cabecera-hook.txt'
+$cabecera = Join-Path $env:APPDATA 'io.github.tefosc.lia\cabecera-hook.txt'
 
 if ($CuerpoInvalido) {
   $cuerpo = '{esto no es json'

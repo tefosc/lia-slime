@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-cancelar-hooks"
+description = "Enables the cancelar_hooks command without any pre-configured scope."
+commands.allow = ["cancelar_hooks"]
+
+[[permission]]
+identifier = "deny-cancelar-hooks"
+description = "Denies the cancelar_hooks command without any pre-configured scope."
+commands.deny = ["cancelar_hooks"]

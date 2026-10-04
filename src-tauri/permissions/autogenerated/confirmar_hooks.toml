@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-confirmar-hooks"
+description = "Enables the confirmar_hooks command without any pre-configured scope."
+commands.allow = ["confirmar_hooks"]
+
+[[permission]]
+identifier = "deny-confirmar-hooks"
+description = "Denies the confirmar_hooks command without any pre-configured scope."
+commands.deny = ["confirmar_hooks"]

@@ -106,7 +106,6 @@ pub fn run() {
             bandeja::ocultar,
             bandeja::preferencias,
             bandeja::guardar_preferencias,
-            bandeja::lia_esta_visible,
             bandeja::modo_privado,
             bandeja::establecer_modo_privado,
             ajustes::estado_hooks,
@@ -115,8 +114,7 @@ pub fn run() {
             ajustes::cancelar_hooks,
             ajustes::regenerar_token,
             ajustes::inicio_automatico,
-            ajustes::establecer_inicio_automatico,
-            ajustes::abrir_ajustes
+            ajustes::establecer_inicio_automatico
         ])
         .run(tauri::generate_context!())
         .expect("error al ejecutar la aplicación Tauri");

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-establecer-modo-privado"
+description = "Enables the establecer_modo_privado command without any pre-configured scope."
+commands.allow = ["establecer_modo_privado"]
+
+[[permission]]
+identifier = "deny-establecer-modo-privado"
+description = "Denies the establecer_modo_privado command without any pre-configured scope."
+commands.deny = ["establecer_modo_privado"]

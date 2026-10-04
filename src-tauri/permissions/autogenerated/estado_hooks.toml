@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-estado-hooks"
+description = "Enables the estado_hooks command without any pre-configured scope."
+commands.allow = ["estado_hooks"]
+
+[[permission]]
+identifier = "deny-estado-hooks"
+description = "Denies the estado_hooks command without any pre-configured scope."
+commands.deny = ["estado_hooks"]

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-55 -70 110 110" width="64" height="64">
+  <!-- Icono de la bandeja: versión simplificada para que se lea a 16 y 32 px.
+       Contorno grueso, ojos grandes y pétalo de un solo color; sin boca,
+       brillos ni mejillas. De aquí sale src-tauri/icons/bandeja.png. -->
+  <g transform="translate(20,-34) rotate(18) scale(1.2)">
+    <path d="M0 0 C-12 -8 -14 -22 -6 -27 L0 -22 L6 -27 C14 -22 12 -8 0 0 Z" fill="#FF9EC0" stroke="#E0709A" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+  <path d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z" fill="#9BE3C3" stroke="#2F8A63" stroke-width="6"/>
+  <ellipse cx="-16" cy="3" rx="9" ry="12" fill="#2B2B2B"/>
+  <ellipse cx="16" cy="3" rx="9" ry="12" fill="#2B2B2B"/>
+  <circle cx="-13" cy="-2" r="3.6" fill="#fff"/>
+  <circle cx="19" cy="-2" r="3.6" fill="#fff"/>
+</svg>

@@ -1,0 +1,133 @@
+# Al subir una etiqueta v*: compila el instalador de Windows, lo firma si hay
+# secretos de firma, calcula los SHA-256 y crea una release en BORRADOR.
+# La release nunca se publica sola: se revisa y se publica a mano.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# Por defecto, solo lectura. El único trabajo que escribe lo pide abajo.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Solo en el repositorio original: en un fork no hay secretos ni release.
+    if: github.repository == 'tefosc/lia-slime'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      # Necesario para crear la release en borrador. El token solo se entrega
+      # al último paso; los pasos de compilación no lo reciben.
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Comprobar la etiqueta
+        run: |
+          $version = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          if ("v$version" -ne $env:GITHUB_REF_NAME) {
+            throw "La etiqueta $env:GITHUB_REF_NAME no coincide con la versión $version de tauri.conf.json."
+          }
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if ($LASTEXITCODE -ne 0) { throw "La etiqueta no está en la rama main." }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      # Lee la versión de pnpm del campo packageManager de package.json.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      # Sin caché de pnpm ni de cargo: el artefacto se compila desde cero.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Preparar Rust
+        run: rustup toolchain install stable --profile minimal --no-self-update
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Pruebas
+        run: |
+          pnpm build
+          if ($LASTEXITCODE -ne 0) { throw "Falló pnpm build." }
+          pnpm verificar
+          if ($LASTEXITCODE -ne 0) { throw "Falló pnpm verificar." }
+          cargo test --locked --manifest-path src-tauri/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw "Falló cargo test." }
+
+      # scripts/firmar-windows.ps1 firma solo si LIA_FIRMA_PROVEEDOR está
+      # definido; si no, la compilación sigue sin firmar. Ver docs/firma.md.
+      # Los secretos solo llegan a este paso, y este flujo nunca se ejecuta
+      # en pull requests.
+      - name: Compilar el instalador
+        env:
+          LIA_FIRMA_PROVEEDOR: ${{ vars.LIA_FIRMA_PROVEEDOR }}
+          LIA_FIRMA_ENDPOINT: ${{ vars.LIA_FIRMA_ENDPOINT }}
+          LIA_FIRMA_CUENTA: ${{ vars.LIA_FIRMA_CUENTA }}
+          LIA_FIRMA_PERFIL: ${{ vars.LIA_FIRMA_PERFIL }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          pnpm tauri build
+          if ($LASTEXITCODE -ne 0) { throw "Falló pnpm tauri build." }
+
+      - name: Hashes y firma
+        env:
+          LIA_FIRMA_PROVEEDOR: ${{ vars.LIA_FIRMA_PROVEEDOR }}
+        run: |
+          $salida = "src-tauri/target/release/bundle/nsis"
+          $instaladores = @(Get-ChildItem $salida -Filter *.exe)
+          if ($instaladores.Count -eq 0) { throw "No se generó ningún instalador." }
+          $lineas = $instaladores | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
+          }
+          # Formato de sha256sum, con saltos de línea de Unix.
+          [IO.File]::WriteAllText("$salida/SHA256SUMS.txt", (($lineas -join "`n") + "`n"))
+          "SHA-256 de los artefactos:"
+          $lineas
+          $firmado = $true
+          foreach ($archivo in $instaladores) {
+            $firma = Get-AuthenticodeSignature $archivo.FullName
+            "{0}: firma {1}" -f $archivo.Name, $firma.Status
+            if ($firma.Status -ne 'Valid') { $firmado = $false }
+          }
+          if ($env:LIA_FIRMA_PROVEEDOR -and -not $firmado) {
+            throw "Se configuró la firma, pero algún instalador no tiene una firma válida."
+          }
+          "FIRMADO=$firmado" >> $env:GITHUB_ENV
+
+      - name: Crear la release en borrador
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $salida = "src-tauri/target/release/bundle/nsis"
+          $aviso = if ($env:FIRMADO -eq 'True') {
+            "El instalador está firmado."
+          } else {
+            "**El instalador no está firmado.** Windows SmartScreen mostrará un aviso al abrirlo. Comprueba el SHA-256 antes de instalar (ver el README)."
+          }
+          $cerca = '```'
+          $notas = @(
+            "Lia $env:VERSION", "",
+            $aviso, "",
+            "Compilado por el flujo público de este repositorio a partir de la etiqueta $env:GITHUB_REF_NAME (commit $env:GITHUB_SHA).", "",
+            "SHA-256:", "", $cerca, (Get-Content "$salida/SHA256SUMS.txt" -Raw).TrimEnd(), $cerca, "",
+            "Cambios: ver CHANGELOG.md."
+          ) -join "`n"
+          Set-Content notas.md $notas
+          $archivos = @(Get-ChildItem $salida -Filter *.exe | ForEach-Object { $_.FullName }) + "$salida/SHA256SUMS.txt"
+          gh release create $env:GITHUB_REF_NAME --draft --verify-tag --title "Lia $env:VERSION" --notes-file notas.md @archivos
+          if ($LASTEXITCODE -ne 0) { throw "No se pudo crear la release en borrador." }

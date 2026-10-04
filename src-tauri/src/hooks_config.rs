@@ -314,7 +314,7 @@ pub fn diff(antes: &Value, despues: &Value) -> Vec<LineaDiff> {
 mod pruebas {
     use super::*;
 
-    const CABECERA: &str = "C:/Users/prueba/AppData/Roaming/dev.lia.mascota/cabecera-hook.txt";
+    const CABECERA: &str = "C:/Users/prueba/AppData/Roaming/io.github.tefosc.lia/cabecera-hook.txt";
 
     fn ejemplo(nombre: &str) -> &'static str {
         match nombre {

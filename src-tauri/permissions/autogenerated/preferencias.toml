@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preferencias"
+description = "Enables the preferencias command without any pre-configured scope."
+commands.allow = ["preferencias"]
+
+[[permission]]
+identifier = "deny-preferencias"
+description = "Denies the preferencias command without any pre-configured scope."
+commands.deny = ["preferencias"]
