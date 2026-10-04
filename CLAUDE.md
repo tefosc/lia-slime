@@ -225,8 +225,9 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   restauración; nunca registrar su contenido.
 - Para probar sin tocar el archivo real: `LIA_CONFIG_DIR` apunta a otra
   carpeta de configuración. Solo existe en compilaciones de desarrollo.
-- Al arrancar con Windows, Lia saluda con un globo (`TarjetaSaludo`): es
-  solo un mensaje, no abre ni lee nada. En desarrollo se prueba con
+- Al abrirse, Lia suena ("hola"). Al arrancar con Windows, además saluda
+  con un globo (`TarjetaSaludo`) que dura 30 s: es solo un mensaje, no abre
+  ni lee nada. En desarrollo se prueba con
   `scripts/simular-evento.ps1 -Saludo`.
 - El inicio con Windows se registra con la ruta del ejecutable que lo
   activa. Por eso solo se puede activar desde la versión instalada (una

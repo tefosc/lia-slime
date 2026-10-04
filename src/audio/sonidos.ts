@@ -22,7 +22,8 @@ export type Sonido =
   | "despertar"
   | "descanso"
   | "caricia"
-  | "encanto";
+  | "encanto"
+  | "hola";
 
 type Categoria = "avisos" | "juego";
 type Onda = "sine" | "triangle";
@@ -71,6 +72,7 @@ export const AUDIO = {
     // Mientras duran las caricias, un ronroneo cada poco, no continuo.
     caricia: 1.7,
     encanto: 3,
+    hola: 5,
   } satisfies Record<Sonido, number>,
 };
 
@@ -89,6 +91,8 @@ const CATEGORIAS: Record<Sonido, Categoria> = {
   descanso: "avisos",
   caricia: "juego",
   encanto: "juego",
+  // Lia aparece al abrir la app.
+  hola: "avisos",
 };
 
 /** Arpegio de `termino`: do, mi, sol, cada uno con su octava muy suave. */
@@ -170,6 +174,13 @@ const SONIDOS: Record<Sonido, Nota[]> = {
       frecuencia: 500,
       hacia: [[0.4, 200]],
     },
+  ],
+  // Hola: dos notas que suben y una tercera más alta, como un "¡ta-chán!".
+  hola: [
+    { onda: "sine", inicio: 0, duracion: 0.14, pico: 0.15, frecuencia: 523 },
+    { onda: "sine", inicio: 0.1, duracion: 0.14, pico: 0.15, frecuencia: 659 },
+    { onda: "sine", inicio: 0.2, duracion: 0.3, pico: 0.16, frecuencia: 1047 },
+    { onda: "sine", inicio: 0.2, duracion: 0.22, pico: 0.035, frecuencia: 1568 },
   ],
   // Ronroneo: una nota grave y suave con un temblor rápido.
   caricia: [

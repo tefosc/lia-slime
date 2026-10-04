@@ -98,7 +98,7 @@ param(
   # Con 0,0 vuelven los de Ajustes.
   [int[]]$Tiempos,
   # Reproduce un sonido; Lia anota en su salida la duración y el pico medidos.
-  [ValidateSet('toque', 'sorpresa', 'enojo', 'mareo', 'necesita', 'termino', 'permitir', 'denegar', 'derretirse', 'despertar', 'descanso', 'caricia', 'encanto')]
+  [ValidateSet('toque', 'sorpresa', 'enojo', 'mareo', 'necesita', 'termino', 'permitir', 'denegar', 'derretirse', 'despertar', 'descanso', 'caricia', 'encanto', 'hola')]
   [string]$Sonido,
   # Lia anota en su salida el estado del contexto de audio.
   [switch]$Audio,

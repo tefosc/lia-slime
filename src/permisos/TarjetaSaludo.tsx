@@ -3,7 +3,7 @@ import { Boton, Globo } from "../globo/Globo";
 import { saludoDe, TEXTOS_SALUDO } from "./textos";
 
 /** El saludo se cierra solo tras este tiempo (ms). */
-const DURACION_SALUDO_MS = 12_000;
+const DURACION_SALUDO_MS = 30_000;
 
 /**
  * Saludo de Lia al arrancar con Windows. Es solo un mensaje: no abre nada ni

@@ -336,13 +336,10 @@ function App() {
       )
       .then(async (ms) => {
         await placeAtTopCenter();
+        // Suena al aparecer, cada vez que se abre la app.
+        window.setTimeout(() => sonar("hola"), 350);
         // Un retraso inicial significa que Lia arrancó con Windows: saluda.
-        if (ms > 0) {
-          window.setTimeout(() => {
-            sonar("despertar");
-            setSaludo(Date.now());
-          }, 900);
-        }
+        if (ms > 0) window.setTimeout(() => setSaludo(Date.now()), 900);
       })
       .catch((error: unknown) => {
         console.error("No se pudo posicionar la ventana:", error);
