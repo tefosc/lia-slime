@@ -88,24 +88,44 @@ no está conectada.
   que la pausa por visibilidad ahorra poco en la práctica.
 - Para probar estados sin Claude Code se usa `scripts/simular-evento.ps1`.
 
-## Globos y mensajes recientes
+## Globos e isla
 
-- `src/globo/Globo.tsx` es la única tarjeta de la app: permisos, avisos,
-  resultados y mensajes recientes la usan, con `Boton` para sus botones. Los
-  estilos están en `src/globo/globo.css` y siguen al personaje (trazo verde
-  de 1,5 px, fondo menta claro, sin sombras, letra de 13 y 11 px). Variantes:
-  `normal`, `peligro` (amarillo) y `aviso` (rosa). No crees otra tarjeta con
-  estilos propios.
+- `src/globo/Globo.tsx` es la única tarjeta de la app: permisos, avisos y
+  resultados la usan, con `Boton` para sus botones. Los estilos están en
+  `src/globo/globo.css` y siguen al personaje (trazo verde de 1,5 px, fondo
+  menta claro, sin sombras, letra de 13 y 11 px). Variantes: `normal`,
+  `peligro` (amarillo) y `aviso` (rosa). No crees otra tarjeta con estilos
+  propios.
 - El globo conserva la clase `tarjeta`, que `src/zonas.ts` usa para el
   click-through. Con un globo abierto, Lia mira hacia él.
-- `src/registro/` — mensajes recientes: resultados que no han caducado
-  (10 min, con su texto) y notas de permisos y avisos (30 min, solo una frase
-  fija, nunca el comando ni la ruta). Todo en memoria. Se abre con la burbuja
-  ✓ (con un solo resultado nuevo se abre ese directamente) o con "Mensajes
-  recientes" de la bandeja.
-- Solo en desarrollo: `http://localhost:1420/?maqueta` muestra todos los
-  globos con datos de ejemplo (`src/globo/Maqueta.tsx`), y
-  `scripts/simular-evento.ps1 -Registro` abre los mensajes recientes.
+- La isla (`src-tauri/src/isla.rs`, `src/isla/`, `isla.html`) es un panel
+  anclado al borde superior de la pantalla, escondido, que baja deslizándose
+  como la barra de tareas oculta de Windows. Muestra lo último que pasó
+  (resultados sin caducar y notas de permisos y avisos) y, al elegir una
+  tarea, su mensaje completo. Baja de cuatro formas: dejando el cursor 300 ms
+  en el borde superior sobre su zona (se puede desactivar en Ajustes), con
+  "Ver más" o "Ver todo" de un globo, con la burbuja ✓ si hay varios
+  resultados nuevos, y con "Mensajes recientes" de la bandeja. Sube al alejar
+  el cursor.
+- La isla es otra ventana, declarada en `tauri.conf.json` y creada oculta al
+  arrancar. No tiene estado propio: la ventana de Lia le entrega lo que puede
+  mostrar (`actualizar_isla`) y Rust solo lo guarda en memoria y lo reenvía.
+  El bucle del cursor (`cursor.rs`) llama a `isla::vigilar_cursor` en cada
+  lectura para decidir cuándo baja y cuándo sube.
+- Depende de Windows: la isla se muestra con `ShowWindow` para no tomar el
+  foco, así que nunca pasa por el `show()` de Tauri; por eso hay que pedir a
+  mano que se recalcule su marco (`recalcular_marco`), o sale con barra de
+  título. Creada después del arranque con `WebviewWindowBuilder` también
+  salía con marco y sin transparencia: déjala en la configuración.
+- Va centrada en el monitor de Lia; si ahí taparía a Lia, se pone a su lado.
+  No baja mientras hay un botón del mouse pulsado (arrastrar una ventana
+  hasta arriba para maximizarla).
+- `src/registro/` — notas de permisos y avisos (30 min, solo una frase fija,
+  nunca el comando ni la ruta). Los resultados se conservan 10 min con su
+  texto. Todo en memoria.
+- Solo en desarrollo: `http://localhost:1420/?maqueta` muestra los globos con
+  datos de ejemplo (`src/globo/Maqueta.tsx`), y
+  `scripts/simular-evento.ps1 -Registro` baja la isla.
 
 ## Sueño por inactividad
 

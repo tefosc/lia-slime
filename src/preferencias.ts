@@ -15,6 +15,8 @@ export interface Preferencias {
   volumen: number;
   sonidosAvisos: boolean;
   sonidosJuego: boolean;
+  /** La isla baja al dejar el cursor en el borde superior de la pantalla. */
+  islaAlBorde: boolean;
 }
 
 export const MINUTOS_INACTIVIDAD = [2, 3, 5, 10];
@@ -26,6 +28,7 @@ export const PREFERENCIAS_POR_DEFECTO: Preferencias = {
   volumen: 0.35,
   sonidosAvisos: true,
   sonidosJuego: true,
+  islaAlBorde: true,
 };
 
 export function guardarPreferencias(nuevas: Preferencias): Promise<Preferencias> {

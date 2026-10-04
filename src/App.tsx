@@ -19,10 +19,12 @@ import { TarjetaAviso } from "./permisos/TarjetaAviso";
 import { TarjetaPermiso } from "./permisos/TarjetaPermiso";
 import { usePermisos } from "./permisos/usePermisos";
 import { usePreferencias } from "./preferencias";
-import { TarjetaRegistro } from "./registro/TarjetaRegistro";
+import type { EstadoIsla, VistaIsla } from "./isla/tipos";
 import { TEXTOS_REGISTRO } from "./registro/textos";
 import { useRegistro } from "./registro/useRegistro";
 import { RESULTADOS } from "./resultados/config";
+import { resumenDe, TEXTOS_RESULTADO } from "./resultados/textos";
+import { preguntaDePermiso } from "./permisos/textos";
 import { TarjetaResultado } from "./resultados/TarjetaResultado";
 import { useResultados } from "./resultados/useResultados";
 import {
@@ -34,19 +36,24 @@ import type { Lado } from "./window";
 import { enviarZonas, marcarLadoTarjeta, marcarTarjeta } from "./zonas";
 import "./App.css";
 
+/** Baja la isla con la vista pedida. */
+function bajarIsla(vista: VistaIsla): void {
+  invoke("bajar_isla", { vista }).catch(() => {
+    console.error("No se pudo abrir la isla");
+  });
+}
+
 function App() {
   const { estado: estadoSesiones, aviso, cerrarAviso } = useEstadoLia();
   const { actual, pendientes, resolver } = usePermisos();
   const resultados = useResultados();
   const registro = useRegistro();
-  // Globo abierto por el usuario: los mensajes recientes o un resultado.
-  const [panel, setPanel] = useState<
-    { tipo: "registro" } | { tipo: "resultado"; id: number } | null
-  >(null);
+  // Resultado cuyo globo abrió el usuario.
+  const [abierto, setAbierto] = useState<number | null>(null);
   const resultadoAbierto =
-    panel?.tipo === "resultado"
-      ? (resultados.historial.find((r) => r.id === panel.id) ?? null)
-      : null;
+    abierto === null
+      ? null
+      : (resultados.historial.find((r) => r.id === abierto) ?? null);
   // Mientras haya solicitudes pendientes, Lia necesita al usuario.
   const estado = pendientes > 0 ? "necesita" : estadoSesiones;
   const preferencias = usePreferencias();
@@ -101,10 +108,8 @@ function App() {
               );
             } else if (p.orden === "audio") {
               console.error(`[lia-dev] audio: ${estadoAudio()}`);
-            } else if (
-              p.orden === "registro"
-            ) {
-              setPanel({ tipo: "registro" });
+            } else if (p.orden === "registro") {
+              bajarIsla({ tipo: "lista" });
             } else if (
               p.orden === "sonido" &&
               NOMBRES_SONIDOS.includes(p.valor as Sonido)
@@ -162,45 +167,100 @@ function App() {
   const abrirResultado = useCallback(
     (id: number) => {
       marcarLeido(id);
-      setPanel({ tipo: "resultado", id });
+      setAbierto(id);
     },
     [marcarLeido],
   );
-  // Clic en la burbuja: con un solo resultado nuevo se abre directo; con
-  // varios, la lista. Si ya hay un globo abierto, lo cierra.
+  // Clic en la burbuja: con un solo resultado nuevo se abre su globo; con
+  // varios, baja la isla con la lista. Si ya hay un globo abierto, lo cierra.
   const alPulsarBurbuja = () => {
-    if (panel) {
-      setPanel(null);
+    if (abierto !== null) {
+      setAbierto(null);
       return;
     }
     const nuevos = historial.filter((r) => !r.leido);
     const unico = nuevos.length === 1 ? nuevos[0] : undefined;
     if (unico) abrirResultado(unico.id);
-    else setPanel({ tipo: "registro" });
+    else bajarIsla({ tipo: "lista" });
   };
   // Si el resultado abierto caduca, su globo se cierra.
   useEffect(() => {
-    if (panel?.tipo === "resultado" && !resultadoAbierto) setPanel(null);
-  }, [panel, resultadoAbierto]);
+    if (abierto !== null && !resultadoAbierto) setAbierto(null);
+  }, [abierto, resultadoAbierto]);
   // Opcional (RESULTADOS.autoAbrir): abrir el resultado nada más llegar.
   const nuevos = historial.filter((r) => !r.leido);
   const ultimoNuevo = nuevos[nuevos.length - 1]?.id;
   useEffect(() => {
     if (RESULTADOS.autoAbrir && ultimoNuevo !== undefined) abrirResultado(ultimoNuevo);
   }, [ultimoNuevo, abrirResultado]);
-  // "Mensajes recientes" de la bandeja.
-  useEffect(() => {
-    const escucha = listen("lia-registro", () => setPanel({ tipo: "registro" }));
-    return () => {
-      escucha.then((dejar) => dejar()).catch(() => {});
+
+  // Isla: panel escondido en el borde superior de la pantalla, con lo último
+  // que pasó y el texto completo de cada cosa. Lia le entrega aquí lo que
+  // puede mostrar; es otra ventana y no tiene estado propio.
+  const { notas } = registro;
+  const modoPrivado = resultados.privado;
+  const estadoIsla = useMemo<EstadoIsla>(() => {
+    const detalles: EstadoIsla["resultados"] = {};
+    for (const r of historial) {
+      detalles[String(r.id)] = {
+        titulo: TEXTOS_RESULTADO.titulo(r.id),
+        detalle: resumenDe(r),
+        texto: modoPrivado ? null : r.mensaje,
+        mono: false,
+      };
+    }
+    return {
+      entradas: [
+        ...historial.map((r) => ({
+          clave: `r${r.id}`,
+          tipo: "resultado" as const,
+          texto: TEXTOS_REGISTRO.termino(r.etiqueta),
+          momento: r.momento,
+          nueva: !r.leido,
+          resultado: r.id,
+        })),
+        ...notas.map((n) => ({
+          clave: `n${n.id}`,
+          tipo: n.tipo,
+          texto: n.texto,
+          momento: n.momento,
+          nueva: false,
+        })),
+      ].sort((a, b) => b.momento - a.momento),
+      resultados: detalles,
+      permiso: actual
+        ? {
+            titulo: preguntaDePermiso(actual.herramienta, actual.id),
+            detalle: actual.etiqueta,
+            texto: actual.detalle,
+            mono: true,
+          }
+        : null,
+      privado: modoPrivado,
     };
-  }, []);
+  }, [historial, notas, actual, modoPrivado]);
+  useEffect(() => {
+    invoke("actualizar_isla", { estado: estadoIsla }).catch(() => {
+      // Fuera de Tauri no hay isla.
+    });
+  }, [estadoIsla]);
+  useEffect(() => {
+    const escuchas = [
+      // "Mensajes recientes" de la bandeja.
+      listen("lia-registro", () => bajarIsla({ tipo: "lista" })),
+      // La isla abrió un resultado: deja de contar como nuevo.
+      listen<number>("lia-isla-leido", ({ payload }) => marcarLeido(payload)),
+    ];
+    return () => {
+      escuchas.forEach((p) => p.then((dejar) => dejar()).catch(() => {}));
+    };
+  }, [marcarLeido]);
 
   // `lado` es distinto de null cuando la ventana ya tiene sitio para la tarjeta.
   const [lado, setLado] = useState<Lado | null>(null);
   const ladoActual = useRef<Lado | null>(null);
   const cambios = useRef(Promise.resolve());
-  const hayTarjeta = actual !== null || aviso !== null || panel !== null;
+  const hayTarjeta = actual !== null || aviso !== null || abierto !== null;
 
   // Lia no se duerme con algo pendiente: una solicitud, una tarjeta, un
   // resultado sin leer o una sesión que no está en reposo.
@@ -299,26 +359,29 @@ function App() {
             solicitud={actual}
             pendientes={pendientes}
             onResolver={resolverConSonido}
+            onVerTodo={() => bajarIsla({ tipo: "permiso" })}
           />
         ) : aviso ? (
           <TarjetaAviso key={aviso.id} aviso={aviso} onCerrar={cerrarAviso} />
-        ) : resultadoAbierto ? (
-          <TarjetaResultado
-            key={resultadoAbierto.id}
-            resultado={resultadoAbierto}
-            pendientes={resultados.sinLeer}
-            privado={resultados.privado}
-            onCerrar={() => setPanel(null)}
-            onPrivado={resultados.cambiarPrivado}
-            onRegistro={() => setPanel({ tipo: "registro" })}
-          />
         ) : (
-          panel?.tipo === "registro" && (
-            <TarjetaRegistro
-              resultados={resultados.historial}
-              notas={registro.notas}
-              onAbrir={abrirResultado}
-              onCerrar={() => setPanel(null)}
+          resultadoAbierto && (
+            <TarjetaResultado
+              key={resultadoAbierto.id}
+              resultado={resultadoAbierto}
+              pendientes={resultados.sinLeer}
+              privado={resultados.privado}
+              onCerrar={() => setAbierto(null)}
+              onPrivado={resultados.cambiarPrivado}
+              // La isla sustituye al globo pequeño.
+              onRegistro={() => {
+                setAbierto(null);
+                bajarIsla({ tipo: "lista" });
+              }}
+              onVerMas={() => {
+                const id = resultadoAbierto.id;
+                setAbierto(null);
+                bajarIsla({ tipo: "resultado", id });
+              }}
             />
           )
         ))}

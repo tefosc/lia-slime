@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-isla-leido"
+description = "Enables the isla_leido command without any pre-configured scope."
+commands.allow = ["isla_leido"]
+
+[[permission]]
+identifier = "deny-isla-leido"
+description = "Denies the isla_leido command without any pre-configured scope."
+commands.deny = ["isla_leido"]

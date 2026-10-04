@@ -30,6 +30,9 @@ mientras hace otra cosa.
 - **Interacciones.** Sigue el cursor con la mirada, rebota si la tocas, se
   sorprende y se enoja si insistes, se pone contenta con caricias y se marea
   si le das vueltas con el cursor.
+- **Isla.** Un panel escondido arriba, en el centro de la pantalla: deja el
+  cursor en el borde superior y baja con lo último que pasó y el mensaje
+  completo de cada tarea. Sube sola al alejarte.
 - **Charquito.** Tras unos minutos sin actividad se adormece, se derrite en un
   charquito y se oculta. Vuelve sola con el siguiente evento.
 - **Sonidos.** Avisos y efectos cortos y suaves, generados por la propia app

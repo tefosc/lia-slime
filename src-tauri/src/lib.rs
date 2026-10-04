@@ -3,6 +3,7 @@ mod bandeja;
 mod cursor;
 mod hooks_archivo;
 mod hooks_config;
+mod isla;
 mod permisos;
 mod receptor;
 mod resultados;
@@ -49,6 +50,7 @@ pub fn run() {
             app.manage(ajustes_guardados.clone());
             app.manage(token.clone());
             app.manage(ajustes::Pendiente::default());
+            app.manage(isla::Isla::default());
             app.manage(RetrasoInicial(if con_windows {
                 RETRASO_INICIO_AUTOMATICO.as_millis() as u64
             } else {
@@ -114,7 +116,12 @@ pub fn run() {
             ajustes::cancelar_hooks,
             ajustes::regenerar_token,
             ajustes::inicio_automatico,
-            ajustes::establecer_inicio_automatico
+            ajustes::establecer_inicio_automatico,
+            isla::actualizar_isla,
+            isla::bajar_isla,
+            isla::estado_isla,
+            isla::subir_isla,
+            isla::isla_leido
         ])
         .run(tauri::generate_context!())
         .expect("error al ejecutar la aplicación Tauri");

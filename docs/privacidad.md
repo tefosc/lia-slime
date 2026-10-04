@@ -13,15 +13,21 @@ solo llegan los hooks de Claude Code de tu propia máquina.
 | Identificador de sesión (`session_id`) | Hook | Distinguir conversaciones ("Conversación 1") | Memoria | Igual |
 | Tipo de notificación o de error | Hook | Saber si Claude te necesita o si hubo un límite de uso | Memoria | Igual |
 | Nombre de la herramienta (`tool_name`) | Hook `PreToolUse` | Contar herramientas para las estadísticas del resultado | Memoria | A los 10 min de terminar la tarea |
-| Último mensaje de Claude | Hook `Stop` (`last_assistant_message`) | Mostrarlo en el globo de resultado | Memoria | A los 10 min de terminar la tarea, lo hayas leído o no (hasta entonces puedes volver a abrirlo desde "Mensajes recientes"), o al activar el modo privado |
+| Último mensaje de Claude | Hook `Stop` (`last_assistant_message`) | Mostrarlo en el globo de resultado | Memoria | A los 10 min de terminar la tarea, lo hayas leído o no (hasta entonces puedes volver a abrirlo en la isla), o al activar el modo privado |
 | Final de la transcripción (últimos 256 KB) | Archivo en `~/.claude/projects`, solo si el hook no trae el mensaje | Plan B para el último mensaje | Memoria | Igual |
 | Comando, ruta o URL de una solicitud de permiso | Hook `PermissionRequest` | Enseñarte qué quiere hacer Claude | Memoria | Al responder, al cancelarse o a los 60 s |
 | Posición del cursor | Windows | Mirada, caricias, mareo y saber dónde recibe clics la ventana | Memoria | No se guarda: solo se usa la última lectura |
 | Sección `hooks` de `settings.json` | `~/.claude/settings.json`, solo al abrir Ajustes o al instalar o quitar hooks | Saber si los hooks están instalados y enseñarte el cambio | Memoria | Al cerrar la vista previa |
 
-"Mensajes recientes" recuerda además, durante 30 minutos y solo en memoria,
-qué tipo de permiso diste o negaste ("Permitiste un comando") y los avisos de
-error. Guarda la frase, nunca el comando, la ruta ni la URL.
+La isla (el panel que baja del borde superior de la pantalla) muestra lo
+último que pasó. Recuerda además, durante 30 minutos y solo en memoria, qué
+tipo de permiso diste o negaste ("Permitiste un comando") y los avisos de
+error. Guarda la frase, nunca el comando, la ruta ni la URL. Lo que enseña se
+lo pasa la ventana de Lia dentro de la propia app; no se escribe en disco.
+
+Para saber cuándo bajar, Lia mira si el cursor está en el borde superior de
+la pantalla. Usa la misma lectura de la posición del cursor que para la
+mirada; no se guarda.
 
 Todo lo demás que trae un hook (el prompt, la carpeta del proyecto, la entrada
 y la salida de las herramientas fuera de una solicitud de permiso) **se

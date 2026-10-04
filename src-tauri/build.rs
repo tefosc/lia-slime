@@ -22,6 +22,11 @@ fn main() {
             "regenerar_token",
             "inicio_automatico",
             "establecer_inicio_automatico",
+            "actualizar_isla",
+            "bajar_isla",
+            "estado_isla",
+            "subir_isla",
+            "isla_leido",
         ]),
     ))
     .expect("no se pudo preparar la compilación de Tauri");

@@ -38,5 +38,8 @@ export const TEXTOS_REGISTRO = {
   permitido: (herramienta: string) => `Permitiste ${accion(herramienta)}`,
   denegado: (herramienta: string) => `No permitiste ${accion(herramienta)}`,
   termino: (etiqueta: string) => `${etiqueta} terminó`,
+  volver: "Volver",
+  sinTexto: "No pude leer el mensaje de esta tarea, pero aquí tienes el resumen.",
+  privado: "Modo privado: no leo los mensajes de Claude.",
   cerrar: "Gracias, Lia",
 };

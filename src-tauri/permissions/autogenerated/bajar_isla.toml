@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-bajar-isla"
+description = "Enables the bajar_isla command without any pre-configured scope."
+commands.allow = ["bajar_isla"]
+
+[[permission]]
+identifier = "deny-bajar-isla"
+description = "Denies the bajar_isla command without any pre-configured scope."
+commands.deny = ["bajar_isla"]

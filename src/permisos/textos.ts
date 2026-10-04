@@ -126,7 +126,6 @@ export const TEXTOS_PERMISO = {
   permitir: "Sí, adelante",
   denegar: "Mejor no",
   verTodo: "Ver todo",
-  verMenos: "Ver menos",
   enEspera: (n: number) =>
     n === 1 ? "y 1 más esperándote" : `y ${n} más esperándote`,
   /** Pie del globo; el tiempo que queda va aparte, con su barra. */

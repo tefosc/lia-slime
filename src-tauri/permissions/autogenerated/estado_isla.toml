@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-estado-isla"
+description = "Enables the estado_isla command without any pre-configured scope."
+commands.allow = ["estado_isla"]
+
+[[permission]]
+identifier = "deny-estado-isla"
+description = "Denies the estado_isla command without any pre-configured scope."
+commands.deny = ["estado_isla"]

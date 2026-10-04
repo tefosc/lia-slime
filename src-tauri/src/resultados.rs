@@ -49,6 +49,8 @@ pub struct Preferencias {
     pub sonidos_avisos: bool,
     /// Sonidos de juego: toque, sorpresa, enojo, mareo, derretirse, despertar.
     pub sonidos_juego: bool,
+    /// La isla baja al dejar el cursor en el borde superior de la pantalla.
+    pub isla_al_borde: bool,
 }
 
 impl Default for Preferencias {
@@ -60,6 +62,7 @@ impl Default for Preferencias {
             volumen: 0.35,
             sonidos_avisos: true,
             sonidos_juego: true,
+            isla_al_borde: true,
         }
     }
 }
@@ -364,7 +367,8 @@ mod pruebas {
                 "minutosInactividad",
                 "volumen",
                 "sonidosAvisos",
-                "sonidosJuego"
+                "sonidosJuego",
+                "islaAlBorde"
             ]
         );
     }

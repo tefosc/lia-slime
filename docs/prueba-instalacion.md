@@ -87,6 +87,9 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
       foco.
 - [ ] Sin actividad, se adormece, se derrite y se oculta en el tiempo elegido.
 - [ ] Vuelve sola con el siguiente evento de Claude Code.
+- [ ] Al dejar el cursor en el borde superior, cerca del centro, baja la isla
+      sin marco ni barra de título y sin robar el foco; sube al alejarse.
+- [ ] "Ver más" de un resultado largo abre la isla con el texto completo.
 - [ ] Con Lia cerrada (bandeja > Salir), Claude Code funciona normal y sin
       retrasos apreciables.
 

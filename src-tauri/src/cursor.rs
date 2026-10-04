@@ -243,6 +243,9 @@ fn bucle(app: AppHandle) {
         // El cursor se lee siempre: es lo único barato y lo que decide si
         // hay que mirar lo demás.
         let fisico = app.cursor_position().ok().map(|c| (c.x, c.y));
+        // La isla decide aquí si baja o sube: necesita verlo en cada
+        // lectura, también con el cursor quieto en el borde.
+        crate::isla::vigilar_cursor(&app, fisico);
         let movido = fisico != ultimo_fisico;
         ultimo_fisico = fisico;
         let zonas_cambiadas = ZONAS_CAMBIADAS.swap(false, Ordering::Relaxed);

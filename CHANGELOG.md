@@ -22,8 +22,10 @@ Primera versión. Solo para Windows.
 - Aviso cuando Claude Code se detiene por un límite de uso u otro error.
 - Todo lo que dice Lia sale en un mismo globo de diálogo, con su trazo y sus
   colores, y una barra con el tiempo que queda para responder un permiso.
-- "Mensajes recientes": lista de lo último que pasó (tareas terminadas,
-  permisos y avisos), desde la burbuja ✓ o desde la bandeja.
+- Isla: panel escondido en el borde superior de la pantalla que baja al
+  dejar el cursor ahí, con lo último que pasó (tareas terminadas, permisos y
+  avisos) y el mensaje completo de cada tarea. "Ver más" y "Ver todo" la
+  abren con el texto entero.
 - Interacciones: mirada que sigue al cursor, rebote al tocarla, sorpresa,
   enojo, caricias y mareo.
 - Sueño por inactividad: se adormece, se derrite en un charquito y se oculta;

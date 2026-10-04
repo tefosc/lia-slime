@@ -12,15 +12,21 @@ interface Props {
   solicitud: Solicitud;
   pendientes: number;
   onResolver: (id: number, permitir: boolean) => void;
+  /** Abrir el comando completo en la isla. */
+  onVerTodo: () => void;
 }
 
 /**
  * Globo de una solicitud de permiso. Se monta de nuevo con cada solicitud
  * (`key`), así que el retardo de los botones vuelve a empezar.
  */
-export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
+export function TarjetaPermiso({
+  solicitud,
+  pendientes,
+  onResolver,
+  onVerTodo,
+}: Props) {
   const [activos, setActivos] = useState(false);
-  const [expandido, setExpandido] = useState(false);
   const [ahora, setAhora] = useState(() => Date.now());
   const resuelta = useRef(false);
   /** Tiempo total para responder, medido al aparecer el globo. */
@@ -71,17 +77,14 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
       }
     >
       {peligroso && <div className="globo-alerta">{TEXTOS_PERMISO.peligro}</div>}
-      {solicitud.detalle &&
-        (expandido ? (
-          <pre className="globo-cita globo-comando expandido">{solicitud.detalle}</pre>
-        ) : (
-          <div className="globo-cita globo-comando">{resumen}</div>
-        ))}
+      {solicitud.detalle && (
+        <div className="globo-cita globo-comando">{resumen}</div>
+      )}
       <div className="globo-pie">
         <span>{TEXTOS_PERMISO.pie(solicitud.etiqueta)}</span>
         {largo && (
-          <Boton tipo="enlace" onClick={() => setExpandido((valor) => !valor)}>
-            {expandido ? TEXTOS_PERMISO.verMenos : TEXTOS_PERMISO.verTodo}
+          <Boton tipo="enlace" onClick={onVerTodo}>
+            {TEXTOS_PERMISO.verTodo}
           </Boton>
         )}
         <span className="globo-segundos">{Math.ceil(falta / 1000)} s</span>

@@ -25,6 +25,9 @@
     "allow-ocultar",
     "allow-preferencias",
     "allow-modo-privado",
-    "allow-establecer-modo-privado"
+    "allow-establecer-modo-privado",
+    "allow-actualizar-isla",
+    "allow-bajar-isla",
+    "allow-subir-isla"
   ]
 }

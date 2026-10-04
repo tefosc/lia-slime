@@ -8,10 +8,10 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(() => ({
   plugins: [react()],
 
-  // Dos páginas: la mascota (index.html) y la ventana de Ajustes.
+  // Tres páginas: la mascota (index.html), Ajustes y la isla de detalles.
   build: {
     rollupOptions: {
-      input: { index: "index.html", ajustes: "ajustes.html" },
+      input: { index: "index.html", ajustes: "ajustes.html", isla: "isla.html" },
     },
   },
 

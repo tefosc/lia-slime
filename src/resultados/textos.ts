@@ -13,6 +13,24 @@ export function textoDuracion(segundos: number): string {
   return resto === 0 ? `${minutos} min` : `${minutos} min ${resto} s`;
 }
 
+/** Línea de estadísticas de un resultado: sin contenido, solo conteos. */
+export function resumenDe(resultado: {
+  etiqueta: string;
+  duracionS: number;
+  herramientas: number;
+  principales: { nombre: string; usos: number }[];
+  ediciones: number;
+}): string {
+  return [
+    resultado.etiqueta,
+    textoDuracion(resultado.duracionS),
+    TEXTOS_RESULTADO.herramientas(resultado.herramientas, resultado.principales),
+    TEXTOS_RESULTADO.ediciones(resultado.ediciones),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export const TEXTOS_RESULTADO = {
   titulo: (id: number) => TITULOS[id % TITULOS.length],
   herramientas: (total: number, principales: { nombre: string; usos: number }[]) => {
@@ -29,6 +47,5 @@ export const TEXTOS_RESULTADO = {
   mostrarTexto: "Volver a mostrar los mensajes de Claude",
   verRegistro: "Ver lo último que pasó",
   verMas: "Ver más",
-  verMenos: "Ver menos",
   cerrar: "Gracias, Lia",
 };

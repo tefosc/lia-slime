@@ -218,25 +218,85 @@ pub fn instalar(raiz: &Value, cabecera: &str) -> Result<Value, ErrorHooks> {
     if estado(raiz, cabecera) == EstadoHooks::Instalados {
         return Ok(raiz.clone());
     }
-    // Primero fuera lo viejo de Lia (también lo pegado a mano), para no
-    // duplicar eventos.
-    let mut nueva = quitar(raiz);
+    let mut nueva = raiz.clone();
     let objeto = nueva.as_object_mut().ok_or(ErrorHooks::EstructuraInesperada)?;
     let eventos = objeto
         .entry("hooks")
         .or_insert_with(|| Value::Object(Map::new()))
         .as_object_mut()
         .ok_or(ErrorHooks::EstructuraInesperada)?;
+
+    // Lo de Lia en eventos que esta versión ya no usa se quita.
+    let mut eventos_vacios = Vec::new();
+    for (evento, grupos) in eventos.iter_mut() {
+        if eventos_necesarios().any(|e| e == evento) {
+            continue;
+        }
+        if let Some(lista) = grupos.as_array_mut() {
+            if quitar_de_la_lista(lista, None) && lista.is_empty() {
+                eventos_vacios.push(evento.clone());
+            }
+        }
+    }
+    for evento in eventos_vacios {
+        eventos.shift_remove(&evento);
+    }
+
     for evento in eventos_necesarios() {
         let lista = eventos
             .entry(evento)
             .or_insert_with(|| Value::Array(Vec::new()))
             .as_array_mut()
             .ok_or(ErrorHooks::EstructuraInesperada)?;
-        // Sin matcher: Lia escucha todas las apariciones del evento.
-        lista.push(json!({ "hooks": [hook_esperado(evento, cabecera)] }));
+        let esperado = hook_esperado(evento, cabecera);
+        // Al actualizar, la entrada de Lia se reemplaza en su sitio: así la
+        // vista previa solo muestra lo que cambia de verdad y no parece que
+        // se muevan los hooks de otras herramientas. Solo vale un grupo que
+        // sea solo de Lia y sin `matcher`; si no, se añade al final.
+        let sitio = lista.iter().position(es_grupo_solo_de_lia);
+        quitar_de_la_lista(lista, sitio);
+        match sitio.and_then(|i| lista.get_mut(i)) {
+            Some(grupo) => grupo["hooks"] = json!([esperado]),
+            // Sin matcher: Lia escucha todas las apariciones del evento.
+            None => lista.push(json!({ "hooks": [esperado] })),
+        }
     }
     Ok(nueva)
+}
+
+/// Un grupo que solo contiene un hook de Lia y no filtra por herramienta.
+fn es_grupo_solo_de_lia(grupo: &Value) -> bool {
+    let sin_matcher = grupo
+        .get("matcher")
+        .is_none_or(|m| m.as_str().is_some_and(str::is_empty));
+    let hooks = grupo.get("hooks").and_then(Value::as_array);
+    sin_matcher && hooks.is_some_and(|h| h.len() == 1 && es_hook_de_lia(&h[0]))
+}
+
+/// Quita los hooks de Lia de los grupos de un evento, salvo del grupo de la
+/// posición `conservar`. Los grupos que quedan vacíos por eso se eliminan.
+/// Devuelve si quitó algo.
+fn quitar_de_la_lista(lista: &mut Vec<Value>, conservar: Option<usize>) -> bool {
+    let mut quitado = false;
+    let mut indice = 0;
+    lista.retain_mut(|grupo| {
+        let actual = indice;
+        indice += 1;
+        if Some(actual) == conservar {
+            return true;
+        }
+        let Some(hooks) = grupo.get_mut("hooks").and_then(Value::as_array_mut) else {
+            return true;
+        };
+        let antes = hooks.len();
+        hooks.retain(|hook| !es_hook_de_lia(hook));
+        if hooks.len() == antes {
+            return true;
+        }
+        quitado = true;
+        !hooks.is_empty()
+    });
+    quitado
 }
 
 /// Texto que se escribe en el archivo: JSON con sangría de 2 espacios.
@@ -435,6 +495,46 @@ mod pruebas {
     fn evento_con_forma_inesperada_aborta_sin_cambios() {
         let raiz = json!({ "hooks": { "Stop": "no soy una lista" } });
         assert_eq!(instalar(&raiz, CABECERA), Err(ErrorHooks::EstructuraInesperada));
+    }
+
+    #[test]
+    fn actualizar_conserva_la_posicion_y_no_toca_lo_ajeno() {
+        // Lia va antes que el hook de otra herramienta en el mismo evento.
+        let vieja = "C:/Users/prueba/AppData/Roaming/otra.carpeta/cabecera-hook.txt";
+        let ajeno = json!({ "hooks": [{ "type": "command", "command": "bash otro.sh" }] });
+        let mut raiz = instalar(&json!({}), vieja).unwrap();
+        raiz["hooks"]["Stop"].as_array_mut().unwrap().push(ajeno.clone());
+
+        let nueva = instalar(&raiz, CABECERA).unwrap();
+        assert_eq!(estado(&nueva, CABECERA), EstadoHooks::Instalados);
+        let grupos = nueva["hooks"]["Stop"].as_array().unwrap();
+        assert_eq!(grupos.len(), 2);
+        assert!(es_grupo_solo_de_lia(&grupos[0]), "Lia sigue en su sitio");
+        assert_eq!(grupos[1], ajeno);
+
+        // La vista previa solo cambia una línea por evento: la del comando.
+        let cambios = diff(&raiz, &nueva);
+        let quitadas: Vec<&LineaDiff> =
+            cambios.iter().filter(|l| l.tipo == TipoLinea::Quitada).collect();
+        let nuevas = cambios.iter().filter(|l| l.tipo == TipoLinea::Nueva).count();
+        assert_eq!(quitadas.len(), eventos_necesarios().count());
+        assert_eq!(nuevas, quitadas.len());
+        assert!(quitadas.iter().all(|l| l.texto.contains("otra.carpeta")));
+        assert!(!cambios
+            .iter()
+            .any(|l| l.tipo != TipoLinea::Igual && l.texto.contains("otro.sh")));
+    }
+
+    #[test]
+    fn un_grupo_con_matcher_no_se_reutiliza() {
+        let vieja = "C:/Users/prueba/AppData/Roaming/otra.carpeta/cabecera-hook.txt";
+        let mut raiz = instalar(&json!({}), vieja).unwrap();
+        raiz["hooks"]["PreToolUse"][0]["matcher"] = json!("Bash");
+        let nueva = instalar(&raiz, CABECERA).unwrap();
+        assert_eq!(estado(&nueva, CABECERA), EstadoHooks::Instalados);
+        let grupos = nueva["hooks"]["PreToolUse"].as_array().unwrap();
+        assert_eq!(grupos.len(), 1);
+        assert!(grupos[0].get("matcher").is_none());
     }
 
     #[test]

@@ -1,7 +1,5 @@
 import { TarjetaAviso } from "../permisos/TarjetaAviso";
 import { TarjetaPermiso } from "../permisos/TarjetaPermiso";
-import { TarjetaRegistro } from "../registro/TarjetaRegistro";
-import type { Nota } from "../registro/useRegistro";
 import { TarjetaResultado } from "../resultados/TarjetaResultado";
 import type { Resultado } from "../resultados/useResultados";
 
@@ -31,12 +29,6 @@ const resultado = (id: number, leido: boolean, minutos: number): Resultado => ({
   leido,
 });
 
-const notas: Nota[] = [
-  { id: 1, tipo: "permitido", texto: "Permitiste un comando", momento: ahora - 20_000 },
-  { id: 2, tipo: "denegado", texto: "No permitiste editar un archivo", momento: ahora - 240_000 },
-  { id: 3, tipo: "aviso", texto: "¡Ay, me quedé sin energía!", momento: ahora - 900_000 },
-];
-
 const solicitud = (id: number, detalle: string) => ({
   id,
   herramienta: "Bash",
@@ -57,11 +49,17 @@ export function Maqueta() {
   } as const;
   return (
     <div style={estilo}>
-      <TarjetaPermiso solicitud={solicitud(1, "pnpm test")} pendientes={1} onResolver={nada} />
+      <TarjetaPermiso
+        solicitud={solicitud(1, "pnpm test")}
+        pendientes={1}
+        onResolver={nada}
+        onVerTodo={nada}
+      />
       <TarjetaPermiso
         solicitud={solicitud(2, "rm -rf ./dist && git push --force origin main")}
         pendientes={3}
         onResolver={nada}
+        onVerTodo={nada}
       />
       <TarjetaAviso
         aviso={{
@@ -79,14 +77,8 @@ export function Maqueta() {
         onCerrar={nada}
         onPrivado={nada}
         onRegistro={nada}
+        onVerMas={nada}
       />
-      <TarjetaRegistro
-        resultados={[resultado(1, true, 6), resultado(2, false, 1)]}
-        notas={notas}
-        onAbrir={nada}
-        onCerrar={nada}
-      />
-      <TarjetaRegistro resultados={[]} notas={[]} onAbrir={nada} onCerrar={nada} />
       <div className="escena-izquierda">
         <TarjetaResultado
           resultado={{ ...resultado(3, true, 0), mensaje: null }}
@@ -95,6 +87,7 @@ export function Maqueta() {
           onCerrar={nada}
           onPrivado={nada}
           onRegistro={nada}
+          onVerMas={nada}
         />
       </div>
     </div>

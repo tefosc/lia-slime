@@ -229,7 +229,7 @@ pub fn mostrar_lia(app: &AppHandle) {
 /// `hide()` de Tauri deja los dos desincronizados. No hace falta ninguna
 /// dependencia: es una función del sistema.
 #[cfg(windows)]
-fn fijar_visible(ventana: &tauri::WebviewWindow, visible: bool) {
+pub fn fijar_visible(ventana: &tauri::WebviewWindow, visible: bool) {
     #[link(name = "user32")]
     extern "system" {
         fn ShowWindow(hwnd: *mut std::ffi::c_void, comando: i32) -> i32;
@@ -252,7 +252,7 @@ fn fijar_visible(ventana: &tauri::WebviewWindow, visible: bool) {
 }
 
 #[cfg(not(windows))]
-fn fijar_visible(ventana: &tauri::WebviewWindow, visible: bool) {
+pub fn fijar_visible(ventana: &tauri::WebviewWindow, visible: bool) {
     let _ = if visible { ventana.show() } else { ventana.hide() };
 }
 
@@ -265,6 +265,8 @@ pub fn ocultar_lia(app: &AppHandle) {
     };
     cursor::restaurar(&ventana);
     fijar_visible(&ventana, false);
+    // La isla es parte de Lia: se esconde con ella.
+    crate::isla::subir(app);
     avisar_visibilidad(app, false);
 }
 

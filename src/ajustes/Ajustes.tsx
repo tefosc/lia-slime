@@ -273,6 +273,19 @@ export function Ajustes() {
           Sin eventos de Claude Code ni toques, Lia se adormece, se derrite y se
           oculta. Vuelve sola con el siguiente evento o desde la bandeja.
         </p>
+        <label className="casilla">
+          <input
+            type="checkbox"
+            checked={preferencias.islaAlBorde}
+            onChange={(e) => cambiar({ islaAlBorde: e.target.checked })}
+          />
+          Bajar la isla al dejar el cursor en el borde superior
+        </label>
+        <p className="nota">
+          La isla es el panel con lo último que pasó. Vive escondida arriba, en
+          el centro de la pantalla. Si la desactivas aquí, sigue abriéndose con
+          "Ver más" y desde la bandeja.
+        </p>
       </section>
 
       <section>

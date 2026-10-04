@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Boton, Globo } from "../globo/Globo";
 import { RESULTADOS } from "./config";
-import { textoDuracion, TEXTOS_RESULTADO } from "./textos";
+import { resumenDe, TEXTOS_RESULTADO } from "./textos";
 import type { Resultado } from "./useResultados";
 
 interface Props {
@@ -13,6 +13,8 @@ interface Props {
   onPrivado: (valor: boolean) => void;
   /** Ir a la lista de mensajes recientes. */
   onRegistro: () => void;
+  /** Abrir el mensaje completo en la isla. */
+  onVerMas: () => void;
 }
 
 /**
@@ -27,8 +29,8 @@ export function TarjetaResultado({
   onCerrar,
   onPrivado,
   onRegistro,
+  onVerMas,
 }: Props) {
-  const [expandido, setExpandido] = useState(false);
   const [desborda, setDesborda] = useState(false);
   const caja = useRef<HTMLDivElement>(null);
   const temporizador = useRef(0);
@@ -50,29 +52,23 @@ export function TarjetaResultado({
   const mensaje = privado ? null : resultado.mensaje;
   const recortado =
     mensaje !== null && mensaje.length > RESULTADOS.recorteMensaje;
-  // "Ver más" aparece si el texto se recortó o si no cabe en el recuadro.
+  // "Ver más" aparece si el texto se recortó o si no cabe en el recuadro, y
+  // abre el mensaje completo en la isla.
   useLayoutEffect(() => {
     const elemento = caja.current;
     setDesborda(
       elemento !== null && elemento.scrollHeight > elemento.clientHeight + 1,
     );
-  }, [mensaje, expandido]);
-  const largo = recortado || desborda || expandido;
+  }, [mensaje]);
+  const largo = recortado || desborda;
   const visible =
     mensaje === null
       ? null
-      : expandido || !largo
-        ? mensaje
-        : `${mensaje.slice(0, RESULTADOS.recorteMensaje).trimEnd()}…`;
+      : recortado
+        ? `${mensaje.slice(0, RESULTADOS.recorteMensaje).trimEnd()}…`
+        : mensaje;
 
-  const estadisticas = [
-    resultado.etiqueta,
-    textoDuracion(resultado.duracionS),
-    TEXTOS_RESULTADO.herramientas(resultado.herramientas, resultado.principales),
-    TEXTOS_RESULTADO.ediciones(resultado.ediciones),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const estadisticas = resumenDe(resultado);
 
   return (
     <Globo
@@ -98,8 +94,8 @@ export function TarjetaResultado({
       botones={
         <>
           {largo && !privado && (
-            <Boton tipo="enlace" onClick={() => setExpandido((v) => !v)}>
-              {expandido ? TEXTOS_RESULTADO.verMenos : TEXTOS_RESULTADO.verMas}
+            <Boton tipo="enlace" onClick={onVerMas}>
+              {TEXTOS_RESULTADO.verMas}
             </Boton>
           )}
           <Boton tipo="principal" corto onClick={onCerrar}>
@@ -114,10 +110,7 @@ export function TarjetaResultado({
       ) : visible === null ? (
         <div className="globo-nota">{TEXTOS_RESULTADO.sinMensaje}</div>
       ) : (
-        <div
-          ref={caja}
-          className={`globo-cita globo-mensaje${expandido ? " expandido" : ""}`}
-        >
+        <div ref={caja} className="globo-cita globo-mensaje">
           {visible}
         </div>
       )}

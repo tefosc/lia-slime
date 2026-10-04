@@ -288,7 +288,8 @@ Reglas para la transcripción:
 El mensaje se muestra como texto plano (sin HTML, Markdown ni enlaces
 clicables), se recorta a 2000 caracteres, vive solo en memoria y se borra a los
 10 minutos de terminar la tarea. Hasta entonces puedes reabrirlo desde
-"Mensajes recientes" (burbuja ✓ o bandeja).
+la isla (lleva el cursor al borde superior de la pantalla, o usa "Mensajes
+recientes" de la bandeja).
 
 ### Modo privado
 

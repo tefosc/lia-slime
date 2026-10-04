@@ -6,8 +6,6 @@ export const REGISTRO = {
   duracionNota: 30 * 60,
   /** Notas que se conservan como mucho. */
   maximoNotas: 12,
-  /** El globo se cierra solo tras este tiempo sin interacción (s). */
-  cierreSinInteraccion: 30,
 };
 
 export type TipoNota = "permitido" | "denegado" | "aviso";

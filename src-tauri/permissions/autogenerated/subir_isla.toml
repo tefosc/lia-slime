@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-subir-isla"
+description = "Enables the subir_isla command without any pre-configured scope."
+commands.allow = ["subir_isla"]
+
+[[permission]]
+identifier = "deny-subir-isla"
+description = "Denies the subir_isla command without any pre-configured scope."
+commands.deny = ["subir_isla"]
