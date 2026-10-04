@@ -11,7 +11,9 @@ import {
   muestrasDeVueltas,
 } from "./detectorMareo";
 import { acercar, limitarPaso, Resorte } from "./movimiento";
-import { POSES, sombraPara } from "./poses";
+import { crearPose } from "./pose";
+import { crearRenderizadorClasico } from "./renderizadorClasico";
+import { POSES } from "./poses";
 import type { EstadoLia } from "./tipos";
 
 const TAU = Math.PI * 2;
@@ -24,10 +26,6 @@ const FPS_LENTO = 20;
  * refrescos), sin pasar nunca del límite.
  */
 const MARGEN_MS = 2;
-/** Punto de apoyo del cuerpo: la deformación se ancla en su base. */
-const BASE_Y = 38;
-/** Centro vertical de los ojos, donde se ancla el parpadeo. */
-const OJOS_Y = 2;
 
 // Parámetros de las animaciones. Longitudes en unidades del viewBox,
 // ángulos en grados y tiempos en segundos.
@@ -485,10 +483,6 @@ function suave(t: number): number {
   return c * c * (3 - 2 * c);
 }
 
-function buscar(svg: SVGSVGElement, id: string): SVGElement | null {
-  return svg.querySelector<SVGElement>(`#${id}`);
-}
-
 /**
  * Anima a Lia con un único bucle `requestAnimationFrame` que escribe los
  * `transform` directamente en los elementos del SVG, sin pasar por el estado
@@ -558,51 +552,9 @@ export function useAnimacionLia(
     const svg = svgRef.current;
     if (!svg) return;
 
-    // Partes de las caras de sorpresa y enojo: solo existen en `inactivo`,
-    // así que se buscan en cada cambio de estado.
-    const caras: Record<string, SVGElement | null> = {};
-    const IDS_REACCION = [
-      "lia-ojos-normal",
-      "lia-ojos-sorpresa",
-      "lia-boca-normal",
-      "lia-boca-sorpresa",
-      "lia-boca-enojo",
-      "lia-cejas-enojo",
-      "lia-mejillas-enojo",
-      "lia-marca-enojo",
-      "lia-ojos-feliz",
-      "lia-mejillas-feliz",
-      "lia-corazon-0",
-      "lia-corazon-1",
-      "lia-corazon-2",
-      "lia-ojos-mareo",
-      "lia-boca-mareo",
-      "lia-espiral-izq",
-      "lia-espiral-der",
-      "lia-estrellas-mareo",
-      "lia-estrella-0",
-      "lia-estrella-1",
-      "lia-estrella-2",
-      "lia-ojos-dormida",
-      "lia-boca-dormida",
-      "lia-z-0",
-      "lia-z-1",
-    ];
-
-    const sombraEl = buscar(svg, "lia-sombra");
-    const flotanteEl = buscar(svg, "lia-flotante");
-    const extrasEl = buscar(svg, "lia-extras");
-    const ojosEl = buscar(svg, "lia-ojos");
-    const petaloEl = buscar(svg, "lia-petalo");
-    const gotaEl = buscar(svg, "lia-gota");
-    const personajeEl = buscar(svg, "lia-personaje");
-    const caraEl = buscar(svg, "lia-cara");
-    const charquitoEl = buscar(svg, "lia-charquito");
-    const ondaEl = buscar(svg, "lia-onda");
-    // La cara de esfuerzo solo existe en `trabajando`: se busca en cada
-    // cambio de estado.
-    let ojosEsfuerzoEl: SVGElement | null = null;
-    let bocaOnduladaEl: SVGElement | null = null;
+    // El motor calcula la pose; el renderizador la pinta en el SVG.
+    const renderizador = crearRenderizadorClasico(svg);
+    const pose = crearPose(estadoActual.current);
 
     const inicial = POSES[estadoActual.current];
     const elevacion = new Resorte(inicial.elevacion, 120, 14);
@@ -764,32 +716,8 @@ export function useAnimacionLia(
       cara.velocidad = 0;
     };
 
-    const buscarCara = () => {
-      ojosEsfuerzoEl = buscar(svg, "lia-ojos-esfuerzo");
-      bocaOnduladaEl = buscar(svg, "lia-boca-ondulada");
-      // Son elementos nuevos: lo escrito en los anteriores ya no vale.
-      for (const clave of ["ojos-d", "ojos-grosor", "boca-d"]) {
-        escritos.delete(clave);
-      }
-      for (const id of IDS_REACCION) {
-        caras[id] = buscar(svg, id);
-        escritos.delete(id);
-        escritos.delete(`${id}-t`);
-      }
-    };
-
-    // Último valor escrito en cada atributo, para no tocar el DOM si no cambió.
-    const escritos = new Map<string, string>();
-    const escribir = (
-      el: SVGElement | null,
-      clave: string,
-      atributo: string,
-      valor: string,
-    ) => {
-      if (!el || escritos.get(clave) === valor) return;
-      escritos.set(clave, valor);
-      el.setAttribute(atributo, valor);
-    };
+    /** Tras un cambio de estado, el renderizador vuelve a buscar sus partes. */
+    const buscarCara = () => renderizador.reencontrar();
 
     const cambiarFase = (nueva: FaseSueno) => {
       fase = nueva;
@@ -1247,146 +1175,78 @@ export function useAnimacionLia(
       // Enojada se infla; sin movimiento reducido.
       const inflado = quieto ? 1 : 1 + TOQUES.infladoEnojo * enojada;
 
-      // Caras de sorpresa y enojo: se muestran u ocultan con opacidad.
-      const opacidad = (id: string, valor: number) =>
-        escribir(caras[id], id, "opacity", valor.toFixed(2));
-      opacidad(
-        "lia-ojos-normal",
-        1 - Math.max(sorprendida, contenta, caraMareada, sueno),
-      );
-      opacidad("lia-ojos-dormida", sueno);
-      opacidad("lia-boca-dormida", sueno);
+      // --- Pose: todo lo anterior, como datos para el renderizador. ---
+      pose.estado = estadoActual.current;
+      const { cara: poseCara, efectos } = pose;
+      poseCara.sorpresa = sorprendida;
+      poseCara.enojo = enojada;
+      poseCara.feliz = contenta;
+      poseCara.mareo = caraMareada;
+      poseCara.dormida = sueno;
       // Al derretirse, la cara se desvanece antes que el cuerpo.
-      escribir(
-        caraEl,
-        "cara-op",
-        "opacity",
-        (1 - Math.min(1, fundiendo * 1.5)).toFixed(2),
-      );
+      poseCara.visible = 1 - Math.min(1, fundiendo * 1.5);
+      poseCara.giroEspiral = giroEspiral;
+      poseCara.tension = Math.min(1, Math.max(0, cara.valor));
+
       // Las "z" suben y se desvanecen una tras otra.
-      for (let i = 0; i < 2; i++) {
-        const id = `lia-z-${i}`;
+      efectos.zzz.forEach((z, i) => {
         const avance = (tiempo / SUENO.periodoZ + i * 0.5) % 1;
-        const visible =
+        z.opacidad =
           quieto || fase === "despertando"
             ? 0
             : sueno * (1 - Math.min(1, fundiendo * 2)) * Math.sin(Math.PI * avance);
-        opacidad(id, visible);
-        if (visible > 0.01) {
-          escribir(
-            caras[id],
-            `${id}-t`,
-            "transform",
-            `translate(${(30 + 12 * avance + 2 * Math.sin(TAU * avance)).toFixed(1)},${(-40 - 24 * avance).toFixed(1)}) scale(${(0.6 + 0.7 * avance).toFixed(2)})`,
-          );
-        }
-      }
+        z.x = 30 + 12 * avance + 2 * Math.sin(TAU * avance);
+        z.y = -40 - 24 * avance;
+        z.escala = 0.6 + 0.7 * avance;
+      });
+
       // Charquito: aparece al fundirse el cuerpo, con una onda que se
       // expande una sola vez.
-      escribir(charquitoEl, "charquito-op", "opacity", charco.toFixed(2));
       const avanceOnda = tiempo - ondaInicio;
       const hayOnda = avanceOnda >= 0 && avanceOnda < 1;
-      escribir(
-        ondaEl,
-        "onda-op",
-        "opacity",
-        (hayOnda ? 0.6 * (1 - avanceOnda) : 0).toFixed(2),
-      );
-      if (hayOnda) {
-        escribir(
-          ondaEl,
-          "onda-t",
-          "transform",
-          `translate(0,40) scale(${(0.75 + 0.35 * suave(avanceOnda)).toFixed(3)}) translate(0,-40)`,
-        );
-      }
-      escribir(personajeEl, "personaje-op", "opacity", (1 - fundido).toFixed(2));
-      escribir(flotanteEl, "flotante-op", "opacity", (1 - charco).toFixed(2));
-      opacidad("lia-ojos-sorpresa", sorprendida);
-      opacidad("lia-ojos-feliz", contenta);
-      opacidad("lia-mejillas-feliz", contenta);
-      opacidad("lia-ojos-mareo", caraMareada);
-      opacidad("lia-boca-mareo", caraMareada);
-      opacidad(
-        "lia-boca-normal",
-        1 - Math.max(sorprendida, enojada, caraMareada, sueno),
-      );
+      efectos.charquito.progreso = charco;
+      efectos.charquito.onda.visible = hayOnda;
+      efectos.charquito.onda.opacidad = hayOnda ? 0.6 * (1 - avanceOnda) : 0;
+      efectos.charquito.onda.escala = 0.75 + 0.35 * suave(avanceOnda);
+      efectos.fundido = fundido;
 
       // Corazones: suben, se balancean un poco y se desvanecen.
       corazones.forEach((corazon, i) => {
-        const id = `lia-corazon-${i}`;
+        const destino = efectos.corazones[i];
+        if (!destino) return;
         const avance = (tiempo - corazon.inicio) / CARICIAS.duracionCorazon;
-        if (avance < 0 || avance >= 1) {
-          opacidad(id, 0);
+        destino.activo = !(avance < 0 || avance >= 1);
+        if (!destino.activo) {
+          destino.opacidad = 0;
           return;
         }
-        opacidad(id, Math.sin(Math.PI * avance));
-        const x = corazon.x + 3 * Math.sin(avance * 7 + i);
-        const y = -44 - CARICIAS.subidaCorazon * avance;
-        escribir(
-          caras[id],
-          `${id}-t`,
-          "transform",
-          `translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${(0.7 + 0.5 * avance).toFixed(2)})`,
-        );
+        destino.opacidad = Math.sin(Math.PI * avance);
+        destino.x = corazon.x + 3 * Math.sin(avance * 7 + i);
+        destino.y = -44 - CARICIAS.subidaCorazon * avance;
+        destino.escala = 0.7 + 0.5 * avance;
       });
 
-      // Mareo: las espirales de los ojos giran y unas estrellas dan vueltas
-      // sobre la cabeza.
-      escribir(
-        caras["lia-espiral-izq"],
-        "lia-espiral-izq-t",
-        "transform",
-        `rotate(${giroEspiral.toFixed(0)})`,
-      );
-      escribir(
-        caras["lia-espiral-der"],
-        "lia-espiral-der-t",
-        "transform",
-        `rotate(${(-giroEspiral).toFixed(0)})`,
-      );
       // Estrellas en órbita sobre la cabeza: elipse de centro (0,-44), 30x8.
       // Las que pasan "por detrás" se ven más pequeñas y tenues. Aparecen
       // desde escala 0 y se desvanecen con la intensidad.
       const verEstrellas = MAREO.estrellas ? caraMareada : 0;
-      opacidad("lia-estrellas-mareo", verEstrellas);
+      efectos.estrellas.visible = verEstrellas;
       if (verEstrellas > 0.01) {
-        for (let i = 0; i < 3; i++) {
-          const id = `lia-estrella-${i}`;
+        efectos.estrellas.lista.forEach((estrella, i) => {
           const angulo =
             (quieto ? 0.6 : TAU * tiempo * MAREO.giroEstrellas) + (TAU * i) / 3;
           // sin > 0: parte de delante de la órbita (más abajo en pantalla).
           const profundidad = 0.5 + 0.5 * Math.sin(angulo);
-          const x = 30 * Math.cos(angulo);
-          const y = -44 + 8 * Math.sin(angulo);
-          const escala = verEstrellas * (0.6 + 0.4 * profundidad);
-          escribir(
-            caras[id],
-            `${id}-t`,
-            "transform",
-            `translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${escala.toFixed(2)})`,
-          );
-          escribir(
-            caras[id],
-            `${id}-o`,
-            "opacity",
-            (0.45 + 0.55 * profundidad).toFixed(2),
-          );
-        }
+          estrella.x = 30 * Math.cos(angulo);
+          estrella.y = -44 + 8 * Math.sin(angulo);
+          estrella.escala = verEstrellas * (0.6 + 0.4 * profundidad);
+          estrella.opacidad = 0.45 + 0.55 * profundidad;
+        });
       }
-      opacidad("lia-boca-sorpresa", sorprendida * (1 - enojada));
-      opacidad("lia-boca-enojo", enojada);
-      opacidad("lia-cejas-enojo", enojada);
-      opacidad("lia-mejillas-enojo", enojada);
-      opacidad("lia-marca-enojo", enojada);
       // La marca de enojo "late" suavemente.
       const latido = quieto ? 1 : 1 + 0.12 * Math.sin(TAU * tiempo * 1.6);
-      escribir(
-        caras["lia-marca-enojo"],
-        "lia-marca-enojo-t",
-        "transform",
-        `translate(-36,-31) scale(${(enojada * latido).toFixed(2)})`,
-      );
+      efectos.marcaEnojo.opacidad = enojada;
+      efectos.marcaEnojo.escala = enojada * latido;
 
       const fuerza = Math.min(1, Math.max(0, tension.valor));
       const bote = Math.abs(Math.sin((Math.PI * tiempo) / SALTAR.periodo));
@@ -1409,53 +1269,41 @@ export function useAnimacionLia(
         trabajo.rebote * Math.sin(faseTrabajo) * pesos.trabaja +
         // Gelatina del esfuerzo: sx y sy van en contrafase.
         ESFUERZO.amplitud * Math.sin(TAU * tiempo * ESFUERZO.frecuencia) * fuerza;
-      // Derretida se aplasta y se ensancha con la base como ancla; al pasar
-      // a charquito se aplasta todavía más mientras se desvanece.
-      const sy =
-        (1 + deformacion + aplasteMareo) *
-        inflado *
-        (1 - SUENO.aplastarY * derretido) *
-        (1 - 0.45 * charco);
-      const sx =
-        (1 - (deformacion + aplasteMareo) * 0.8) *
-        inflado *
-        (1 + SUENO.estirarX * derretido) *
-        (1 + 0.1 * charco);
       // Temblor horizontal, a otra frecuencia para que no se vea mecánico.
       const temblor =
         ESFUERZO.temblorX *
         Math.sin(TAU * tiempo * ESFUERZO.frecuencia * 1.37 + 1) *
         fuerza;
 
-      escribir(
-        flotanteEl,
-        "flotante",
-        "transform",
-        `translate(${(temblor + inclinaX).toFixed(2)},${(BASE_Y - altura).toFixed(1)}) rotate(${giroCuerpo.toFixed(2)}) scale(${sx.toFixed(3)},${sy.toFixed(3)}) translate(0,${-BASE_Y})`,
-      );
-      escribir(
-        extrasEl,
-        "extras",
-        "transform",
-        `translate(0,${(-altura).toFixed(1)})`,
-      );
+      pose.cuerpo.x = temblor + inclinaX;
+      pose.cuerpo.altura = altura;
+      pose.cuerpo.giro = giroCuerpo;
+      // Derretida se aplasta y se ensancha con la base como ancla; al pasar
+      // a charquito se aplasta todavía más mientras se desvanece.
+      pose.cuerpo.escalaY =
+        (1 + deformacion + aplasteMareo) *
+        inflado *
+        (1 - SUENO.aplastarY * derretido) *
+        (1 - 0.45 * charco);
+      pose.cuerpo.escalaX =
+        (1 - (deformacion + aplasteMareo) * 0.8) *
+        inflado *
+        (1 + SUENO.estirarX * derretido) *
+        (1 + 0.1 * charco);
+      pose.cuerpo.opacidad = 1 - charco;
 
       // La sombra se ensancha al derretirse.
-      const tamano =
+      pose.sombra.escala =
         Math.max(0.4, sombra.valor - SOMBRA_POR_ALTURA * (salto + flote)) *
         (1 + 0.3 * fundiendo);
-      const s = sombraPara(tamano);
-      escribir(sombraEl, "sombra-cy", "cy", s.cy.toFixed(1));
-      escribir(sombraEl, "sombra-rx", "rx", s.rx.toFixed(1));
-      escribir(sombraEl, "sombra-ry", "ry", s.ry.toFixed(1));
-      escribir(sombraEl, "sombra-op", "opacity", s.opacity.toFixed(2));
 
-      const petY =
+      pose.accesorio.x = petaloX.valor;
+      pose.accesorio.y =
         petaloY.valor -
         FLOTAR.petalo *
           (0.5 + 0.5 * Math.sin((TAU * tiempo) / FLOTAR.periodoPetalo)) *
           pesos.flota;
-      const petGiro =
+      pose.accesorio.giro =
         petaloGiro.valor +
         // Sacudida al tocarla.
         sacudida.valor +
@@ -1479,12 +1327,6 @@ export function useAnimacionLia(
         FLOTAR.giro *
           Math.sin((TAU * tiempo) / FLOTAR.periodoGiro) *
           pesos.flota;
-      escribir(
-        petaloEl,
-        "petalo",
-        "transform",
-        `translate(${petaloX.valor.toFixed(1)},${petY.toFixed(1)}) rotate(${petGiro.toFixed(1)})`,
-      );
 
       // Gota de esfuerzo: crece, resbala y se desvanece.
       let gotaEscala = 0;
@@ -1501,26 +1343,12 @@ export function useAnimacionLia(
           gotaOpacidad = 1 - suave((avance - 0.65) / 0.35);
         }
       }
-      escribir(
-        gotaEl,
-        "gota",
-        "transform",
-        `translate(${ESFUERZO.gota.x},${(ESFUERZO.gota.y + gotaCaida).toFixed(1)}) scale(${gotaEscala.toFixed(2)})`,
-      );
-      escribir(gotaEl, "gota-op", "opacity", gotaOpacidad.toFixed(2));
+      efectos.gota.x = ESFUERZO.gota.x;
+      efectos.gota.y = ESFUERZO.gota.y + gotaCaida;
+      efectos.gota.escala = gotaEscala;
+      efectos.gota.opacidad = gotaOpacidad;
 
-      // Cara de esfuerzo: se interpolan los puntos de los mismos trazos. Los
-      // valores van redondeados, así que solo se escriben si cambian a la vista.
-      const tensionCara = Math.min(1, Math.max(0, cara.valor));
-      escribir(ojosEsfuerzoEl, "ojos-d", "d", ojosEsfuerzo(tensionCara));
-      escribir(
-        ojosEsfuerzoEl,
-        "ojos-grosor",
-        "stroke-width",
-        grosorOjosEsfuerzo(tensionCara),
-      );
-      escribir(bocaOnduladaEl, "boca-d", "d", bocaEsfuerzo(tensionCara));
-
+      // Parpadeo.
       let ojosY = 1;
       if (parpadeoInicio >= 0) {
         const avance = (tiempo - parpadeoInicio) / PARPADEO.duracion;
@@ -1532,12 +1360,11 @@ export function useAnimacionLia(
           ojosY = 1 - PARPADEO.cierre * Math.sin(Math.PI * avance);
         }
       }
-      escribir(
-        ojosEl,
-        "ojos",
-        "transform",
-        `translate(${ojosX.toFixed(2)},${(OJOS_Y + ojosDY).toFixed(2)}) scale(1,${ojosY.toFixed(2)}) translate(0,${-OJOS_Y})`,
-      );
+      pose.ojos.x = ojosX;
+      pose.ojos.y = ojosDY;
+      pose.ojos.apertura = ojosY;
+
+      renderizador.dibujar(pose);
     };
 
     /** Con movimiento reducido, el bucle se detiene al llegar a la pose. */
