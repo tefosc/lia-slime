@@ -27,7 +27,9 @@ export function estiloDe(mascota?: string, estilo?: string): EstiloDeMascota {
 /**
  * El id del disfraz pedido si esa mascota lo tiene; si no, sin disfraz.
  */
-export function disfrazDe(mascota?: string, disfraz?: string): string {
+export function disfrazDe(mascota?: string, disfraz?: string, estilo?: string): string {
+  // Un estilo que aún no dibuja disfraces va siempre sin ninguno.
+  if (estilo !== undefined && estiloDe(mascota, estilo).conDisfraces === false) return SIN_DISFRAZ;
   return mascotaDe(mascota).disfraces.some((d) => d.id === disfraz) && disfraz
     ? disfraz
     : SIN_DISFRAZ;

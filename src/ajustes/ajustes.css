@@ -247,3 +247,8 @@ button.paleta[aria-checked="true"] {
 .campo input.hex-invalido {
   border-color: #e8745a;
 }
+
+button.paleta-texto {
+  padding: 8px 14px;
+  font-size: 13px;
+}

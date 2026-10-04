@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -12,6 +12,7 @@ import {
 } from "./detectorMareo";
 import { acercar, limitarPaso, Resorte } from "./movimiento";
 import { crearPose } from "./pose";
+import type { Pose } from "./pose";
 import type { Renderizador } from "./renderizador";
 import { POSES } from "./poses";
 import type { EstadoLia } from "./tipos";
@@ -492,6 +493,8 @@ export function useAnimacionLia(
   const alAcariciar = useRef<(() => void) | null>(null);
   const acariciar = useRef(() => alAcariciar.current?.()).current;
   const renderizadorActual = useRef<Renderizador | null>(null);
+  /** Con qué fábrica se creó el renderizador vigente. */
+  const creadoCon = useRef<typeof crearRenderizador | null>(null);
   const alRozar = useRef<(() => void) | null>(null);
   const rozar = useRef(() => alRozar.current?.()).current;
   const suenoActual = useRef(opcionesSueno);
@@ -520,9 +523,17 @@ export function useAnimacionLia(
     const contenedor = contenedorRef.current;
     if (!contenedor) return;
 
-    // El motor calcula la pose; el renderizador la pinta en el SVG.
-    const renderizador = crearRenderizador(contenedor);
-    renderizadorActual.current = renderizador;
+    // El motor calcula la pose; el renderizador la pinta a su manera. El
+    // motor habla siempre con el renderizador vigente: así, al cambiar de
+    // estilo se cambia el renderizador sin reiniciar el motor ni perder su
+    // estado (resortes, reacciones, temporizador de inactividad).
+    renderizadorActual.current = crearRenderizador(contenedor);
+    creadoCon.current = crearRenderizador;
+    const renderizador = {
+      reencontrar: () => renderizadorActual.current?.reencontrar(),
+      dibujar: (p: Pose) => renderizadorActual.current?.dibujar(p),
+      centro: () => renderizadorActual.current?.centro() ?? null,
+    };
     const pose = crearPose(estadoActual.current);
 
     const inicial = POSES[estadoActual.current];
@@ -1794,6 +1805,7 @@ export function useAnimacionLia(
       alHaberActividad.current = null;
       alDescansar.current = null;
       alCambiarActividad.current = null;
+      renderizadorActual.current?.desmontar?.();
       renderizadorActual.current = null;
       window.clearInterval(vigilancia);
       if (import.meta.env.DEV && !guionInicial) delete window.__lia;
@@ -1801,6 +1813,20 @@ export function useAnimacionLia(
       reducido.removeEventListener("change", alCambiarReducido);
       alCambiar.current = null;
     };
+    // `crearRenderizador` no es dependencia: su cambio lo atiende el efecto
+    // de abajo, sin reiniciar el motor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contenedorRef]);
+
+  // Cambio de estilo en caliente: el dibujo nuevo ya está en el contenedor.
+  useLayoutEffect(() => {
+    const contenedor = contenedorRef.current;
+    if (!contenedor || creadoCon.current === crearRenderizador) return;
+    if (!renderizadorActual.current) return;
+    renderizadorActual.current.desmontar?.();
+    renderizadorActual.current = crearRenderizador(contenedor);
+    creadoCon.current = crearRenderizador;
+    renderizadorActual.current.reencontrar();
   }, [contenedorRef, crearRenderizador]);
 
   return { tocar, acariciar, rozar, renderizador: renderizadorActual };

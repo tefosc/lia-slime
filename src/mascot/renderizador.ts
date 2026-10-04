@@ -35,6 +35,8 @@ export interface Renderizador {
   cajaDelCuerpo(): DOMRect | null;
   /** Centro del cuerpo en reposo, en px CSS de la ventana. */
   centro(): { x: number; y: number } | null;
+  /** Suelta lo que tenga pendiente al cambiar de estilo o cerrar. */
+  desmontar?(): void;
 }
 
 /** Lo que el dibujo de un estilo recibe de la app (lo que no es animación). */
@@ -62,4 +64,6 @@ export interface EstiloDeMascota {
   Dibujo: ComponentType<PropsDibujo>;
   /** Crea el renderizador sobre el dibujo ya pintado en `contenedor`. */
   crearRenderizador(contenedor: HTMLElement): Renderizador;
+  /** false si este estilo aún no dibuja los disfraces. */
+  conDisfraces?: boolean;
 }

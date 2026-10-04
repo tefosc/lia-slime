@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { matizDeHex, PALETA_LIBRE, PALETAS, paletaDe } from "../mascotas/paletas";
 import type { Paleta } from "../mascotas/paletas";
-import { disfrazDe, mascotaDe } from "../mascotas/indice";
+import { disfrazDe, estiloDe, mascotaDe } from "../mascotas/indice";
 import { SIN_DISFRAZ } from "../mascotas/tipos";
 import type { Preferencias } from "../preferencias";
 
@@ -97,7 +97,9 @@ export function Apariencia({
   const elegida = paletaDe(preferencias.paleta, preferencias.matiz).id;
   const libre = elegida === PALETA_LIBRE;
   const paletaActual = paletaDe(preferencias.paleta, preferencias.matiz);
-  const disfraz = disfrazDe(preferencias.mascota, preferencias.disfraz);
+  const estilo = estiloDe(preferencias.mascota, preferencias.estilo);
+  const conDisfraces = estilo.conDisfraces !== false;
+  const disfraz = disfrazDe(preferencias.mascota, preferencias.disfraz, estilo.id);
   const disfraces = [
     { id: SIN_DISFRAZ, nombre: "Ninguno" },
     ...mascotaDe(preferencias.mascota).disfraces,
@@ -121,7 +123,25 @@ export function Apariencia({
   return (
     <section>
       <h2>Apariencia</h2>
+      <h3>Estilo</h3>
+      <div className="paletas" role="radiogroup" aria-label="Estilo">
+        {mascotaDe(preferencias.mascota).estilos.map((e) => (
+          <button
+            key={e.id}
+            type="button"
+            role="radio"
+            aria-checked={estilo.id === e.id}
+            className="paleta paleta-texto"
+            onClick={() => cambiar({ estilo: e.id })}
+          >
+            {e.nombre}
+          </button>
+        ))}
+      </div>
       <h3>Disfraz</h3>
+      {!conDisfraces && (
+        <p className="nota">Los disfraces todavía no están dibujados en pixel art.</p>
+      )}
       <div className="paletas" role="radiogroup" aria-label="Disfraz">
         {disfraces.map((d) => (
           <button
@@ -130,6 +150,7 @@ export function Apariencia({
             role="radio"
             aria-checked={disfraz === d.id}
             className="paleta"
+            disabled={!conDisfraces}
             onClick={() => cambiar({ disfraz: d.id })}
           >
             <Muestra paleta={paletaActual} disfraz={d.id} />

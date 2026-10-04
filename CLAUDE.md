@@ -46,6 +46,15 @@ no está conectada.
   - `lia/manifiesto.ts` — Lia y sus estilos. `lia/clasico/` — el estilo
     clásico: `Dibujo.tsx` (SVG del personaje), `renderizador.ts` (escribe
     los `transform` directamente en el SVG), `trazos.ts` y `lia.css`.
+  - `lia/pixel/` — el estilo pixel art: `sprites.ts` (cuerpo, caras, pétalo
+    y efectos como rejillas de letras, una por slot de color),
+    `renderizador.ts` (canvas de 50 x 50 píxeles lógicos ampliado a 200 px
+    sin suavizar) y `estilo.tsx`. El motor es el mismo; el renderizador
+    cuantiza la pose: 15 fps como mucho, desplazamientos enteros, aplastar y
+    estirar por vecino más cercano anclado en la base, inclinación por
+    cizalla de filas y variantes del pétalo dibujadas a mano en vez de
+    girarlo. Los disfraces aún no existen en pixel art (`conDisfraces`).
+    Depende de WebView2: `image-rendering: pixelated`.
   - `paletas.ts` — colores: seis paletas fijas y el color libre, que sale de
     un matiz (`paletaLibre`, con el contorno corregido para que contraste
     sobre fondos claros y oscuros). Son datos puros; cada estilo los usa a su
@@ -227,6 +236,10 @@ no está conectada.
   motor no cambia. La única animación nueva es el "puf" de la bruja al
   terminar: chispas que saltan del sombrero una vez, animadas con CSS
   (`lia-chispa` en `lia.css`), que no salen con movimiento reducido.
+- Cambio de estilo en caliente: el motor habla siempre con el renderizador
+  vigente (`renderizadorActual`), así que al cambiar de estilo solo se
+  sustituye el renderizador; el motor no se reinicia y no se pierden
+  resortes, reacciones ni el temporizador de inactividad.
 - Apariencia: solo se guardan identificadores (`mascota`, `estilo`,
   `disfraz`, `paleta`) y el `matiz` del color libre. Rust comprueba que tengan forma de
   identificador y la interfaz resuelve uno desconocido al valor por defecto

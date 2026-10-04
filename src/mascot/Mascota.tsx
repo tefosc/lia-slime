@@ -57,11 +57,12 @@ export function Mascota({
     guion,
   );
 
-  // Al cambiar de disfraz cambian piezas del dibujo: el renderizador las
-  // vuelve a buscar. El motor y todo lo pendiente siguen como estaban.
+  // Al cambiar de disfraz cambian piezas del dibujo, y en un canvas el
+  // color o la burbuja hay que volver a pintarlos: el renderizador se pone
+  // al día. El motor y todo lo pendiente siguen como estaban.
   useLayoutEffect(() => {
     renderizador.current?.reencontrar();
-  }, [renderizador, disfraz]);
+  }, [renderizador, disfraz, paleta, resultadosSinLeer]);
 
   // El click-through usa las zonas del renderizador activo.
   useEffect(() => {

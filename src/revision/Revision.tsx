@@ -52,8 +52,10 @@ export function Revision() {
   const casos = solo ? CASOS.filter((c) => c.nombre.includes(solo)) : CASOS;
   const matiz = Number(parametros.get("matiz") ?? NaN);
   const paleta = paletaDe(parametros.get("paleta") ?? undefined, matiz);
-  const disfraz = disfrazDe(undefined, parametros.get("disfraz") ?? undefined);
-  const conReferencia = paleta.id === PALETAS[0].id && disfraz === SIN_DISFRAZ;
+  const estilo = estiloDe(undefined, parametros.get("estilo") ?? undefined);
+  const disfraz = disfrazDe(undefined, parametros.get("disfraz") ?? undefined, estilo.id);
+  const conReferencia =
+    paleta.id === PALETAS[0].id && disfraz === SIN_DISFRAZ && estilo.id === estiloDe().id;
   const enlaceDisfraz = (id: string) => {
     const otros = new URLSearchParams(parametros);
     otros.set("disfraz", id);
@@ -99,7 +101,7 @@ export function Revision() {
       }
       window.__revision = nuevas;
       setHuellas(nuevas);
-    }, 60);
+    }, 200);
     return () => window.clearTimeout(espera);
   }, []);
 
@@ -122,6 +124,15 @@ export function Revision() {
               : `${distintos.length} distintos de la referencia`}
       </h1>
       <nav className="revision-paletas">
+        {mascotaDe().estilos.map((e) => {
+          const otros = new URLSearchParams(parametros);
+          otros.set("estilo", e.id);
+          return (
+            <a key={e.id} href={`?${otros}`} className="revision-disfraz">
+              {e.nombre}
+            </a>
+          );
+        })}
         {[{ id: SIN_DISFRAZ, nombre: "Sin disfraz" }, ...mascotaDe().disfraces].map((d) => (
           <a key={d.id} href={enlaceDisfraz(d.id)} className="revision-disfraz">
             {d.nombre}
@@ -161,7 +172,7 @@ export function Revision() {
                   style={{ transform: `scale(${zoom})`, transformOrigin: "0 0" }}
                 >
                   <Mascota
-                    estilo={estiloDe()}
+                    estilo={estilo}
                     paleta={paleta}
                     disfraz={disfraz}
                     estado={c.estado}

@@ -393,7 +393,7 @@ function App() {
         <Mascota
           estilo={estiloDe(preferencias.mascota, preferencias.estilo)}
           paleta={paletaDe(preferencias.paleta, preferencias.matiz)}
-          disfraz={disfrazDe(preferencias.mascota, preferencias.disfraz)}
+          disfraz={disfrazDe(preferencias.mascota, preferencias.disfraz, preferencias.estilo)}
           estado={estadoMostrado}
           sueno={sueno}
           actividad={actividad}
