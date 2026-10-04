@@ -218,12 +218,20 @@ export const SUENO = {
   /** Derretida: cuánto se ensancha y cuánto se aplasta el cuerpo. */
   estirarX: 0.15,
   aplastarY: 0.38,
-  /** Momento en que el cuerpo ya derretido pasa a charquito, y cuánto tarda. */
-  inicioCharco: 1.5,
-  duracionCharco: 0.6,
+  /**
+   * Momento en que empieza a verse el charquito y cuánto tarda en relevar al
+   * cuerpo. Empieza mientras el cuerpo todavía se está aplastando, para que
+   * todo sea un solo movimiento continuo, sin pausas entre fases.
+   */
+  inicioCharco: 0.7,
+  duracionCharco: 1.3,
+  /** Cuánto más se aplasta el cuerpo mientras se funde en el charquito. */
+  aplastarCharco: 0.62,
+  /** Punto del relevo (0 a 1) en el que sale la onda. */
+  ondaEn: 0.55,
   /** Momento en que el charquito empieza a desvanecerse, y cuánto tarda. */
-  inicioFundido: 3,
-  duracionFundido: 0.5,
+  inicioFundido: 2.6,
+  duracionFundido: 0.6,
   /** Cuánto tarda en volver a formarse al despertar. */
   duracionDespertar: 0.9,
   /** Con movimiento reducido solo hay un fundido de esta duración. */
@@ -742,9 +750,9 @@ export function useAnimacionLia(
           if (enFase >= SUENO.fundidoReducido + 0.1) ocultarse();
         } else {
           derretida.objetivo = 1;
-          if (enFase >= SUENO.inicioCharco) {
-            objetivoCharco = 1;
-            if (ondaInicio < inicioFase) ondaInicio = tiempo;
+          if (enFase >= SUENO.inicioCharco) objetivoCharco = 1;
+          if (charco >= SUENO.ondaEn && ondaInicio < inicioFase) {
+            ondaInicio = tiempo;
           }
           if (enFase >= SUENO.inicioFundido) objetivoFundido = 1;
           if (enFase >= SUENO.inicioFundido + SUENO.duracionFundido + 0.1) {
@@ -981,6 +989,13 @@ export function useAnimacionLia(
       const sueno = Math.min(1, Math.max(0, dormida.valor));
       const derretido = Math.min(1.1, Math.max(-0.4, derretida.valor));
       const fundiendo = Math.min(1, Math.max(0, derretido));
+      // Relevo del cuerpo por el charquito, con arranque y frenada suaves. El
+      // charquito aparece antes de que el cuerpo termine de irse.
+      const relevo = suave(charco);
+      const verCharquito = suave(charco * 1.6);
+      const verCuerpo = 1 - suave((charco - 0.3) / 0.7);
+      // Mientras se funde, el cuerpo se hunde un poco hasta apoyarse en el
+      // charquito (ver el `translate` de `lia-flotante`).
 
       // Mirada: de px de pantalla a unidades del viewBox. Enojada, aparta la
       // mirada: los ojos van hacia el lado contrario al cursor.
@@ -1077,7 +1092,7 @@ export function useAnimacionLia(
       }
       // Charquito: aparece al fundirse el cuerpo, con una onda que se
       // expande una sola vez.
-      escribir(charquitoEl, "charquito-op", "opacity", charco.toFixed(2));
+      escribir(charquitoEl, "charquito-op", "opacity", verCharquito.toFixed(2));
       const avanceOnda = tiempo - ondaInicio;
       const hayOnda = avanceOnda >= 0 && avanceOnda < 1;
       escribir(
@@ -1094,8 +1109,13 @@ export function useAnimacionLia(
           `translate(0,40) scale(${(0.75 + 0.35 * suave(avanceOnda)).toFixed(3)}) translate(0,-40)`,
         );
       }
-      escribir(personajeEl, "personaje-op", "opacity", (1 - fundido).toFixed(2));
-      escribir(flotanteEl, "flotante-op", "opacity", (1 - charco).toFixed(2));
+      escribir(
+        personajeEl,
+        "personaje-op",
+        "opacity",
+        (1 - suave(fundido)).toFixed(2),
+      );
+      escribir(flotanteEl, "flotante-op", "opacity", verCuerpo.toFixed(2));
       opacidad("lia-ojos-sorpresa", sorprendida);
       opacidad("lia-ojos-feliz", contenta);
       opacidad("lia-mejillas-feliz", contenta);
@@ -1207,12 +1227,12 @@ export function useAnimacionLia(
         (1 + deformacion + aplasteMareo) *
         inflado *
         (1 - SUENO.aplastarY * derretido) *
-        (1 - 0.45 * charco);
+        (1 - SUENO.aplastarCharco * relevo);
       const sx =
         (1 - (deformacion + aplasteMareo) * 0.8) *
         inflado *
         (1 + SUENO.estirarX * derretido) *
-        (1 + 0.1 * charco);
+        (1 + 0.12 * relevo);
       // Temblor horizontal, a otra frecuencia para que no se vea mecánico.
       const temblor =
         ESFUERZO.temblorX *
@@ -1223,7 +1243,7 @@ export function useAnimacionLia(
         flotanteEl,
         "flotante",
         "transform",
-        `translate(${(temblor + inclinaX).toFixed(2)},${(BASE_Y - altura).toFixed(1)}) rotate(${giroCuerpo.toFixed(2)}) scale(${sx.toFixed(3)},${sy.toFixed(3)}) translate(0,${-BASE_Y})`,
+        `translate(${(temblor + inclinaX).toFixed(2)},${(BASE_Y - altura + 5 * relevo).toFixed(2)}) rotate(${giroCuerpo.toFixed(2)}) scale(${sx.toFixed(3)},${sy.toFixed(3)}) translate(0,${-BASE_Y})`,
       );
       escribir(
         extrasEl,
