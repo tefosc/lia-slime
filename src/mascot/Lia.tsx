@@ -4,14 +4,9 @@ import { useWindowDrag } from "../useWindowDrag";
 import { crearDetectorDeCaricias } from "./caricias";
 import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
+import type { Actividad } from "../estado/useActividad";
 import type { OpcionesSueno } from "./useAnimacionLia";
-import {
-  bocaEsfuerzo,
-  ESFUERZO,
-  grosorOjosEsfuerzo,
-  ojosEsfuerzo,
-  useAnimacionLia,
-} from "./useAnimacionLia";
+import { useAnimacionLia } from "./useAnimacionLia";
 import "./lia.css";
 
 // La geometría y los colores siguen docs/lia-referencia.svg. El origen de
@@ -46,11 +41,6 @@ const ESPIRAL = trazoEspiral(2.2, 5.5);
 const SOMBRA_BASE = sombraPara(POSES.inactivo.sombra);
 const PETALO_BASE = `translate(${POSES.inactivo.petalo.x},${POSES.inactivo.petalo.y}) rotate(${POSES.inactivo.petalo.giro})`;
 
-// Cara de esfuerzo en su tensión mínima; son constantes para que React no
-// vuelva a escribirlas y pise lo que anima el motor.
-const OJOS_ESFUERZO_BASE = ojosEsfuerzo(ESFUERZO.cara.tensionMinima);
-const GROSOR_ESFUERZO_BASE = grosorOjosEsfuerzo(ESFUERZO.cara.tensionMinima);
-const BOCA_ESFUERZO_BASE = bocaEsfuerzo(ESFUERZO.cara.tensionMinima);
 
 function Ojos({ estado }: { estado: EstadoLia }) {
   switch (estado) {
@@ -123,17 +113,22 @@ function Ojos({ estado }: { estado: EstadoLia }) {
       );
     case "trabajando":
       return (
-        // Una sola cara: el motor de animación interpola estos mismos trazos
-        // entre relajados y tensos al ritmo de las oleadas de esfuerzo.
-        <path
-          id="lia-ojos-esfuerzo"
-          d={OJOS_ESFUERZO_BASE}
-          stroke={TINTA}
-          strokeWidth={GROSOR_ESFUERZO_BASE}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        // Concentrada: ojos abiertos y cejas rectas (atenta, no enfadada).
+        <>
+          <ellipse cx="-15" cy="2.5" rx="6.2" ry="7.6" fill={TINTA} />
+          <ellipse cx="15" cy="2.5" rx="6.2" ry="7.6" fill={TINTA} />
+          <circle cx="-13.2" cy="0" r="2.4" fill="#fff" />
+          <circle cx="16.8" cy="0" r="2.4" fill="#fff" />
+          <circle cx="-17" cy="5.5" r="1.2" fill="#fff" />
+          <circle cx="13" cy="5.5" r="1.2" fill="#fff" />
+          <path
+            d="M-22 -9.6 L-10 -9 M22 -9.6 L10 -9"
+            stroke={TINTA}
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </>
       );
     case "necesita":
       return (
@@ -213,14 +208,17 @@ function Boca({ estado }: { estado: EstadoLia }) {
       );
     case "trabajando":
       return (
-        <path
-          id="lia-boca-ondulada"
-          d={BOCA_ESFUERZO_BASE}
-          stroke={TINTA}
-          strokeWidth="1.8"
-          fill="none"
-          strokeLinecap="round"
-        />
+        // Boquita cerrada con la lengua asomando, de concentración.
+        <>
+          <path
+            d="M-4.5 16.5 Q0 18.5 4.5 16.5"
+            stroke={TINTA}
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <ellipse cx="3.6" cy="18.6" rx="2.3" ry="1.7" fill={LENGUA} />
+        </>
       );
     case "necesita":
       return (
@@ -277,8 +275,10 @@ function Petalo() {
 }
 
 /** Elementos que solo aparecen en algunos estados. */
-function Extras({ estado }: { estado: EstadoLia }) {
+function Extras({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }) {
   switch (estado) {
+    case "trabajando":
+      return <BurbujaActividad actividad={actividad} />;
     case "necesita":
       return (
         <g id="lia-burbuja-alerta">
@@ -334,6 +334,70 @@ function Extras({ estado }: { estado: EstadoLia }) {
 }
 
 /**
+ * Burbuja que dice, con un dibujo y sin texto, qué está haciendo Claude:
+ * pensar, leer, buscar, editar, ejecutar un comando, mirar la web o delegar.
+ * Va a la izquierda de la cabeza, donde sale la de alerta. El dibujo cambia
+ * con un fundido corto; no se mueve ni parpadea, para no distraer.
+ */
+function BurbujaActividad({ actividad }: { actividad: Actividad }) {
+  const trazo = {
+    fill: "none",
+    stroke: "#2F8A63",
+    strokeWidth: 1.9,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  } as const;
+  return (
+    <g id="lia-actividad" pointerEvents="none">
+      <circle cx="-48" cy="-46" r="12" fill="#FFFFFF" stroke="#45B084" strokeWidth="1.5" />
+      {/* `key`: al cambiar de actividad el dibujo entra con su fundido. */}
+      <g key={actividad} className="lia-actividad-dibujo" transform="translate(-48,-46)">
+        {actividad === "pensar" && (
+          <g fill="#2F8A63">
+            <circle className="lia-punto lia-punto-1" cx="-5" cy="0" r="1.8" />
+            <circle className="lia-punto lia-punto-2" cx="0" cy="0" r="1.8" />
+            <circle className="lia-punto lia-punto-3" cx="5" cy="0" r="1.8" />
+          </g>
+        )}
+        {actividad === "leer" && (
+          <path d="M-5 -6 H3 L5.5 -3.5 V6 H-5 Z M-2.3 -1.5 H2.8 M-2.3 1.5 H2.8" {...trazo} />
+        )}
+        {actividad === "buscar" && (
+          <>
+            <circle cx="-1.2" cy="-1.2" r="4.2" {...trazo} />
+            <path d="M2 2 L5.8 5.8" {...trazo} />
+          </>
+        )}
+        {actividad === "editar" && (
+          <path d="M-5.5 5.5 L-4.6 1.6 L2.6 -5.6 L5.6 -2.6 L-1.6 4.6 Z M0.6 -3.6 L3.6 -0.6" {...trazo} />
+        )}
+        {actividad === "comando" && (
+          <path d="M-6 -3.5 L-2 0 L-6 3.5 M0.5 4 H6" {...trazo} />
+        )}
+        {actividad === "web" && (
+          <>
+            <circle cx="0" cy="0" r="6" {...trazo} />
+            <path d="M-6 0 H6 M0 -6 C-3.4 -2.5 -3.4 2.5 0 6 C3.4 2.5 3.4 -2.5 0 -6" {...trazo} />
+          </>
+        )}
+        {actividad === "agente" && (
+          <path
+            d="M0 -6.5 L1.7 -1.7 L6.5 0 L1.7 1.7 L0 6.5 L-1.7 1.7 L-6.5 0 L-1.7 -1.7 Z"
+            {...trazo}
+          />
+        )}
+        {actividad === "otra" && (
+          <>
+            <path d="M0 -6.2 L5.4 -3.1 V3.1 L0 6.2 L-5.4 3.1 V-3.1 Z" {...trazo} />
+            <circle cx="0" cy="0" r="1.9" {...trazo} />
+          </>
+        )}
+      </g>
+    </g>
+  );
+}
+
+/**
  * Burbuja ✓ junto a la cabeza, a la derecha (la de alerta va a la izquierda).
  * Dibujada con formas; el número de resultados sin leer solo aparece si hay
  * más de uno.
@@ -378,6 +442,8 @@ interface LiaProps {
   onClickBurbuja?: () => void;
   /** Sueño por inactividad: tiempos y lo que lo impide. */
   sueno: OpcionesSueno;
+  /** Qué está haciendo Claude: se ve en una burbuja mientras trabaja. */
+  actividad?: Actividad;
 }
 
 export function Lia({
@@ -385,6 +451,7 @@ export function Lia({
   resultadosSinLeer = 0,
   onClickBurbuja,
   sueno,
+  actividad = "pensar",
 }: LiaProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const { tocar, acariciar, rozar } = useAnimacionLia(svgRef, estado, sueno);
@@ -556,7 +623,7 @@ export function Lia({
         </g>
         {/* Sube con el cuerpo, pero no se deforma con él. */}
         <g id="lia-extras">
-          <Extras key={estado} estado={estado} />
+          <Extras key={estado} estado={estado} actividad={actividad} />
           {/* Corazones de las caricias y estrellas del mareo: el motor los
               mueve; no reciben el mouse. */}
           {estado === "inactivo" && (

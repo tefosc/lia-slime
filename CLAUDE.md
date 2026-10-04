@@ -243,6 +243,14 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   nunca ignora; si el bucle no late en 1 s, el vigilante la devuelve al modo
   normal. No quites estas protecciones: la ventana no debe quedar atrapada.
 - El pétalo y la sombra no son zona activa: los clics sobre ellos pasan.
+- `trabajando`: Lia está concentrada y tranquila (parámetros en `TRABAJO`),
+  no temblando; el temblor de antes sigue en el código, desactivado con
+  `TRABAJO.oleadas`. Una burbuja a su izquierda dice con un dibujo, sin
+  texto, qué hace Claude (pensar, leer, buscar, editar, comando, web,
+  agente): `src/estado/useActividad.ts` lo saca solo del nombre de la
+  herramienta de cada `PreToolUse` y espacia los cambios para no distraer.
+- Caricias seguidas durante unos segundos la "encantan": dos botes, meneo y
+  corazones más seguidos (`CARICIAS.tiempoParaEncanto`).
 - Las reacciones (toque, sorpresa y enojo por clics; alegría al frotar la
   cabeza; mareo al girar el cursor a su alrededor) solo cambian la cara en
   `inactivo`; los estados de Claude Code mandan siempre. Sus parámetros están

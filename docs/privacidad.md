@@ -12,7 +12,7 @@ solo llegan los hooks de Claude Code de tu propia máquina.
 | Nombre del evento (`hook_event_name`) | Hook | Cambiar el estado de Lia | Memoria | Al cerrar la sesión o a los 5 min sin eventos |
 | Identificador de sesión (`session_id`) | Hook | Distinguir conversaciones ("Conversación 1") | Memoria | Igual |
 | Tipo de notificación o de error | Hook | Saber si Claude te necesita o si hubo un límite de uso | Memoria | Igual |
-| Nombre de la herramienta (`tool_name`) | Hook `PreToolUse` | Contar herramientas para las estadísticas del resultado | Memoria | A los 10 min de terminar la tarea |
+| Nombre de la herramienta (`tool_name`) | Hook `PreToolUse` | Contar herramientas para las estadísticas del resultado y elegir el dibujo de la burbuja mientras Claude trabaja | Memoria | A los 10 min de terminar la tarea |
 | Último mensaje de Claude | Hook `Stop` (`last_assistant_message`) | Mostrarlo en el globo de resultado | Memoria | A los 10 min de terminar la tarea, lo hayas leído o no (hasta entonces puedes volver a abrirlo en la isla), o al activar el modo privado |
 | Final de la transcripción (últimos 256 KB) | Archivo en `~/.claude/projects`, solo si el hook no trae el mensaje | Plan B para el último mensaje | Memoria | Igual |
 | Comando, ruta o URL de una solicitud de permiso | Hook `PermissionRequest` | Enseñarte qué quiere hacer Claude | Memoria | Al responder, al cancelarse o a los 60 s |

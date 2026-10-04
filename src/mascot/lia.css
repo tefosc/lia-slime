@@ -17,3 +17,45 @@
   /* Evita que el gesto táctil o de lápiz cancele el arrastre. */
   touch-action: none;
 }
+
+/* Burbuja de actividad: el dibujo entra con un fundido corto al cambiar. */
+.lia-actividad-dibujo {
+  animation: lia-actividad 260ms ease-out;
+}
+
+@keyframes lia-actividad {
+  from {
+    opacity: 0;
+  }
+}
+
+/* "Pensando": los tres puntos se encienden uno tras otro, despacio. */
+.lia-punto {
+  animation: lia-punto 1.8s ease-in-out infinite;
+}
+
+.lia-punto-2 {
+  animation-delay: 0.3s;
+}
+
+.lia-punto-3 {
+  animation-delay: 0.6s;
+}
+
+@keyframes lia-punto {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lia-actividad-dibujo,
+  .lia-punto {
+    animation: none;
+  }
+}

@@ -20,7 +20,9 @@ export type Sonido =
   | "denegar"
   | "derretirse"
   | "despertar"
-  | "descanso";
+  | "descanso"
+  | "caricia"
+  | "encanto";
 
 type Categoria = "avisos" | "juego";
 type Onda = "sine" | "triangle";
@@ -66,6 +68,9 @@ export const AUDIO = {
     derretirse: 1,
     despertar: 1,
     descanso: 5,
+    // Mientras duran las caricias, un ronroneo cada poco, no continuo.
+    caricia: 1.7,
+    encanto: 3,
   } satisfies Record<Sonido, number>,
 };
 
@@ -82,6 +87,8 @@ const CATEGORIAS: Record<Sonido, Categoria> = {
   despertar: "juego",
   // Se acabó el límite de uso: Lia se va a descansar.
   descanso: "avisos",
+  caricia: "juego",
+  encanto: "juego",
 };
 
 /** Arpegio de `termino`: do, mi, sol, cada uno con su octava muy suave. */
@@ -164,6 +171,26 @@ const SONIDOS: Record<Sonido, Nota[]> = {
       hacia: [[0.4, 200]],
     },
   ],
+  // Ronroneo: una nota grave y suave con un temblor rápido.
+  caricia: [
+    {
+      onda: "sine",
+      inicio: 0,
+      duracion: 0.3,
+      pico: 0.13,
+      frecuencia: 330,
+      hacia: [[0.28, 392]],
+      vibrato: [22, 10],
+    },
+  ],
+  // Encanto: cuatro notas rápidas que suben.
+  encanto: [659, 784, 988, 1175].map((frecuencia, i) => ({
+    onda: "sine" as const,
+    inicio: 0.06 * i,
+    duracion: 0.16,
+    pico: 0.12,
+    frecuencia,
+  })),
   // Tres notas que bajan despacio, como un bostezo.
   descanso: [
     { onda: "sine", inicio: 0, duracion: 0.3, pico: 0.15, frecuencia: 659 },

@@ -11,6 +11,7 @@ import {
   sonar,
 } from "./audio/sonidos";
 import type { Sonido } from "./audio/sonidos";
+import { useActividad } from "./estado/useActividad";
 import { useEstadoLia } from "./estado/useEstadoLia";
 import { Lia } from "./mascot/Lia";
 import { SUENO } from "./mascot/useAnimacionLia";
@@ -51,6 +52,7 @@ function App() {
   const { estado: estadoSesiones, aviso, cerrarAviso } = useEstadoLia();
   const { actual, pendientes, resolver, pregunta, cerrarPregunta } = usePermisos();
   const resultados = useResultados();
+  const actividad = useActividad();
   const registro = useRegistro();
   // Resultado cuyo globo abrió el usuario.
   const [abierto, setAbierto] = useState<number | null>(null);
@@ -369,6 +371,7 @@ function App() {
         <Lia
           estado={estadoMostrado}
           sueno={sueno}
+          actividad={actividad}
           resultadosSinLeer={resultados.sinLeer}
           onClickBurbuja={alPulsarBurbuja}
         />

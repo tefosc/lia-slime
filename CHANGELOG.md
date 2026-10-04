@@ -13,7 +13,8 @@ Primera versión. Solo para Windows.
   en la barra de tareas ni roba el foco. Se arrastra con el mouse y los clics
   fuera de su cuerpo pasan a la ventana de debajo.
 - Estados según los eventos de Claude Code: en reposo, trabajando, "te
-  necesita" y "terminó", con varias conversaciones a la vez.
+  necesita" y "terminó", con varias conversaciones a la vez. Mientras
+  trabaja, una burbuja muestra con un dibujo qué está haciendo Claude.
 - Tarjeta de permisos: muestra el comando, el archivo o la URL y permite o
   deniega solo cuando se pulsa un botón. Marca los comandos que parecen
   peligrosos.

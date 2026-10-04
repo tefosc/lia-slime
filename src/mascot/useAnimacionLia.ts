@@ -154,6 +154,12 @@ export const CARICIAS = {
   duracionCorazon: 1.3,
   /** Cuánto sube cada corazón, en unidades del viewBox. */
   subidaCorazon: 24,
+  /** Segundos de caricias seguidas para que Lia se encante. */
+  tiempoParaEncanto: 4.5,
+  /** Cuánto dura el encanto (botes, meneo y corazones más seguidos). */
+  duracionEncanto: 1.8,
+  /** Descanso mínimo entre dos encantos. */
+  esperaEntreEncantos: 10,
 };
 
 /**
@@ -259,6 +265,30 @@ export interface OpcionesSueno {
   descanso: number;
   onFase?: (fase: FaseSueno) => void;
 }
+
+/**
+ * Trabajo: mientras Claude Code trabaja, Lia está concentrada y tranquila,
+ * no sufriendo. Se balancea despacio, como quien teclea, y mira la burbuja
+ * que indica qué está haciendo Claude. Tiempos en segundos.
+ */
+export const TRABAJO = {
+  /** Duración de cada vaivén del cuerpo. */
+  periodo: 1.1,
+  /** Cuánto se estira y se encoge en cada vaivén (0.012 = 1,2 %). */
+  rebote: 0.012,
+  /** Balanceo lateral del cuerpo, en grados; va a la mitad de ritmo. */
+  balanceo: 1.4,
+  /** Vaivén del pétalo, en grados. */
+  petalo: 5,
+  /** Hacia dónde mira (fracción del tope de la mirada): a su burbuja. */
+  miradaX: -0.75,
+  miradaY: -0.55,
+  /**
+   * Oleadas de esfuerzo (el temblor de antes). Desactivadas: cansaban en
+   * tareas largas. Con `true` vuelven, con los parámetros de `ESFUERZO`.
+   */
+  oleadas: false,
+};
 
 export const ESFUERZO = {
   /** Amplitud de la gelatina: cuánto cambia la escala (0.025 = 2.5 %). */
@@ -576,6 +606,10 @@ export function useAnimacionLia(
       { inicio: -10, x: 0 },
     ];
     let proximoCorazon = 0;
+    /** Desde cuándo recibe caricias seguidas, y encanto en curso. */
+    let inicioFeliz = -1;
+    let inicioEncanto = -100;
+    let segundoBote = false;
     let siguienteCorazon = 0;
     let reaccion: "ninguna" | "sorpresa" | "enojo" | "feliz" | "mareo" = "ninguna";
     let finReaccion = 0;
@@ -597,6 +631,7 @@ export function useAnimacionLia(
       agita: 0,
       salta: 0,
       flota: 0,
+      trabaja: 0,
       ojos: 0,
       inclina: 0,
     };
@@ -819,7 +854,7 @@ export function useAnimacionLia(
           Math.min(1, Math.max(0, dormida.valor)),
         );
 
-      if (e === "trabajando" && !quieto) {
+      if (TRABAJO.oleadas && e === "trabajando" && !quieto) {
         if (tiempo >= finFase) {
           enOleada = !enOleada;
           const rango = enOleada ? ESFUERZO.oleada : ESFUERZO.respiro;
@@ -905,7 +940,35 @@ export function useAnimacionLia(
         corazon.inicio = tiempo;
         corazon.x = azar(-22, 22);
         siguienteCorazon = (siguienteCorazon + 1) % corazones.length;
-        proximoCorazon = tiempo + CARICIAS.intervaloCorazones;
+        // Encantada, los corazones salen más seguidos.
+        proximoCorazon =
+          tiempo +
+          (tiempo - inicioEncanto < CARICIAS.duracionEncanto
+            ? CARICIAS.intervaloCorazones * 0.6
+            : CARICIAS.intervaloCorazones);
+      }
+      if (reaccion !== "feliz") inicioFeliz = -1;
+      // Encanto: tras un rato de caricias seguidas da dos botes de alegría.
+      if (
+        reaccion === "feliz" &&
+        inicioFeliz >= 0 &&
+        tiempo - inicioFeliz >= CARICIAS.tiempoParaEncanto &&
+        tiempo - inicioEncanto >= CARICIAS.esperaEntreEncantos
+      ) {
+        inicioEncanto = tiempo;
+        segundoBote = false;
+        sonar("encanto");
+        if (!quieto) {
+          elevacion.impulso(60);
+          aplaste.impulso(0.8);
+        }
+      }
+      if (!segundoBote && tiempo - inicioEncanto >= 0.5 && tiempo - inicioEncanto < 1) {
+        segundoBote = true;
+        if (!quieto) {
+          elevacion.impulso(50);
+          aplaste.impulso(0.6);
+        }
       }
       // La sorpresa usa un resorte rígido: dos medios pasos lo mantienen estable.
       sorpresa.paso(dt / 2);
@@ -924,7 +987,8 @@ export function useAnimacionLia(
       );
       // Ojos que siguen: solo los redondos. Inclinación: completa en reposo y
       // en alerta, a la mitad mientras trabaja o celebra.
-      pesos.ojos = peso(pesos.ojos, e === "inactivo" || e === "necesita" ? 1 : 0);
+      pesos.ojos = peso(pesos.ojos, e === "termino" ? 0 : 1);
+      pesos.trabaja = peso(pesos.trabaja, e === "trabajando" ? 1 : 0);
       pesos.inclina = peso(
         pesos.inclina,
         e === "inactivo" || e === "necesita" ? 1 : 0.5,
@@ -938,6 +1002,11 @@ export function useAnimacionLia(
         miradaX.objetivo = haciaGlobo * MIRADA.maxDesplazamientoOjos * 0.85;
         miradaY.objetivo = 0;
         inclinacion.objetivo = haciaGlobo * 0.6;
+      } else if (e === "trabajando" && !quieto) {
+        // Trabajando no se distrae con el cursor: mira su burbuja.
+        miradaX.objetivo = TRABAJO.miradaX * MIRADA.maxDesplazamientoOjos;
+        miradaY.objetivo = TRABAJO.miradaY * MIRADA.maxDesplazamientoOjos;
+        inclinacion.objetivo = 0;
       } else if (
         // Dormida no sigue al cursor.
         cursor &&
@@ -975,7 +1044,7 @@ export function useAnimacionLia(
       petaloGiro.paso(dt);
       aplaste.paso(dt);
 
-      if (e === "inactivo") {
+      if (e === "inactivo" || e === "trabajando") {
         // Con movimiento reducido no parpadea sola, pero sí al tocarla.
         if (
           !quieto &&
@@ -1017,12 +1086,25 @@ export function useAnimacionLia(
         ? 0
         : Math.sin(faseMareo) * mareada * MAREO.intensidadBalanceo;
       // El rebote del toque se suma a la inclinación hacia el cursor.
+      // Encanto: meneo rápido que se apaga solo.
+      const desdeEncanto = tiempo - inicioEncanto;
+      const meneoEncanto =
+        quieto || desdeEncanto < 0 || desdeEncanto > CARICIAS.duracionEncanto
+          ? 0
+          : 8 *
+            Math.sin(TAU * 3.2 * desdeEncanto) *
+            (1 - desdeEncanto / CARICIAS.duracionEncanto);
       const giroCuerpo =
         MIRADA.maxInclinacion *
           inclinacion.valor *
           pesos.inclina *
           (1 - caraMareada) +
         TOQUES.inclinacionRebote * empuje.valor +
+        TRABAJO.balanceo *
+          Math.sin((TAU * tiempo) / (2 * TRABAJO.periodo)) *
+          pesos.trabaja +
+        // Meneo de alegría al encantarse con las caricias.
+        meneoEncanto +
         5 * balanceoMareo +
         // Ronroneo de las caricias.
         (quieto
@@ -1222,6 +1304,8 @@ export function useAnimacionLia(
           pesos.respira +
         // En el salto se estira arriba y se aplasta al tocar el suelo.
         SALTAR.estiron * (bote - 0.4) * pesos.salta +
+        // Vaivén tranquilo del trabajo.
+        TRABAJO.rebote * Math.sin((TAU * tiempo) / TRABAJO.periodo) * pesos.trabaja +
         // Gelatina del esfuerzo: sx y sy van en contrafase.
         ESFUERZO.amplitud * Math.sin(TAU * tiempo * ESFUERZO.frecuencia) * fuerza;
       // Derretida se aplasta y se ensancha con la base como ancla; al pasar
@@ -1288,6 +1372,9 @@ export function useAnimacionLia(
         AGITAR.amplitud *
           Math.sin(TAU * tiempo * AGITAR.frecuencia) *
           pesos.agita +
+        TRABAJO.petalo *
+          Math.sin((TAU * tiempo) / TRABAJO.periodo - 0.9) *
+          pesos.trabaja +
         FLOTAR.giro *
           Math.sin((TAU * tiempo) / FLOTAR.periodoGiro) *
           pesos.flota;
@@ -1373,6 +1460,7 @@ export function useAnimacionLia(
       gotaInicio >= 0 ||
       (reaccion === "enojo" && temblorEnojo > 0.05) ||
       reaccion === "feliz" ||
+      tiempo - inicioEncanto < CARICIAS.duracionEncanto ||
       reaccion === "mareo" ||
       mareo.valor > 0.01 ||
       tiempo - inicioMareo < 1.7 ||
@@ -1524,7 +1612,11 @@ export function useAnimacionLia(
         if (reaccion !== "feliz") {
           proximoCorazon = tiempo + 0.15;
           toques = [];
+          inicioFeliz = tiempo;
         }
+        // El sonido tiene su propia separación mínima: suena de vez en
+        // cuando mientras duran las caricias, no en cada movimiento.
+        sonar("caricia");
         reaccion = "feliz";
         finReaccion = tiempo + CARICIAS.duracion;
       }

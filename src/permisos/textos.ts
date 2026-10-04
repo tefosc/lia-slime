@@ -18,10 +18,11 @@ export interface TextoAviso {
 
 const AVISOS: Record<string, { titulos: string[]; textos: string[] }> = {
   rate_limit: {
-    titulos: ["Me voy a descansar un ratito", "Toca siesta: se acabó el límite"],
+    titulos: ["Siesta obligatoria", "Cerrado por descanso", "Se acabó la cuerda por hoy"],
     textos: [
-      "Se nos acabó el límite de Claude por ahora. Voy a echarme una siesta; en cuanto vuelvas a escribirle, aquí estaré.",
-      "Usaste todo tu límite de Claude. Descanso un rato y me despierto cuando le vuelvas a escribir.",
+      "Claude se quedó sin límite y yo sin excusas para seguir despierta. Vuelvo al trabajo en cuanto tú vuelvas a Claude Code.",
+      "Sin límite no hay trabajo, y sin trabajo hay siesta. Cuando tú te pongas otra vez con Claude Code, yo me pongo contigo.",
+      "Nos gastamos todo el límite de Claude. Me echo una siestita; el primero que vuelva a Claude Code despierta al otro.",
     ],
   },
   billing_error: {
