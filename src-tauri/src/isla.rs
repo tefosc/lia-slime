@@ -31,9 +31,10 @@ const EVENTO_BAJAR: &str = "lia-isla-bajar";
 const EVENTO_SUBIR: &str = "lia-isla-subir";
 const EVENTO_LEIDO: &str = "lia-isla-leido";
 
-/// Tamaño de la isla en píxeles lógicos (el mismo que en tauri.conf.json).
-const ANCHO: f64 = 520.0;
-const ALTO: f64 = 300.0;
+/// Tamaño de la ventana de la isla en píxeles lógicos (el mismo que en
+/// tauri.conf.json). El panel es algo menor: deja sitio a su sombra.
+const ANCHO: f64 = 572.0;
+const ALTO: f64 = 360.0;
 /// Separación de Lia cuando la isla tiene que apartarse de ella.
 const MARGEN: f64 = 8.0;
 /// Tiempo que el cursor debe quedarse en el borde superior para que baje.

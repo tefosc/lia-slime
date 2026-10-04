@@ -1,4 +1,9 @@
-/* La ventana de la isla es transparente: solo se ve el panel. */
+/*
+ * Isla: panel oscuro, compacto y muy redondeado, pegado al borde superior de
+ * la pantalla. Los acentos son los colores de Lia (menta, rosa del pétalo y
+ * amarillo de alerta). La ventana es transparente y algo mayor que el panel
+ * para que quepa su sombra.
+ */
 html,
 body,
 #root {
@@ -10,63 +15,396 @@ body,
   user-select: none;
 }
 
-/*
- * Mismo globo que las tarjetas de Lia, sin colita. Va pegado al borde
- * superior de la pantalla (sin borde ni esquinas redondas arriba) y baja y
- * sube deslizándose, como la barra de tareas oculta de Windows.
- */
-.globo.isla {
-  width: calc(100% - 4px);
-  height: calc(100% - 4px);
-  margin: 0 2px 4px;
-  padding: 10px 14px 12px;
+.isla {
+  --fondo: #14161b;
+  --capa: rgba(255, 255, 255, 0.055);
+  --capa-fuerte: rgba(255, 255, 255, 0.1);
+  --linea: rgba(255, 255, 255, 0.09);
+  --tinta: #eef2f3;
+  --tenue: #98a2ab;
+  --menta: #9be3c3;
+  --menta-fuerte: #5fd3a4;
+  --rosa: #ff9ec0;
+  --amarillo: #ffd95a;
+
+  position: absolute;
+  inset: 0 16px 20px;
+  box-sizing: border-box;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--linea);
   border-top: none;
-  border-radius: 0 0 16px 16px;
-  animation: none;
-  transform: translateY(-104%);
-  transition: transform 240ms cubic-bezier(0.4, 0, 0.9, 0.6);
+  border-radius: 0 0 26px 26px;
+  background: var(--fondo);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.38);
+  color: var(--tinta);
+  font: 13px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  /* Escondida por encima del borde; baja y sube deslizándose. */
+  transform: translateY(-112%);
+  transition: transform 220ms cubic-bezier(0.5, 0, 0.9, 0.5);
 }
 
-.globo.isla.isla-abajo {
+.isla.isla-abajo {
   transform: translateY(0);
-  /* Al bajar frena con un pequeño rebote. */
-  transition: transform 300ms cubic-bezier(0.2, 1.1, 0.4, 1.06);
+  /* Al bajar frena con un rebote corto. */
+  transition: transform 340ms cubic-bezier(0.2, 1.2, 0.35, 1.02);
 }
 
-.globo.isla::before {
-  display: none;
+.isla-cabecera {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .globo.isla,
-  .globo.isla.isla-abajo {
-    transition: none;
+.isla-carita {
+  flex: none;
+}
+
+.isla-titulos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.isla-titulo {
+  min-width: 0;
+  font: 600 13.5px/1.3 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.isla-contador {
+  flex: none;
+  color: var(--menta);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.isla-icono {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--capa);
+  color: var(--tenue);
+  cursor: pointer;
+  transition:
+    background-color 120ms,
+    color 120ms;
+}
+
+.isla-icono:hover {
+  background: var(--capa-fuerte);
+  color: var(--tinta);
+}
+
+/* Cada vista entra con un fundido y un pequeño desplazamiento. */
+.isla-vista {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: isla-vista 200ms ease-out;
+}
+
+@keyframes isla-vista {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
   }
 }
 
-.globo.isla .registro-lista {
-  gap: 4px;
-}
-
-.globo.isla .registro-entrada {
-  padding: 6px 9px;
-}
-
-/* Texto completo: plano, con sus saltos de línea, seleccionable y con
-   desplazamiento. */
-.isla-texto {
+.isla-lista,
+.isla-cuerpo {
   flex: 1;
   min-height: 0;
-  padding: 8px 10px;
+  margin: 0;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--borde) transparent;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.isla-lista {
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.isla-entrada {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border: none;
+  border-radius: 14px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.isla-abrible {
+  cursor: pointer;
+  transition: background-color 120ms;
+}
+
+.isla-abrible:hover {
+  background: var(--capa);
+}
+
+.isla-marca {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(155, 227, 195, 0.14);
+  color: var(--menta);
+}
+
+.isla-marca-denegado {
+  background: rgba(255, 158, 192, 0.14);
+  color: var(--rosa);
+}
+
+.isla-marca-aviso {
+  background: rgba(255, 217, 90, 0.14);
+  color: var(--amarillo);
+}
+
+.isla-entrada-textos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.isla-entrada-titulo,
+.isla-entrada-detalle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.isla-entrada-titulo {
+  line-height: 1.3;
+}
+
+.isla-nueva .isla-entrada-titulo {
+  font-weight: 600;
+}
+
+.isla-entrada-detalle,
+.isla-cuando {
+  color: var(--tenue);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.isla-cuando {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Punto de "nuevo", con un halo suave. */
+.isla-punto {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--menta-fuerte);
+  box-shadow: 0 0 0 3px rgba(95, 211, 164, 0.2);
+}
+
+.isla-flecha {
+  flex: none;
+  color: var(--tenue);
+  opacity: 0.6;
+  transition:
+    transform 120ms,
+    opacity 120ms;
+}
+
+.isla-abrible:hover .isla-flecha {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* Detalle: fichas con los datos de la tarea y el mensaje debajo. */
+.isla-fichas {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 2px;
+}
+
+.isla-ficha {
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--capa);
+  color: var(--tenue);
+  font-size: 11.5px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.isla-ficha:first-child {
+  background: rgba(155, 227, 195, 0.14);
+  color: var(--menta);
+}
+
+.isla-cuerpo {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--capa);
   user-select: text;
 }
 
+.isla-nota {
+  margin: 0;
+  color: var(--tenue);
+}
+
+.isla-vacia {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 40px;
+  text-align: center;
+}
+
+/* Mensaje de Claude con formato seguro (ver formato.ts). */
+.mensaje {
+  overflow-wrap: anywhere;
+}
+
+.mensaje > :first-child {
+  margin-top: 0;
+}
+
+.mensaje > :last-child {
+  margin-bottom: 0;
+}
+
+.mensaje p {
+  margin: 0 0 8px;
+  white-space: pre-line;
+}
+
+.mensaje-titulo {
+  margin: 12px 0 5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mensaje-titulo-1 {
+  font-size: 15px;
+}
+
+.mensaje-titulo-2 {
+  font-size: 14px;
+}
+
+.mensaje-titulo-3 {
+  color: var(--menta);
+}
+
+.mensaje ul,
+.mensaje ol {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.mensaje li {
+  margin: 2px 0;
+  white-space: pre-line;
+}
+
+.mensaje li::marker {
+  color: var(--menta-fuerte);
+}
+
+.mensaje strong {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.mensaje-en-linea,
+.mensaje-codigo {
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.mensaje-en-linea {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(155, 227, 195, 0.13);
+  color: var(--menta);
+}
+
+.mensaje-codigo {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+/* El comando de un permiso se ajusta al ancho: hay que poder leerlo entero. */
 .isla-comando {
-  font: 12px/1.45 ui-monospace, Consolas, monospace;
+  margin: 0;
+  white-space: pre-wrap;
   word-break: break-all;
+}
+
+.mensaje-cita {
+  margin: 0 0 8px;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid var(--menta-fuerte);
+  color: var(--tenue);
+  white-space: pre-line;
+}
+
+.mensaje-separador {
+  height: 1px;
+  margin: 10px 0;
+  background: var(--linea);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .isla,
+  .isla.isla-abajo {
+    transition: none;
+  }
+
+  .isla-vista {
+    animation: none;
+  }
 }

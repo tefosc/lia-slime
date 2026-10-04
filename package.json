@@ -15,7 +15,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "verificar": "node src/mascot/detectorMareo.verificar.ts",
+    "verificar": "node src/mascot/detectorMareo.verificar.ts && node src/isla/formato.verificar.ts",
     "licencias": "node scripts/listar-licencias.mjs",
     "tauri": "tauri"
   },

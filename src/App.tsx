@@ -23,7 +23,7 @@ import type { EstadoIsla, VistaIsla } from "./isla/tipos";
 import { TEXTOS_REGISTRO } from "./registro/textos";
 import { useRegistro } from "./registro/useRegistro";
 import { RESULTADOS } from "./resultados/config";
-import { resumenDe, TEXTOS_RESULTADO } from "./resultados/textos";
+import { resumenDe, textoDuracion, TEXTOS_RESULTADO } from "./resultados/textos";
 import { preguntaDePermiso } from "./permisos/textos";
 import { TarjetaResultado } from "./resultados/TarjetaResultado";
 import { useResultados } from "./resultados/useResultados";
@@ -215,6 +215,7 @@ function App() {
           clave: `r${r.id}`,
           tipo: "resultado" as const,
           texto: TEXTOS_REGISTRO.termino(r.etiqueta),
+          detalle: TEXTOS_REGISTRO.resumen(textoDuracion(r.duracionS), r.herramientas),
           momento: r.momento,
           nueva: !r.leido,
           resultado: r.id,

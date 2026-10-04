@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Boton } from "../globo/Globo";
 import { haceCuanto, TEXTOS_REGISTRO } from "../registro/textos";
+import { Mensaje } from "./Mensaje";
 import type { EstadoIsla, TipoEntrada, VistaIsla } from "./tipos";
 
 /** Respuesta de `estado_isla` (ver src-tauri/src/isla.rs). */
@@ -21,21 +21,24 @@ const VACIO: EstadoIsla = {
 const LISTA: VistaIsla = { tipo: "lista" };
 
 /**
- * Isla: panel anclado al borde superior de la pantalla. Baja deslizándose y
- * muestra lo último que pasó; al elegir una tarea, su mensaje completo.
+ * Isla: panel oscuro anclado al borde superior de la pantalla. Baja
+ * deslizándose y muestra lo último que pasó; al elegir una tarea, su mensaje
+ * completo con formato seguro.
  *
  * No tiene estado propio: lo que muestra se lo entrega la ventana de Lia.
- * Todo se pinta como texto plano de React (nada de HTML, Markdown ni
- * enlaces) y solo vive en memoria.
+ * Nada del contenido se convierte en HTML (ver formato.ts) y solo vive en
+ * memoria. `muestra` solo se usa en la maqueta de desarrollo.
  */
-export function Isla() {
-  const [estado, setEstado] = useState<EstadoIsla>(VACIO);
-  const [vista, setVista] = useState<VistaIsla>(LISTA);
-  const [abajo, setAbajo] = useState(false);
+export function Isla({ muestra }: { muestra?: { estado: EstadoIsla; vista: VistaIsla } }) {
+  const [estado, setEstado] = useState<EstadoIsla>(muestra?.estado ?? VACIO);
+  const [vista, setVista] = useState<VistaIsla>(muestra?.vista ?? LISTA);
+  const [abajo, setAbajo] = useState(muestra !== undefined);
   const [ahora, setAhora] = useState(() => Date.now());
-  const texto = useRef<HTMLDivElement>(null);
+  const cuerpo = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Con datos de muestra (solo en desarrollo) no se habla con Tauri.
+    if (muestra) return;
     const bajar = (pedida: VistaIsla | null) => {
       setVista(pedida ?? LISTA);
       setAhora(Date.now());
@@ -62,6 +65,7 @@ export function Isla() {
       window.clearInterval(reloj);
       escuchas.forEach((p) => p.then((dejar) => dejar()).catch(() => {}));
     };
+    // Solo al montar.
   }, []);
 
   const subir = () => {
@@ -86,99 +90,168 @@ export function Isla() {
   // Al abrir un resultado, Lia lo marca como leído y el texto empieza arriba.
   const idAbierto = vista.tipo === "resultado" ? vista.id : null;
   useEffect(() => {
-    if (idAbierto !== null && abajo) {
+    if (idAbierto !== null && abajo && !muestra) {
       invoke("isla_leido", { id: idAbierto }).catch((error: unknown) => {
         console.error("No se pudo marcar el resultado como leído:", error);
       });
     }
-    texto.current?.scrollTo(0, 0);
+    cuerpo.current?.scrollTo(0, 0);
   }, [idAbierto, abajo]);
 
+  const nuevas = estado.entradas.filter((e) => e.nueva).length;
+
   return (
-    <div className={`globo isla${abajo ? " isla-abajo" : ""}`} role="status">
-      {detalle ? (
-        <>
-          <div className="globo-cabecera">
-            {vista.tipo === "resultado" && (
-              <Boton
-                tipo="icono"
-                titulo={TEXTOS_REGISTRO.volver}
-                onClick={() => setVista(LISTA)}
-              >
-                <Flecha />
-              </Boton>
-            )}
-            <span className="globo-titulo">{detalle.titulo}</span>
-          </div>
-          {detalle.detalle && <div className="globo-menor">{detalle.detalle}</div>}
-          {detalle.texto === null ? (
-            <div className="globo-nota">
-              {estado.privado ? TEXTOS_REGISTRO.privado : TEXTOS_REGISTRO.sinTexto}
-            </div>
-          ) : (
-            <div
-              ref={texto}
-              className={`globo-cita isla-texto${detalle.mono ? " isla-comando" : ""}`}
-            >
-              {detalle.texto}
-            </div>
+    <div className={`isla${abajo ? " isla-abajo" : ""}`} role="status">
+      <header className="isla-cabecera">
+        {detalle && vista.tipo === "resultado" ? (
+          <button
+            type="button"
+            tabIndex={-1}
+            className="isla-icono"
+            title={TEXTOS_REGISTRO.volver}
+            onClick={() => setVista(LISTA)}
+          >
+            <Flecha />
+          </button>
+        ) : (
+          <Carita />
+        )}
+        <div className="isla-titulos">
+          <span className="isla-titulo">
+            {detalle ? detalle.titulo : TEXTOS_REGISTRO.titulo}
+          </span>
+          {!detalle && nuevas > 0 && (
+            <span className="isla-contador">{TEXTOS_REGISTRO.nuevas(nuevas)}</span>
           )}
-        </>
-      ) : (
-        <>
-          <div className="globo-cabecera">
-            <span className="globo-titulo">{TEXTOS_REGISTRO.titulo}</span>
+        </div>
+        <button
+          type="button"
+          tabIndex={-1}
+          className="isla-icono"
+          title={TEXTOS_REGISTRO.cerrar}
+          onClick={subir}
+        >
+          <Equis />
+        </button>
+      </header>
+
+      {/* La clave reinicia la animación de entrada al cambiar de vista. */}
+      <div
+        key={detalle ? `d${vista.tipo}${idAbierto ?? ""}` : "lista"}
+        className="isla-vista"
+      >
+        {detalle ? (
+          <>
+            {detalle.detalle && (
+              <div className="isla-fichas">
+                {detalle.detalle.split(" · ").map((ficha) => (
+                  <span key={ficha} className="isla-ficha">
+                    {ficha}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div ref={cuerpo} className="isla-cuerpo">
+              {detalle.texto === null ? (
+                <p className="isla-nota">
+                  {estado.privado ? TEXTOS_REGISTRO.privado : TEXTOS_REGISTRO.sinTexto}
+                </p>
+              ) : detalle.mono ? (
+                <pre className="mensaje-codigo isla-comando">{detalle.texto}</pre>
+              ) : (
+                <Mensaje texto={detalle.texto} />
+              )}
+            </div>
+          </>
+        ) : estado.entradas.length === 0 ? (
+          <div className="isla-vacia">
+            <Carita grande />
+            <p className="isla-nota">{TEXTOS_REGISTRO.vacio}</p>
           </div>
-          {estado.entradas.length === 0 ? (
-            <div className="globo-nota">{TEXTOS_REGISTRO.vacio}</div>
-          ) : (
-            <ul className="registro-lista">
-              {estado.entradas.map((entrada) =>
-                entrada.resultado !== undefined ? (
-                  <li key={entrada.clave}>
+        ) : (
+          <ul className="isla-lista">
+            {estado.entradas.map((entrada) => {
+              const abrible = entrada.resultado !== undefined;
+              const contenido = (
+                <>
+                  <Marca tipo={entrada.tipo} />
+                  <span className="isla-entrada-textos">
+                    <span className="isla-entrada-titulo">{entrada.texto}</span>
+                    {entrada.detalle && (
+                      <span className="isla-entrada-detalle">{entrada.detalle}</span>
+                    )}
+                  </span>
+                  {entrada.nueva && <span className="isla-punto" />}
+                  <span className="isla-cuando">{haceCuanto(entrada.momento, ahora)}</span>
+                  {abrible && <Flecha derecha />}
+                </>
+              );
+              return (
+                <li key={entrada.clave}>
+                  {abrible ? (
                     <button
                       type="button"
                       tabIndex={-1}
-                      className={`registro-entrada${entrada.nueva ? " registro-nueva" : ""}`}
+                      className={`isla-entrada isla-abrible${entrada.nueva ? " isla-nueva" : ""}`}
                       onClick={() =>
                         setVista({ tipo: "resultado", id: entrada.resultado as number })
                       }
                     >
-                      <Marca tipo={entrada.tipo} />
-                      <span className="registro-texto">{entrada.texto}</span>
-                      <span className="registro-cuando">
-                        {haceCuanto(entrada.momento, ahora)}
-                      </span>
+                      {contenido}
                     </button>
-                  </li>
-                ) : (
-                  <li key={entrada.clave} className="registro-entrada">
-                    <Marca tipo={entrada.tipo} />
-                    <span className="registro-texto">{entrada.texto}</span>
-                    <span className="registro-cuando">
-                      {haceCuanto(entrada.momento, ahora)}
-                    </span>
-                  </li>
-                ),
-              )}
-            </ul>
-          )}
-        </>
-      )}
-      <div className="globo-botones">
-        <Boton tipo="principal" corto onClick={subir}>
-          {TEXTOS_REGISTRO.cerrar}
-        </Boton>
+                  ) : (
+                    <div className="isla-entrada">{contenido}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );
 }
 
-function Flecha() {
+/** Carita de Lia, con las mismas formas que su icono de bandeja. */
+function Carita({ grande }: { grande?: boolean }) {
+  const lado = grande ? 44 : 24;
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <svg
+      className="isla-carita"
+      viewBox="-55 -70 110 110"
+      width={lado}
+      height={lado}
+      aria-hidden="true"
+    >
+      <g transform="translate(20,-34) rotate(18) scale(1.2)">
+        <path
+          d="M0 0 C-12 -8 -14 -22 -6 -27 L0 -22 L6 -27 C14 -22 12 -8 0 0 Z"
+          fill="#FF9EC0"
+        />
+      </g>
       <path
-        d="M14.5 5 L7.5 12 L14.5 19"
+        d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z"
+        fill="#9BE3C3"
+      />
+      <ellipse cx="-16" cy="3" rx="8" ry="11" fill="#14161B" />
+      <ellipse cx="16" cy="3" rx="8" ry="11" fill="#14161B" />
+      <circle cx="-13" cy="-2" r="3.2" fill="#fff" />
+      <circle cx="19" cy="-2" r="3.2" fill="#fff" />
+    </svg>
+  );
+}
+
+function Flecha({ derecha }: { derecha?: boolean }) {
+  return (
+    <svg
+      className={derecha ? "isla-flecha" : undefined}
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      aria-hidden="true"
+    >
+      <path
+        d={derecha ? "M9.5 5 L16.5 12 L9.5 19" : "M14.5 5 L7.5 12 L14.5 19"}
         fill="none"
         stroke="currentColor"
         strokeWidth="2.4"
@@ -189,35 +262,47 @@ function Flecha() {
   );
 }
 
-/** Marca dibujada con formas, con los colores del personaje. */
-function Marca({ tipo }: { tipo: TipoEntrada }) {
-  const color =
-    tipo === "denegado" ? "#C9788F" : tipo === "aviso" ? "#E0A800" : "#2F8A63";
+function Equis() {
   return (
-    <svg className="registro-marca" viewBox="0 0 14 14" aria-hidden="true">
-      {tipo === "resultado" && <circle cx="7" cy="7" r="6" fill="#9BE3C3" />}
-      {tipo === "aviso" ? (
-        <>
-          <rect x="6" y="2.5" width="2" height="6" rx="1" fill={color} />
-          <circle cx="7" cy="11" r="1.2" fill={color} />
-        </>
-      ) : tipo === "denegado" ? (
-        <path
-          d="M3.5 3.5 L10.5 10.5 M10.5 3.5 L3.5 10.5"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      ) : (
-        <path
-          d="M3.5 7.2 L6 9.7 L10.5 4.6"
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      )}
+    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+      <path
+        d="M6 6 L18 18 M18 6 L6 18"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
     </svg>
+  );
+}
+
+/** Marca de cada entrada, dibujada con formas, sobre un fondo de su color. */
+function Marca({ tipo }: { tipo: TipoEntrada }) {
+  return (
+    <span className={`isla-marca isla-marca-${tipo}`}>
+      <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true">
+        {tipo === "aviso" ? (
+          <>
+            <rect x="6" y="2.5" width="2" height="6" rx="1" fill="currentColor" />
+            <circle cx="7" cy="11" r="1.2" fill="currentColor" />
+          </>
+        ) : tipo === "denegado" ? (
+          <path
+            d="M3.5 3.5 L10.5 10.5 M10.5 3.5 L3.5 10.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        ) : (
+          <path
+            d="M3.2 7.3 L5.9 10 L10.8 4.4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+      </svg>
+    </span>
   );
 }

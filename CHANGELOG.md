@@ -24,8 +24,8 @@ Primera versión. Solo para Windows.
   colores, y una barra con el tiempo que queda para responder un permiso.
 - Isla: panel escondido en el borde superior de la pantalla que baja al
   dejar el cursor ahí, con lo último que pasó (tareas terminadas, permisos y
-  avisos) y el mensaje completo de cada tarea. "Ver más" y "Ver todo" la
-  abren con el texto entero.
+  avisos) y el mensaje completo de cada tarea, con títulos, listas y código
+  bien presentados. "Ver más" y "Ver todo" la abren con el texto entero.
 - Interacciones: mirada que sigue al cursor, rebote al tocarla, sorpresa,
   enojo, caricias y mareo.
 - Sueño por inactividad: se adormece, se derrite en un charquito y se oculta;

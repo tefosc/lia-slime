@@ -120,12 +120,26 @@ no está conectada.
 - Va centrada en el monitor de Lia; si ahí taparía a Lia, se pone a su lado.
   No baja mientras hay un botón del mouse pulsado (arrastrar una ventana
   hasta arriba para maximizarla).
+- Aspecto de la isla (`src/isla/isla.css`): panel oscuro y muy redondeado,
+  con los colores de Lia como acentos; no usa `Globo`. La ventana es algo
+  mayor que el panel para que quepa su sombra (si cambias el tamaño, cámbialo
+  también en `tauri.conf.json` y en `ANCHO`/`ALTO` de `isla.rs`).
+- Mensajes de Claude en la isla: formato limitado y seguro.
+  `src/isla/formato.ts` (función pura, se verifica con `pnpm verificar`)
+  reconoce títulos, párrafos, listas, citas, bloques de código, negrita,
+  cursiva y código en línea; `Mensaje.tsx` los pinta con elementos propios.
+  No se genera HTML a partir del mensaje, no hay enlaces clicables ni
+  imágenes, y nada se ejecuta ni se abre. No lo relajes: nada de
+  `dangerouslySetInnerHTML` ni de librerías de Markdown. Los globos junto a
+  Lia siguen mostrando texto plano.
 - `src/registro/` — notas de permisos y avisos (30 min, solo una frase fija,
   nunca el comando ni la ruta). Los resultados se conservan 10 min con su
   texto. Todo en memoria.
 - Solo en desarrollo: `http://localhost:1420/?maqueta` muestra los globos con
-  datos de ejemplo (`src/globo/Maqueta.tsx`), y
-  `scripts/simular-evento.ps1 -Registro` baja la isla.
+  datos de ejemplo (`src/globo/Maqueta.tsx`);
+  `http://localhost:1420/isla.html?maqueta` muestra la isla (también
+  `?maqueta=detalle`, `=permiso` y `=vacia`); y
+  `scripts/simular-evento.ps1 -Registro` la baja en la app.
 
 ## Sueño por inactividad
 
@@ -253,8 +267,9 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   puerto local cerrado, y eso retrasaría a Claude Code con Lia cerrada.
 - Privacidad: del evento solo se conservan `hook_event_name`, `session_id` y
   `notification_type`. Nunca registres ni reenvíes otros campos.
-- Resultados: el último mensaje de Claude solo vive en memoria, se muestra
-  como texto plano (nunca HTML, Markdown ni enlaces) y nunca se registra.
+- Resultados: el último mensaje de Claude solo vive en memoria y nunca se
+  registra. En los globos se muestra como texto plano; en la isla, con el
+  formato limitado y seguro de `src/isla/formato.ts` (nunca HTML ni enlaces).
   Las rutas de transcripción se validan con su forma canónica dentro de
   `~/.claude/projects`; no relajes esa comprobación.
 - Permisos (`/permiso`): el comando, la ruta o la URL viven

@@ -39,7 +39,13 @@ export const TEXTOS_REGISTRO = {
   denegado: (herramienta: string) => `No permitiste ${accion(herramienta)}`,
   termino: (etiqueta: string) => `${etiqueta} terminó`,
   volver: "Volver",
+  nuevas: (n: number) => (n === 1 ? "1 nueva" : `${n} nuevas`),
+  /** Segunda línea de una tarea terminada en la lista. */
+  resumen: (duracion: string, herramientas: number) =>
+    herramientas === 0
+      ? duracion
+      : `${duracion} · ${herramientas} ${herramientas === 1 ? "herramienta" : "herramientas"}`,
   sinTexto: "No pude leer el mensaje de esta tarea, pero aquí tienes el resumen.",
   privado: "Modo privado: no leo los mensajes de Claude.",
-  cerrar: "Gracias, Lia",
+  cerrar: "Cerrar",
 };

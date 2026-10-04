@@ -8,6 +8,8 @@ export interface EntradaIsla {
   clave: string;
   tipo: TipoEntrada;
   texto: string;
+  /** Segunda línea, más discreta: duración y herramientas de una tarea. */
+  detalle?: string;
   /** Momento (ms) en que ocurrió. */
   momento: number;
   /** Resultado que todavía no se ha abierto. */

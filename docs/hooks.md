@@ -285,8 +285,8 @@ Reglas para la transcripción:
 - Si algo falla, la tarjeta muestra solo las estadísticas, sin errores ni
   rutas.
 
-El mensaje se muestra como texto plano (sin HTML, Markdown ni enlaces
-clicables), se recorta a 2000 caracteres, vive solo en memoria y se borra a los
+El mensaje se muestra como texto plano en el globo y con un formato limitado
+y seguro en la isla (sin HTML ni enlaces clicables en ningún caso), se recorta a 2000 caracteres, vive solo en memoria y se borra a los
 10 minutos de terminar la tarea. Hasta entonces puedes reabrirlo desde
 la isla (lleva el cursor al borde superior de la pantalla, o usa "Mensajes
 recientes" de la bandeja).

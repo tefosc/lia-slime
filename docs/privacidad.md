@@ -43,8 +43,11 @@ descarta al recibirlo**: ni se guarda ni se muestra.
   caracteres de la sesión.
 - No lee archivos fuera de `~/.claude/projects` como transcripción: la ruta se
   resuelve (enlaces, uniones de directorio, `..`) y se comprueba antes de leer.
-- No interpreta el mensaje de Claude: se muestra como texto plano, sin HTML,
-  Markdown ni enlaces.
+- No ejecuta ni abre nada del mensaje de Claude. En los globos se muestra
+  como texto plano. En la isla, Lia reconoce un formato limitado (títulos,
+  listas, negritas y código) y lo dibuja con sus propios elementos: nunca se
+  genera HTML a partir del mensaje, y los enlaces y las imágenes quedan como
+  texto que no se puede pulsar.
 - No decide permisos por ti: solo responde cuando pulsas un botón.
 
 ## Qué guarda en disco
