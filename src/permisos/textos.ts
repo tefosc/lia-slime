@@ -129,9 +129,8 @@ export const TEXTOS_PERMISO = {
   verMenos: "Ver menos",
   enEspera: (n: number) =>
     n === 1 ? "y 1 más esperándote" : `y ${n} más esperándote`,
-  /** Pie con el contador; `segundos` va resaltado aparte. */
-  pieAntes: (etiqueta: string) => `${etiqueta} · si no eliges en `,
-  pieDespues: ", te lo preguntará en la terminal",
+  /** Pie del globo; el tiempo que queda va aparte, con su barra. */
+  pie: (etiqueta: string) => `${etiqueta} · si no eliges, te lo pregunta en la terminal`,
 };
 
 export const TEXTO_ENTENDIDO = "Gracias, Lia";

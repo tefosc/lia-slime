@@ -23,6 +23,7 @@ pub const VENTANA_LIA: &str = "main";
 const EVENTO_VISIBLE: &str = "lia-visible";
 const EVENTO_PRIVADO: &str = "lia-privado";
 const EVENTO_PREFERENCIAS: &str = "lia-preferencias";
+const EVENTO_REGISTRO: &str = "lia-registro";
 
 /// Elementos del menú que cambian mientras la app está abierta.
 pub struct Bandeja {
@@ -49,6 +50,7 @@ pub fn crear(
 ) -> tauri::Result<Bandeja> {
     let sin_atajo = None::<&str>;
     let mostrar = MenuItem::with_id(app, "mostrar", "Ocultar Lia", true, sin_atajo)?;
+    let recientes = MenuItem::with_id(app, "recientes", "Mensajes recientes", true, sin_atajo)?;
     let privado = CheckMenuItem::with_id(
         app,
         "privado",
@@ -87,6 +89,7 @@ pub fn crear(
         app,
         &[
             &mostrar,
+            &recientes,
             &PredefinedMenuItem::separator(app)?,
             &privado,
             &inactividad,
@@ -107,6 +110,11 @@ pub fn crear(
             let actuales = app.state::<AjustesCompartidos>().preferencias();
             match evento.id().as_ref() {
                 "mostrar" => alternar_lia(app),
+                // Lia reaparece y abre su globo con lo último que pasó.
+                "recientes" => {
+                    mostrar_lia(app);
+                    let _ = app.emit_to(VENTANA_LIA, EVENTO_REGISTRO, ());
+                }
                 "privado" => {
                     aplicar_preferencias(
                         app,

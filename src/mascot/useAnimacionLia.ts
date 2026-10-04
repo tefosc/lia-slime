@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { estadoAudio, medirSonido, sonar } from "../audio/sonidos";
-import { hayTarjetaVisible, hayArrastre } from "../zonas";
+import { hayTarjetaVisible, hayArrastre, ladoTarjeta } from "../zonas";
 import {
   alimentarDetector,
   estadoInicial,
@@ -915,8 +915,14 @@ export function useAnimacionLia(
 
       // Objetivo de la mirada: hacia el cursor, o al centro si lleva mucho
       // quieto o el sistema pide movimiento reducido.
-      // Dormida no sigue al cursor.
-      if (
+      // Con un globo abierto, Lia lo mira: es ella quien habla.
+      const haciaGlobo = ladoTarjeta();
+      if (haciaGlobo !== 0 && !quieto && fase === "despierta") {
+        miradaX.objetivo = haciaGlobo * MIRADA.maxDesplazamientoOjos * 0.85;
+        miradaY.objetivo = 0;
+        inclinacion.objetivo = haciaGlobo * 0.6;
+      } else if (
+        // Dormida no sigue al cursor.
         cursor &&
         !quieto &&
         fase === "despierta" &&

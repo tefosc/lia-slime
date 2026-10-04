@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Boton, Globo } from "../globo/Globo";
 import { esPeligroso } from "./peligro";
 import { preguntaDePermiso, TEXTOS_PERMISO } from "./textos";
 import type { Solicitud } from "./usePermisos";
-import "./permisos.css";
 
 /** Los botones se activan tras este tiempo, para evitar clics accidentales. */
 const RETARDO_BOTONES_MS = 500;
@@ -15,17 +15,16 @@ interface Props {
 }
 
 /**
- * Tarjeta de una solicitud de permiso. Se monta de nuevo con cada solicitud
+ * Globo de una solicitud de permiso. Se monta de nuevo con cada solicitud
  * (`key`), así que el retardo de los botones vuelve a empezar.
- *
- * Sin foco ni atajos: los botones no son tabulables y no hay teclas. La
- * ventana es `focusable: false`, así que pulsarlos no quita el foco al editor.
  */
 export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
   const [activos, setActivos] = useState(false);
   const [expandido, setExpandido] = useState(false);
   const [ahora, setAhora] = useState(() => Date.now());
   const resuelta = useRef(false);
+  /** Tiempo total para responder, medido al aparecer el globo. */
+  const total = useRef(Math.max(1, solicitud.expira - Date.now())).current;
 
   useEffect(() => {
     const retardo = window.setTimeout(() => setActivos(true), RETARDO_BOTONES_MS);
@@ -36,7 +35,7 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
     };
   }, []);
 
-  const restante = Math.max(0, Math.ceil((solicitud.expira - ahora) / 1000));
+  const falta = Math.max(0, solicitud.expira - ahora);
   const unaLinea = solicitud.detalle.replace(/\s+/g, " ").trim();
   const resumen =
     unaLinea.length > RESUMEN_MAXIMO
@@ -53,68 +52,40 @@ export function TarjetaPermiso({ solicitud, pendientes, onResolver }: Props) {
   };
 
   return (
-    <div
-      className={`tarjeta${peligroso ? " tarjeta-peligro" : ""}`}
-      role="dialog"
-      aria-label="Solicitud de permiso de Claude Code"
+    <Globo
+      variante={peligroso ? "peligro" : "normal"}
+      rol="dialog"
+      etiqueta="Solicitud de permiso de Claude Code"
+      titulo={preguntaDePermiso(solicitud.herramienta, solicitud.id)}
+      pastilla={pendientes > 1 ? TEXTOS_PERMISO.enEspera(pendientes - 1) : null}
+      tiempo={falta / total}
+      botones={
+        <>
+          <Boton tipo="secundario" disabled={!activos} onClick={() => decidir(false)}>
+            {TEXTOS_PERMISO.denegar}
+          </Boton>
+          <Boton tipo="principal" disabled={!activos} onClick={() => decidir(true)}>
+            {TEXTOS_PERMISO.permitir}
+          </Boton>
+        </>
+      }
     >
-      <div className="tarjeta-cabecera">
-        <span className="tarjeta-titulo">
-          {preguntaDePermiso(solicitud.herramienta, solicitud.id)}
-        </span>
-        {pendientes > 1 && (
-          <span className="tarjeta-cola">{TEXTOS_PERMISO.enEspera(pendientes - 1)}</span>
-        )}
-      </div>
-
-      {peligroso && <div className="tarjeta-aviso">{TEXTOS_PERMISO.peligro}</div>}
-
+      {peligroso && <div className="globo-alerta">{TEXTOS_PERMISO.peligro}</div>}
       {solicitud.detalle &&
         (expandido ? (
-          <pre className="tarjeta-detalle">{solicitud.detalle}</pre>
+          <pre className="globo-cita globo-comando expandido">{solicitud.detalle}</pre>
         ) : (
-          <div className="tarjeta-resumen" title="Detalle de la acción">
-            {resumen}
-          </div>
+          <div className="globo-cita globo-comando">{resumen}</div>
         ))}
-      <div className="tarjeta-pie">
-        <span>
-          {TEXTOS_PERMISO.pieAntes(solicitud.etiqueta)}
-          <span className="tarjeta-tiempo">{restante} s</span>
-          {TEXTOS_PERMISO.pieDespues}
-        </span>
+      <div className="globo-pie">
+        <span>{TEXTOS_PERMISO.pie(solicitud.etiqueta)}</span>
         {largo && (
-          <button
-            type="button"
-            tabIndex={-1}
-            className="tarjeta-expandir"
-            onClick={() => setExpandido((valor) => !valor)}
-          >
+          <Boton tipo="enlace" onClick={() => setExpandido((valor) => !valor)}>
             {expandido ? TEXTOS_PERMISO.verMenos : TEXTOS_PERMISO.verTodo}
-          </button>
+          </Boton>
         )}
+        <span className="globo-segundos">{Math.ceil(falta / 1000)} s</span>
       </div>
-
-      <div className="tarjeta-botones">
-        <button
-          type="button"
-          tabIndex={-1}
-          className="boton boton-denegar"
-          disabled={!activos}
-          onClick={() => decidir(false)}
-        >
-          {TEXTOS_PERMISO.denegar}
-        </button>
-        <button
-          type="button"
-          tabIndex={-1}
-          className="boton boton-permitir"
-          disabled={!activos}
-          onClick={() => decidir(true)}
-        >
-          {TEXTOS_PERMISO.permitir}
-        </button>
-      </div>
-    </div>
+    </Globo>
   );
 }

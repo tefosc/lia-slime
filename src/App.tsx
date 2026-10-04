@@ -19,6 +19,10 @@ import { TarjetaAviso } from "./permisos/TarjetaAviso";
 import { TarjetaPermiso } from "./permisos/TarjetaPermiso";
 import { usePermisos } from "./permisos/usePermisos";
 import { usePreferencias } from "./preferencias";
+import { TarjetaRegistro } from "./registro/TarjetaRegistro";
+import { TEXTOS_REGISTRO } from "./registro/textos";
+import { useRegistro } from "./registro/useRegistro";
+import { RESULTADOS } from "./resultados/config";
 import { TarjetaResultado } from "./resultados/TarjetaResultado";
 import { useResultados } from "./resultados/useResultados";
 import {
@@ -27,13 +31,22 @@ import {
   placeAtTopCenter,
 } from "./window";
 import type { Lado } from "./window";
-import { enviarZonas, marcarTarjeta } from "./zonas";
+import { enviarZonas, marcarLadoTarjeta, marcarTarjeta } from "./zonas";
 import "./App.css";
 
 function App() {
   const { estado: estadoSesiones, aviso, cerrarAviso } = useEstadoLia();
   const { actual, pendientes, resolver } = usePermisos();
   const resultados = useResultados();
+  const registro = useRegistro();
+  // Globo abierto por el usuario: los mensajes recientes o un resultado.
+  const [panel, setPanel] = useState<
+    { tipo: "registro" } | { tipo: "resultado"; id: number } | null
+  >(null);
+  const resultadoAbierto =
+    panel?.tipo === "resultado"
+      ? (resultados.historial.find((r) => r.id === panel.id) ?? null)
+      : null;
   // Mientras haya solicitudes pendientes, Lia necesita al usuario.
   const estado = pendientes > 0 ? "necesita" : estadoSesiones;
   const preferencias = usePreferencias();
@@ -89,6 +102,10 @@ function App() {
             } else if (p.orden === "audio") {
               console.error(`[lia-dev] audio: ${estadoAudio()}`);
             } else if (
+              p.orden === "registro"
+            ) {
+              setPanel({ tipo: "registro" });
+            } else if (
               p.orden === "sonido" &&
               NOMBRES_SONIDOS.includes(p.valor as Sonido)
             ) {
@@ -117,20 +134,73 @@ function App() {
     else if (estadoMostrado === "termino") sonar("termino");
   }, [estadoMostrado]);
 
+  const herramientaActual = actual?.herramienta;
+  const { anotar } = registro;
   const resolverConSonido = useCallback(
     (id: number, permitir: boolean) => {
       sonar(permitir ? "permitir" : "denegar");
+      // Se anota solo el tipo de acción, nunca el comando ni la ruta.
+      if (herramientaActual) {
+        anotar(
+          permitir ? "permitido" : "denegado",
+          (permitir ? TEXTOS_REGISTRO.permitido : TEXTOS_REGISTRO.denegado)(
+            herramientaActual,
+          ),
+        );
+      }
       resolver(id, permitir);
     },
-    [resolver],
+    [resolver, anotar, herramientaActual],
   );
+  const idAviso = aviso?.id;
+  const tituloAviso = aviso?.titulo;
+  useEffect(() => {
+    if (idAviso !== undefined && tituloAviso) anotar("aviso", tituloAviso);
+  }, [idAviso, tituloAviso, anotar]);
+
+  const { marcarLeido, historial } = resultados;
+  const abrirResultado = useCallback(
+    (id: number) => {
+      marcarLeido(id);
+      setPanel({ tipo: "resultado", id });
+    },
+    [marcarLeido],
+  );
+  // Clic en la burbuja: con un solo resultado nuevo se abre directo; con
+  // varios, la lista. Si ya hay un globo abierto, lo cierra.
+  const alPulsarBurbuja = () => {
+    if (panel) {
+      setPanel(null);
+      return;
+    }
+    const nuevos = historial.filter((r) => !r.leido);
+    const unico = nuevos.length === 1 ? nuevos[0] : undefined;
+    if (unico) abrirResultado(unico.id);
+    else setPanel({ tipo: "registro" });
+  };
+  // Si el resultado abierto caduca, su globo se cierra.
+  useEffect(() => {
+    if (panel?.tipo === "resultado" && !resultadoAbierto) setPanel(null);
+  }, [panel, resultadoAbierto]);
+  // Opcional (RESULTADOS.autoAbrir): abrir el resultado nada más llegar.
+  const nuevos = historial.filter((r) => !r.leido);
+  const ultimoNuevo = nuevos[nuevos.length - 1]?.id;
+  useEffect(() => {
+    if (RESULTADOS.autoAbrir && ultimoNuevo !== undefined) abrirResultado(ultimoNuevo);
+  }, [ultimoNuevo, abrirResultado]);
+  // "Mensajes recientes" de la bandeja.
+  useEffect(() => {
+    const escucha = listen("lia-registro", () => setPanel({ tipo: "registro" }));
+    return () => {
+      escucha.then((dejar) => dejar()).catch(() => {});
+    };
+  }, []);
 
   // `lado` es distinto de null cuando la ventana ya tiene sitio para la tarjeta.
   const [lado, setLado] = useState<Lado | null>(null);
   const ladoActual = useRef<Lado | null>(null);
   const cambios = useRef(Promise.resolve());
-  const hayTarjeta =
-    actual !== null || aviso !== null || resultados.actual !== null;
+  const hayTarjeta = actual !== null || aviso !== null || panel !== null;
 
   // Lia no se duerme con algo pendiente: una solicitud, una tarjeta, un
   // resultado sin leer o una sesión que no está en reposo.
@@ -185,6 +255,10 @@ function App() {
   useEffect(() => {
     enviarZonas();
   });
+  // Lia mira hacia su globo mientras está abierto.
+  useEffect(() => {
+    marcarLadoTarjeta(lado === null ? 0 : lado === "izquierda" ? -1 : 1);
+  }, [lado]);
 
   // Los cambios de tamaño se encadenan para que abrir y cerrar no se pisen.
   useEffect(() => {
@@ -214,7 +288,7 @@ function App() {
           estado={estadoMostrado}
           sueno={sueno}
           resultadosSinLeer={resultados.sinLeer}
-          onClickBurbuja={resultados.alternar}
+          onClickBurbuja={alPulsarBurbuja}
         />
       </div>
       {/* Prioridad: permiso, después aviso de error, después resultado. */}
@@ -228,15 +302,23 @@ function App() {
           />
         ) : aviso ? (
           <TarjetaAviso key={aviso.id} aviso={aviso} onCerrar={cerrarAviso} />
+        ) : resultadoAbierto ? (
+          <TarjetaResultado
+            key={resultadoAbierto.id}
+            resultado={resultadoAbierto}
+            pendientes={resultados.sinLeer}
+            privado={resultados.privado}
+            onCerrar={() => setPanel(null)}
+            onPrivado={resultados.cambiarPrivado}
+            onRegistro={() => setPanel({ tipo: "registro" })}
+          />
         ) : (
-          resultados.actual && (
-            <TarjetaResultado
-              key={resultados.actual.id}
-              resultado={resultados.actual}
-              pendientes={resultados.sinLeer}
-              privado={resultados.privado}
-              onCerrar={resultados.marcarLeido}
-              onPrivado={resultados.cambiarPrivado}
+          panel?.tipo === "registro" && (
+            <TarjetaRegistro
+              resultados={resultados.historial}
+              notas={registro.notas}
+              onAbrir={abrirResultado}
+              onCerrar={() => setPanel(null)}
             />
           )
         ))}

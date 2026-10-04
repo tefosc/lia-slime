@@ -1,0 +1,387 @@
+/*
+ * Globo de diálogo de Lia. Mismo lenguaje que el personaje: trazo fino del
+ * verde de su contorno, fondo menta muy claro, tinta casi negra y sin
+ * sombras. Dos tamaños de letra (13 y 11 px) y uno monoespaciado para
+ * comandos.
+ */
+.globo {
+  --borde: #45b084;
+  --fondo: #f2fbf7;
+  --suave: rgba(69, 176, 132, 0.13);
+  --fuerte: #9be3c3;
+  --tinta: #2b2b2b;
+  --tenue: #56665f;
+
+  position: relative;
+  box-sizing: border-box;
+  width: 300px;
+  height: 178px;
+  margin: 14px 8px 8px 12px;
+  padding: 10px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1.5px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo);
+  color: var(--tinta);
+  font: 13px/1.35 system-ui, "Segoe UI", sans-serif;
+  /* Sale de la boca de Lia con un pequeño rebote, como ella. */
+  transform-origin: 0 124px;
+  animation: globo-entrar 320ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.globo-peligro {
+  --borde: #e0a800;
+  --fondo: #fff9e6;
+  --suave: rgba(224, 168, 0, 0.16);
+  --fuerte: #ffd95a;
+}
+
+.globo-aviso {
+  --borde: #f28fb2;
+  --fondo: #fff6f9;
+  --suave: rgba(242, 143, 178, 0.16);
+  --fuerte: #ffc1d6;
+}
+
+/* Colita hacia Lia: un cuadrado girado que tapa el borde del globo. */
+.globo::before {
+  content: "";
+  position: absolute;
+  top: 118px;
+  left: -7px;
+  width: 11px;
+  height: 11px;
+  border-left: 1.5px solid var(--borde);
+  border-bottom: 1.5px solid var(--borde);
+  border-bottom-left-radius: 3px;
+  background: var(--fondo);
+  transform: rotate(45deg);
+}
+
+/* Con la tarjeta a la izquierda de Lia, todo se refleja. */
+.escena-izquierda .globo {
+  margin: 14px 12px 8px 8px;
+  transform-origin: 100% 124px;
+}
+
+.escena-izquierda .globo::before {
+  left: auto;
+  right: -7px;
+  transform: rotate(225deg);
+}
+
+@keyframes globo-entrar {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  55% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .globo {
+    animation: none;
+  }
+}
+
+.globo-cabecera {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.globo-titulo {
+  flex: 1;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Pastilla sobre el borde superior, para no quitarle sitio al título. */
+.globo-pastilla {
+  position: absolute;
+  top: -9px;
+  right: 14px;
+  padding: 0 8px;
+  border: 1.5px solid #e0a800;
+  border-radius: 999px;
+  background: #ffd95a;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+}
+
+.globo-cuerpo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Recuadro con lo que Claude quiere hacer o lo que dijo. */
+.globo-cita {
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--suave);
+}
+
+.globo-comando {
+  /* El comando nunca se encoge: es lo más importante del globo. */
+  flex: none;
+  font: 12px/1.35 ui-monospace, Consolas, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.globo-comando.expandido {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--borde) transparent;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: text;
+}
+
+/* Texto de Claude: texto plano; se respetan los saltos de línea y nada más. */
+.globo-mensaje {
+  flex: 1;
+  min-height: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  user-select: text;
+}
+
+.globo-mensaje.expandido {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--borde) transparent;
+}
+
+.globo-texto {
+  color: #3d4a44;
+}
+
+.globo-nota {
+  flex: 1;
+  color: var(--tenue);
+  font-style: italic;
+}
+
+.globo-menor {
+  flex: none;
+  color: var(--tenue);
+  font-size: 11px;
+}
+
+.globo-dos-lineas {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.globo-alerta {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a5a00;
+}
+
+.globo-pie {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--tenue);
+  font-size: 11px;
+}
+
+.globo-pie > span:first-child {
+  flex: 1;
+}
+
+.globo-segundos {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barra de tiempo: se consume de derecha a izquierda. */
+.globo-tiempo {
+  flex: none;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--suave);
+  overflow: hidden;
+}
+
+.globo-tiempo > div {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--borde);
+  transform-origin: left;
+  transition: transform 250ms linear;
+}
+
+.globo-botones {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Botones con la forma redondeada del cuerpo de Lia y su mismo trazo. */
+.boton {
+  flex: 1;
+  padding: 5px 0;
+  border: 1.5px solid var(--borde);
+  border-radius: 999px;
+  color: #12372a;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 120ms,
+    transform 80ms;
+}
+
+.boton:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.boton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.boton-corto {
+  flex: none;
+  margin-left: auto;
+  padding: 5px 16px;
+}
+
+.boton-principal {
+  background: var(--fuerte);
+}
+
+.boton-principal:hover:not(:disabled) {
+  background: #74d0a8;
+}
+
+.globo-peligro .boton-principal:hover:not(:disabled) {
+  background: #f5c93a;
+}
+
+.globo-aviso .boton-principal:hover:not(:disabled) {
+  background: #f79bbb;
+}
+
+.boton-secundario {
+  background: #ffffff;
+}
+
+.boton-secundario:hover:not(:disabled) {
+  background: var(--suave);
+}
+
+.boton-enlace {
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: #2f8a63;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.boton-icono {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 1px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--tenue);
+  line-height: 0;
+}
+
+.boton-icono:hover,
+.boton-icono[aria-pressed="true"] {
+  background: var(--suave);
+  color: #2f8a63;
+}
+
+/* Mensajes recientes. */
+.registro-lista {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--borde) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.registro-entrada {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.registro-entrada {
+  background: var(--suave);
+  cursor: pointer;
+}
+
+button.registro-entrada:hover {
+  background: rgba(69, 176, 132, 0.24);
+}
+
+.registro-marca {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.registro-texto {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.registro-nueva .registro-texto {
+  font-weight: 700;
+}
+
+.registro-cuando {
+  flex: none;
+  color: var(--tenue);
+  font-size: 11px;
+}

@@ -1,28 +1,26 @@
 import type { Aviso } from "../estado/useEstadoLia";
+import { Boton, Globo } from "../globo/Globo";
 import { TEXTO_ENTENDIDO } from "./textos";
-import "./permisos.css";
 
 interface Props {
   aviso: Aviso;
   onCerrar: () => void;
 }
 
-/** Tarjeta informativa: Claude se detuvo y Lia explica por qué. */
+/** Globo informativo: Claude se detuvo y Lia explica por qué. */
 export function TarjetaAviso({ aviso, onCerrar }: Props) {
   return (
-    <div className="tarjeta tarjeta-info" role="status">
-      <div className="tarjeta-titulo">{aviso.titulo}</div>
-      <div className="tarjeta-texto">{aviso.texto}</div>
-      <div className="tarjeta-botones">
-        <button
-          type="button"
-          tabIndex={-1}
-          className="boton boton-permitir"
-          onClick={onCerrar}
-        >
+    <Globo
+      variante="aviso"
+      rol="status"
+      titulo={aviso.titulo}
+      botones={
+        <Boton tipo="principal" corto onClick={onCerrar}>
           {TEXTO_ENTENDIDO}
-        </button>
-      </div>
-    </div>
+        </Boton>
+      }
+    >
+      <div className="globo-texto">{aviso.texto}</div>
+    </Globo>
   );
 }

@@ -31,6 +31,17 @@ export function marcarTarjeta(valor: boolean): void {
   enviarZonas();
 }
 
+/** Lado de Lia en el que está la tarjeta abierta: -1, 1 o 0 si no hay. */
+let lado = 0;
+
+export function marcarLadoTarjeta(valor: -1 | 0 | 1): void {
+  lado = valor;
+}
+
+export function ladoTarjeta(): number {
+  return hayTarjeta ? lado : 0;
+}
+
 /** Hay una tarjeta visible o a punto de abrirse. */
 export function hayTarjetaVisible(): boolean {
   return hayTarjeta;

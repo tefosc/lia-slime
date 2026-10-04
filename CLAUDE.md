@@ -88,6 +88,25 @@ no está conectada.
   que la pausa por visibilidad ahorra poco en la práctica.
 - Para probar estados sin Claude Code se usa `scripts/simular-evento.ps1`.
 
+## Globos y mensajes recientes
+
+- `src/globo/Globo.tsx` es la única tarjeta de la app: permisos, avisos,
+  resultados y mensajes recientes la usan, con `Boton` para sus botones. Los
+  estilos están en `src/globo/globo.css` y siguen al personaje (trazo verde
+  de 1,5 px, fondo menta claro, sin sombras, letra de 13 y 11 px). Variantes:
+  `normal`, `peligro` (amarillo) y `aviso` (rosa). No crees otra tarjeta con
+  estilos propios.
+- El globo conserva la clase `tarjeta`, que `src/zonas.ts` usa para el
+  click-through. Con un globo abierto, Lia mira hacia él.
+- `src/registro/` — mensajes recientes: resultados que no han caducado
+  (10 min, con su texto) y notas de permisos y avisos (30 min, solo una frase
+  fija, nunca el comando ni la ruta). Todo en memoria. Se abre con la burbuja
+  ✓ (con un solo resultado nuevo se abre ese directamente) o con "Mensajes
+  recientes" de la bandeja.
+- Solo en desarrollo: `http://localhost:1420/?maqueta` muestra todos los
+  globos con datos de ejemplo (`src/globo/Maqueta.tsx`), y
+  `scripts/simular-evento.ps1 -Registro` abre los mensajes recientes.
+
 ## Sueño por inactividad
 
 - Sin eventos de Claude Code, toques ni arrastres, y sin tarjetas, Lia se
@@ -145,8 +164,9 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
 
 - Rutas `/dev/...` del receptor (ocultar, mostrar, salir, Ajustes, bucle del
   cursor y `/dev/prueba`).
-- `window.__lia` (`simularVueltas`, `probarSonido`) y el evento `lia-dev`
-  (tiempos de inactividad acortados, prueba de sonidos).
+- `window.__lia` (`simularVueltas`, `probarSonido`), el evento `lia-dev`
+  (tiempos de inactividad acortados, prueba de sonidos, abrir el registro) y
+  la galería `?maqueta`.
 - `LIA_CONFIG_DIR` y la carpeta `.pruebas/transcripciones`.
 - Los registros `[lia] ...` de eventos (solo nombre del evento y principio de
   la sesión).

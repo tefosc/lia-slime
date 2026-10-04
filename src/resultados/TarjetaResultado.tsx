@@ -1,21 +1,23 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Boton, Globo } from "../globo/Globo";
 import { RESULTADOS } from "./config";
 import { textoDuracion, TEXTOS_RESULTADO } from "./textos";
 import type { Resultado } from "./useResultados";
-import "../permisos/permisos.css";
-import "./resultados.css";
 
 interface Props {
   resultado: Resultado;
+  /** Otros resultados que siguen sin leer. */
   pendientes: number;
   privado: boolean;
   onCerrar: () => void;
   onPrivado: (valor: boolean) => void;
+  /** Ir a la lista de mensajes recientes. */
+  onRegistro: () => void;
 }
 
 /**
- * Tarjeta con el resultado de una tarea. El mensaje de Claude se muestra
- * como texto plano de React: nada de HTML, Markdown ni enlaces, porque puede
+ * Globo con el resultado de una tarea. El mensaje de Claude se muestra como
+ * texto plano de React: nada de HTML, Markdown ni enlaces, porque puede
  * contener contenido de terceros.
  */
 export function TarjetaResultado({
@@ -24,13 +26,14 @@ export function TarjetaResultado({
   privado,
   onCerrar,
   onPrivado,
+  onRegistro,
 }: Props) {
   const [expandido, setExpandido] = useState(false);
   const [desborda, setDesborda] = useState(false);
   const caja = useRef<HTMLDivElement>(null);
   const temporizador = useRef(0);
 
-  // Se cierra sola tras un rato sin interacción.
+  // Se cierra solo tras un rato sin interacción.
   const reiniciarTemporizador = () => {
     window.clearTimeout(temporizador.current);
     temporizador.current = window.setTimeout(
@@ -41,7 +44,7 @@ export function TarjetaResultado({
   useEffect(() => {
     reiniciarTemporizador();
     return () => window.clearTimeout(temporizador.current);
-    // Solo al montar: cada resultado monta una tarjeta nueva (key).
+    // Solo al montar: cada resultado monta un globo nuevo (key).
   }, []);
 
   const mensaje = privado ? null : resultado.mensaje;
@@ -72,64 +75,53 @@ export function TarjetaResultado({
     .join(" · ");
 
   return (
-    <div
-      className="tarjeta tarjeta-resultado"
-      role="status"
-      onPointerMove={reiniciarTemporizador}
-      onPointerDown={reiniciarTemporizador}
+    <Globo
+      rol="status"
+      titulo={TEXTOS_RESULTADO.titulo(resultado.id)}
+      pastilla={pendientes > 0 ? TEXTOS_RESULTADO.enCola(pendientes) : null}
+      onActividad={reiniciarTemporizador}
+      acciones={
+        <>
+          <Boton tipo="icono" titulo={TEXTOS_RESULTADO.verRegistro} onClick={onRegistro}>
+            <Lista />
+          </Boton>
+          <Boton
+            tipo="icono"
+            pulsado={privado}
+            titulo={privado ? TEXTOS_RESULTADO.mostrarTexto : TEXTOS_RESULTADO.ocultarTexto}
+            onClick={() => onPrivado(!privado)}
+          >
+            <Ojo tachado={privado} />
+          </Boton>
+        </>
+      }
+      botones={
+        <>
+          {largo && !privado && (
+            <Boton tipo="enlace" onClick={() => setExpandido((v) => !v)}>
+              {expandido ? TEXTOS_RESULTADO.verMenos : TEXTOS_RESULTADO.verMas}
+            </Boton>
+          )}
+          <Boton tipo="principal" corto onClick={onCerrar}>
+            {TEXTOS_RESULTADO.cerrar}
+          </Boton>
+        </>
+      }
     >
-      {pendientes > 1 && (
-        <span className="tarjeta-cola">{TEXTOS_RESULTADO.enCola(pendientes - 1)}</span>
-      )}
-      <div className="tarjeta-cabecera">
-        <span className="tarjeta-titulo">{TEXTOS_RESULTADO.titulo(resultado.id)}</span>
-        <button
-          type="button"
-          tabIndex={-1}
-          className="boton-ojo"
-          aria-pressed={privado}
-          title={privado ? TEXTOS_RESULTADO.mostrarTexto : TEXTOS_RESULTADO.ocultarTexto}
-          onClick={() => onPrivado(!privado)}
-        >
-          <Ojo tachado={privado} />
-        </button>
-      </div>
-      <div className="resultado-estadisticas">{estadisticas}</div>
-
+      <div className="globo-menor globo-dos-lineas">{estadisticas}</div>
       {privado ? (
-        <div className="resultado-nota">{TEXTOS_RESULTADO.privado}</div>
+        <div className="globo-nota">{TEXTOS_RESULTADO.privado}</div>
       ) : visible === null ? (
-        <div className="resultado-nota">{TEXTOS_RESULTADO.sinMensaje}</div>
+        <div className="globo-nota">{TEXTOS_RESULTADO.sinMensaje}</div>
       ) : (
         <div
           ref={caja}
-          className={`resultado-mensaje${expandido ? " expandido" : ""}`}
+          className={`globo-cita globo-mensaje${expandido ? " expandido" : ""}`}
         >
           {visible}
         </div>
       )}
-
-      <div className="tarjeta-botones resultado-botones">
-        {largo && !privado && (
-          <button
-            type="button"
-            tabIndex={-1}
-            className="tarjeta-expandir"
-            onClick={() => setExpandido((v) => !v)}
-          >
-            {expandido ? TEXTOS_RESULTADO.verMenos : TEXTOS_RESULTADO.verMas}
-          </button>
-        )}
-        <button
-          type="button"
-          tabIndex={-1}
-          className="boton boton-permitir boton-cerrar"
-          onClick={onCerrar}
-        >
-          {TEXTOS_RESULTADO.cerrar}
-        </button>
-      </div>
-    </div>
+    </Globo>
   );
 }
 
@@ -147,6 +139,22 @@ function Ojo({ tachado }: { tachado: boolean }) {
       {tachado && (
         <path d="M4 20 L20 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       )}
+    </svg>
+  );
+}
+
+function Lista() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path
+        d="M9 7 H20 M9 12 H20 M9 17 H20"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="4.5" cy="7" r="1.5" fill="currentColor" />
+      <circle cx="4.5" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="4.5" cy="17" r="1.5" fill="currentColor" />
     </svg>
   );
 }

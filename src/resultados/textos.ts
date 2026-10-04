@@ -27,6 +27,7 @@ export const TEXTOS_RESULTADO = {
   privado: "Modo privado: no leo los mensajes de Claude.",
   ocultarTexto: "Modo privado: no leer los mensajes de Claude",
   mostrarTexto: "Volver a mostrar los mensajes de Claude",
+  verRegistro: "Ver lo último que pasó",
   verMas: "Ver más",
   verMenos: "Ver menos",
   cerrar: "Gracias, Lia",

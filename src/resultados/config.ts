@@ -2,9 +2,12 @@
 export const RESULTADOS = {
   /** Una tarea sin herramientas solo genera burbuja si duró al menos esto (s). */
   duracionMinimaParaTarjeta: 15,
-  /** La burbuja y su resultado desaparecen solos tras este tiempo (s). */
+  /**
+   * El resultado (con su texto) se olvida tras este tiempo (s), leído o no.
+   * Hasta entonces se puede volver a abrir desde los mensajes recientes.
+   */
   tiempoCaducidadBurbuja: 10 * 60,
-  /** Abrir la tarjeta sola al terminar, sin esperar al clic en la burbuja. */
+  /** Abrir el globo solo al terminar, sin esperar al clic en la burbuja. */
   autoAbrir: false,
   /** La tarjeta abierta se cierra sola tras este tiempo sin interacción (s). */
   cierreSinInteraccion: 30,

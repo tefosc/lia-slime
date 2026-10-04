@@ -15,8 +15,12 @@ export interface Resultado {
   ediciones: number;
   /** Último mensaje de Claude, solo en memoria; null si no hay o es privado. */
   mensaje: string | null;
+  /** Momento (ms) en que terminó la tarea. */
+  momento: number;
   /** Momento (ms) en que caduca. */
   caduca: number;
+  /** Ya se abrió su globo. */
+  leido: boolean;
 }
 
 interface Acumulador {
@@ -27,12 +31,11 @@ interface Acumulador {
 /**
  * Resultados de las tareas terminadas. Las estadísticas salen solo de los
  * eventos que ya llegan (nombres y conteos de herramientas, nunca su
- * contenido). Los resultados viven en memoria y se borran al leerlos o al
- * caducar.
+ * contenido). Los resultados viven en memoria y se borran al caducar; hasta
+ * entonces se pueden volver a abrir desde los mensajes recientes.
  */
 export function useResultados() {
-  const [cola, setCola] = useState<Resultado[]>([]);
-  const [abierta, setAbierta] = useState(false);
+  const [historial, setHistorial] = useState<Resultado[]>([]);
   const [privado, setPrivado] = useState(RESULTADOS.modoPrivado);
 
   useEffect(() => {
@@ -58,8 +61,7 @@ export function useResultados() {
         if (!acumulador) return;
         const resultado = crearResultado(siguienteId++, e, acumulador);
         if (!resultado) return;
-        setCola((actual) => [...actual, resultado]);
-        if (RESULTADOS.autoAbrir) setAbierta(true);
+        setHistorial((actual) => [...actual, resultado]);
         // Si Lia estaba oculta, reaparece para avisar del resultado.
         invoke("mostrar").catch(() => {});
       }
@@ -82,16 +84,16 @@ export function useResultados() {
     listen<boolean>("lia-privado", ({ payload }) => {
       setPrivado(payload);
       if (payload) {
-        setCola((actual) => actual.map((r) => ({ ...r, mensaje: null })));
+        setHistorial((actual) => actual.map((r) => ({ ...r, mensaje: null })));
       }
     })
       .then((fn) => (cancelado ? fn() : (dejarPrivado = fn)))
       .catch(() => {});
 
-    // Caducidad: lo vencido sale de la cola y su texto se pierde.
+    // Caducidad: lo vencido sale del historial y su texto se pierde.
     const revision = window.setInterval(() => {
       const ahora = Date.now();
-      setCola((actual) =>
+      setHistorial((actual) =>
         actual.some((r) => r.caduca <= ahora)
           ? actual.filter((r) => r.caduca > ahora)
           : actual,
@@ -106,41 +108,28 @@ export function useResultados() {
     };
   }, []);
 
-  useEffect(() => {
-    if (cola.length === 0) setAbierta(false);
-  }, [cola.length]);
-
-  /** Marca como leído el resultado visible: sale de la cola con su texto. */
-  const marcarLeido = useCallback(() => {
-    setCola((actual) => actual.slice(1));
+  /** Marca un resultado como leído: deja de contar para la burbuja. */
+  const marcarLeido = useCallback((id: number) => {
+    setHistorial((actual) =>
+      actual.map((r) => (r.id === id && !r.leido ? { ...r, leido: true } : r)),
+    );
   }, []);
-
-  /** Clic en la burbuja: abre la tarjeta o, si está abierta, la cierra. */
-  const alternar = useCallback(() => {
-    if (abierta) {
-      setCola((actual) => actual.slice(1));
-      setAbierta(false);
-    } else {
-      setAbierta(true);
-    }
-  }, [abierta]);
 
   const cambiarPrivado = useCallback((valor: boolean) => {
     setPrivado(valor);
     // Al activarlo, el texto que ya hubiera en memoria también se borra.
-    if (valor) setCola((actual) => actual.map((r) => ({ ...r, mensaje: null })));
+    if (valor) setHistorial((actual) => actual.map((r) => ({ ...r, mensaje: null })));
     invoke("establecer_modo_privado", { valor }).catch(() => {
       console.error("No se pudo guardar el modo privado");
     });
   }, []);
 
   return {
-    actual: abierta ? (cola[0] ?? null) : null,
-    sinLeer: cola.length,
-    /** Para el futuro modo de inactividad: con resultados sin leer, Lia no se oculta. */
-    hayResultadosSinLeer: cola.length > 0,
+    /** Resultados que no han caducado, leídos o no, del más antiguo al más nuevo. */
+    historial,
+    /** Con resultados sin leer se ve la burbuja y Lia no se duerme. */
+    sinLeer: historial.filter((r) => !r.leido).length,
     privado,
-    alternar,
     marcarLeido,
     cambiarPrivado,
   };
@@ -171,6 +160,8 @@ function crearResultado(
       .filter(([nombre]) => HERRAMIENTAS_DE_EDICION.has(nombre))
       .reduce((total, [, n]) => total + n, 0),
     mensaje: evento.mensaje,
+    momento: Date.now(),
     caduca: Date.now() + RESULTADOS.tiempoCaducidadBurbuja * 1000,
+    leido: false,
   };
 }
