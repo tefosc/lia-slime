@@ -454,7 +454,12 @@ export function Lia({
   actividad = "pensar",
 }: LiaProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const { tocar, acariciar, rozar } = useAnimacionLia(svgRef, estado, sueno);
+  const { tocar, acariciar, rozar } = useAnimacionLia(
+    svgRef,
+    estado,
+    sueno,
+    actividad,
+  );
   const cajaDelCuerpo = () =>
     svgRef.current?.querySelector("#lia-cuerpo")?.getBoundingClientRect();
   // Un clic sin arrastre sobre la burbuja abre el resultado y no cuenta como

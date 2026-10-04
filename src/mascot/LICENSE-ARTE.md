@@ -5,7 +5,7 @@
 > legal. Mientras este aviso siga aquí, trata el arte como "todos los derechos
 > reservados" sin más permisos que los que la ley ya concede.
 
-Copyright © 2026 `<NOMBRE QUE USARÉ EN LA LICENCIA>`. Todos los derechos
+Copyright © 2026 Alejandro Stéfano Solís Martos. Todos los derechos
 reservados.
 
 ## Qué cubre
@@ -59,4 +59,4 @@ El arte se ofrece "tal cual", sin garantías de ningún tipo.
 
 ## Contacto
 
-Para pedir permiso: `<CONTACTO PARA PERMISOS>`.
+Para pedir permiso: asolism17_1@unc.edu.pe.

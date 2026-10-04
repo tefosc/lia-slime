@@ -202,6 +202,11 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   (tiempos de inactividad acortados, prueba de sonidos, abrir el registro) y
   la galería `?maqueta`.
 - `LIA_CONFIG_DIR` y la carpeta `.pruebas/transcripciones`.
+- `LIA_AISLADA`: con esta variable de entorno, la copia de desarrollo escucha
+  en el puerto 47616, guarda su token en `cabecera-hook-aislada.txt` y no
+  comprueba la instancia única, para convivir con la Lia instalada. Los hooks
+  de Claude Code siguen llegando a la instalada; a la aislada se le habla con
+  `scripts/simular-evento.ps1 -Aislada`.
 - Los registros `[lia] ...` de eventos (solo nombre del evento y principio de
   la sesión).
 

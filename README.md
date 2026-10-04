@@ -195,7 +195,7 @@ Hecha con [Tauri 2](https://tauri.app/), React y TypeScript.
 
 ## Créditos
 
-- Diseño, personaje y desarrollo: `<NOMBRE QUE USARÉ EN LA LICENCIA>`.
+- Diseño, personaje y desarrollo: Alejandro Stéfano Solís Martos.
 - Estructura inicial generada con la plantilla oficial `create-tauri-app`
   (MIT o Apache-2.0).
 - Buena parte del código se escribió con ayuda de Claude Code.

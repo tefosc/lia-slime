@@ -34,6 +34,8 @@ export function Isla({ muestra }: { muestra?: { estado: EstadoIsla; vista: Vista
   const [vista, setVista] = useState<VistaIsla>(muestra?.vista ?? LISTA);
   const [abajo, setAbajo] = useState(muestra !== undefined);
   const [ahora, setAhora] = useState(() => Date.now());
+  /** Agrandada a media pantalla con su botón; vuelve a normal al subir. */
+  const [grande, setGrande] = useState(false);
   const cuerpo = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,7 +60,10 @@ export function Isla({ muestra }: { muestra?: { estado: EstadoIsla; vista: Vista
         setEstado(payload ?? VACIO),
       ),
       listen<VistaIsla | null>("lia-isla-bajar", ({ payload }) => bajar(payload)),
-      listen("lia-isla-subir", () => setAbajo(false)),
+      listen("lia-isla-subir", () => {
+        setAbajo(false);
+        setGrande(false);
+      }),
     ];
     const reloj = window.setInterval(() => setAhora(Date.now()), 15_000);
     return () => {
@@ -124,6 +129,20 @@ export function Isla({ muestra }: { muestra?: { estado: EstadoIsla; vista: Vista
             <span className="isla-contador">{TEXTOS_REGISTRO.nuevas(nuevas)}</span>
           )}
         </div>
+        <button
+          type="button"
+          tabIndex={-1}
+          className="isla-icono"
+          title={grande ? TEXTOS_REGISTRO.reducir : TEXTOS_REGISTRO.agrandar}
+          aria-pressed={grande}
+          onClick={() => {
+            const nueva = !grande;
+            setGrande(nueva);
+            if (!muestra) invoke("agrandar_isla", { grande: nueva }).catch(() => {});
+          }}
+        >
+          <Esquinas hacia={grande ? "dentro" : "fuera"} />
+        </button>
         <button
           type="button"
           tabIndex={-1}
@@ -252,6 +271,26 @@ function Flecha({ derecha }: { derecha?: boolean }) {
     >
       <path
         d={derecha ? "M9.5 5 L16.5 12 L9.5 19" : "M14.5 5 L7.5 12 L14.5 19"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Dos esquinas que se separan (agrandar) o se juntan (reducir). */
+function Esquinas({ hacia }: { hacia: "fuera" | "dentro" }) {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+      <path
+        d={
+          hacia === "fuera"
+            ? "M14 5 H19 V10 M10 19 H5 V14"
+            : "M19 10 H14 V5 M5 14 H10 V19"
+        }
         fill="none"
         stroke="currentColor"
         strokeWidth="2.4"

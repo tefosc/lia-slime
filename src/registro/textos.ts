@@ -40,6 +40,8 @@ export const TEXTOS_REGISTRO = {
   termino: (etiqueta: string) => `${etiqueta} terminó`,
   respondida: "Respondiste una pregunta de Claude",
   volver: "Volver",
+  agrandar: "Agrandar",
+  reducir: "Tamaño normal",
   nuevas: (n: number) => (n === 1 ? "1 nueva" : `${n} nuevas`),
   /** Segunda línea de una tarea terminada en la lista. */
   resumen: (duracion: string, herramientas: number) =>

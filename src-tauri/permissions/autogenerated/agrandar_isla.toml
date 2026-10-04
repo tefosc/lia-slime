@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agrandar-isla"
+description = "Enables the agrandar_isla command without any pre-configured scope."
+commands.allow = ["agrandar_isla"]
+
+[[permission]]
+identifier = "deny-agrandar-isla"
+description = "Denies the agrandar_isla command without any pre-configured scope."
+commands.deny = ["agrandar_isla"]

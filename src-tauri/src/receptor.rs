@@ -29,6 +29,35 @@ pub const PUERTO: u16 = 47615;
 const EVENTO_TAURI: &str = "lia-evento";
 /// Archivo con la cabecera de autorización, en el formato que lee `curl -H @`.
 const ARCHIVO_CABECERA: &str = "cabecera-hook.txt";
+/// Modo aislado (solo en compilaciones de desarrollo, con la variable de
+/// entorno `LIA_AISLADA`): esta copia escucha en otro puerto, guarda su token
+/// en otro archivo y no comprueba si ya hay otra Lia abierta. Sirve para
+/// probar una copia de desarrollo junto a la Lia instalada sin estorbarla; los
+/// hooks de Claude Code siguen llegando a la instalada.
+const PUERTO_AISLADA: u16 = 47616;
+const ARCHIVO_CABECERA_AISLADA: &str = "cabecera-hook-aislada.txt";
+
+/// Esta copia de desarrollo se lanzó en modo aislado.
+pub fn aislada() -> bool {
+    cfg!(debug_assertions) && std::env::var_os("LIA_AISLADA").is_some()
+}
+
+/// Puerto en el que escucha esta copia.
+fn puerto() -> u16 {
+    if aislada() {
+        PUERTO_AISLADA
+    } else {
+        PUERTO
+    }
+}
+
+fn archivo_cabecera() -> &'static str {
+    if aislada() {
+        ARCHIVO_CABECERA_AISLADA
+    } else {
+        ARCHIVO_CABECERA
+    }
+}
 const CABECERAS_MAXIMO: usize = 8 * 1024;
 /// Un `Stop` con un mensaje largo de Claude puede pasar de 64 KB: si se
 /// rechazara, Lia se quedaría en "trabajando".
@@ -103,7 +132,7 @@ pub fn regenerar_token(app: &AppHandle, token: &Token) -> Result<(), String> {
 
 /// Ruta del archivo del token con barras normales, como va en los hooks.
 pub fn ruta_cabecera(app: &AppHandle) -> Option<String> {
-    let ruta = app.path().app_data_dir().ok()?.join(ARCHIVO_CABECERA);
+    let ruta = app.path().app_data_dir().ok()?.join(archivo_cabecera());
     Some(ruta.to_string_lossy().replace('\\', "/"))
 }
 
@@ -131,9 +160,10 @@ fn arrancar(
     token: Token,
 ) -> Result<(), String> {
     // Primero el puerto: si está ocupado no se toca el token en uso.
-    let escucha = TcpListener::bind((Ipv4Addr::LOCALHOST, PUERTO)).map_err(|e| {
+    let puerto = puerto();
+    let escucha = TcpListener::bind((Ipv4Addr::LOCALHOST, puerto)).map_err(|e| {
         format!(
-            "el puerto {PUERTO} de 127.0.0.1 está ocupado o no se pudo abrir ({e}). \
+            "el puerto {puerto} de 127.0.0.1 está ocupado o no se pudo abrir ({e}). \
              Cierra la otra instancia de Lia o el programa que lo usa."
         )
     })?;
@@ -173,7 +203,7 @@ fn guardar_cabecera(app: &AppHandle, token: &str) -> Result<(), String> {
     fs::create_dir_all(&carpeta)
         .map_err(|e| format!("no se pudo crear el directorio de datos ({e})"))?;
     fs::write(
-        carpeta.join(ARCHIVO_CABECERA),
+        carpeta.join(archivo_cabecera()),
         format!("Authorization: Bearer {token}\n"),
     )
     .map_err(|e| format!("no se pudo guardar el token ({e})"))

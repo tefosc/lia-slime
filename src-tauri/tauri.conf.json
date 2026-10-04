@@ -77,7 +77,7 @@
       "nsis"
     ],
     "publisher": "tefosc",
-    "copyright": "Copyright © 2026 tefosc",
+    "copyright": "Copyright © 2026 Alejandro Stéfano Solís Martos",
     "category": "DeveloperTool",
     "shortDescription": "Mascota de escritorio que acompaña a Claude Code",
     "longDescription": "Lia es una mascota flotante para Windows que reacciona a los eventos de Claude Code: avisa cuando necesita permiso, cuando termina una tarea y te deja responder sin cambiar de ventana.",

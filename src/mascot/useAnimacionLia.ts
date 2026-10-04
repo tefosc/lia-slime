@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { estadoAudio, medirSonido, sonar } from "../audio/sonidos";
+import type { Actividad } from "../estado/useActividad";
 import { hayTarjetaVisible, hayArrastre, ladoTarjeta } from "../zonas";
 import {
   alimentarDetector,
@@ -246,6 +247,17 @@ export type FaseSueno =
   | "oculta"
   | "despertando";
 
+interface MovimientoDeTrabajo {
+  periodo: number;
+  rebote: number;
+  balanceo: number;
+  petalo: number;
+  miradaX: number;
+  miradaY: number;
+  barrido: number;
+  periodoBarrido: number;
+}
+
 export interface OpcionesSueno {
   /** Ocultarse por inactividad está activado. */
   activa: boolean;
@@ -272,17 +284,35 @@ export interface OpcionesSueno {
  * que indica qué está haciendo Claude. Tiempos en segundos.
  */
 export const TRABAJO = {
-  /** Duración de cada vaivén del cuerpo. */
-  periodo: 1.1,
-  /** Cuánto se estira y se encoge en cada vaivén (0.012 = 1,2 %). */
-  rebote: 0.012,
-  /** Balanceo lateral del cuerpo, en grados; va a la mitad de ritmo. */
-  balanceo: 1.4,
-  /** Vaivén del pétalo, en grados. */
-  petalo: 5,
-  /** Hacia dónde mira (fracción del tope de la mirada): a su burbuja. */
-  miradaX: -0.75,
-  miradaY: -0.55,
+  /**
+   * Cómo se mueve según lo que hace Claude (la misma actividad que muestra la
+   * burbuja). Cada una tiene su carácter, y el paso de una a otra es suave.
+   *  - periodo: segundos de cada vaivén del cuerpo.
+   *  - rebote: cuánto se estira y se encoge (0.012 = 1,2 %).
+   *  - balanceo: grados que se ladea; va a la mitad de ritmo.
+   *  - petalo: grados de vaivén del pétalo.
+   *  - miradaX, miradaY: hacia dónde mira (fracción del tope de la mirada).
+   *  - barrido: cuánto recorren los ojos de lado a lado, y cada cuánto.
+   */
+  actividades: {
+    // Pensando: se mece despacio, mirando su burbuja.
+    pensar: { periodo: 1.7, rebote: 0.008, balanceo: 2.2, petalo: 4, miradaX: -0.75, miradaY: -0.55, barrido: 0, periodoBarrido: 3 },
+    // Leyendo: casi quieta; los ojos recorren renglones.
+    leer: { periodo: 1.5, rebote: 0.005, balanceo: 0.5, petalo: 2, miradaX: 0, miradaY: 0.4, barrido: 0.8, periodoBarrido: 2.4 },
+    // Buscando: se asoma a un lado y a otro, mirando rápido.
+    buscar: { periodo: 1.2, rebote: 0.009, balanceo: 3.2, petalo: 6, miradaX: 0, miradaY: -0.1, barrido: 1, periodoBarrido: 1.5 },
+    // Editando: botecitos rápidos, como quien escribe, mirando hacia abajo.
+    editar: { periodo: 0.45, rebote: 0.014, balanceo: 0.6, petalo: 6, miradaX: 0.1, miradaY: 0.7, barrido: 0.25, periodoBarrido: 0.9 },
+    // Comando: concentrada y firme, con golpecitos cortos.
+    comando: { periodo: 0.7, rebote: 0.011, balanceo: 0.3, petalo: 3, miradaX: 0, miradaY: 0.6, barrido: 0, periodoBarrido: 3 },
+    // Web: flota tranquila mirando arriba, de un lado a otro.
+    web: { periodo: 1.9, rebote: 0.008, balanceo: 1.6, petalo: 5, miradaX: 0, miradaY: -0.6, barrido: 0.6, periodoBarrido: 3.2 },
+    // Agente: mira su burbuja y agita el pétalo, como llamando a alguien.
+    agente: { periodo: 1.2, rebote: 0.01, balanceo: 1.8, petalo: 10, miradaX: -0.75, miradaY: -0.55, barrido: 0, periodoBarrido: 3 },
+    otra: { periodo: 1.1, rebote: 0.012, balanceo: 1.4, petalo: 5, miradaX: -0.75, miradaY: -0.55, barrido: 0, periodoBarrido: 3 },
+  } satisfies Record<Actividad, MovimientoDeTrabajo>,
+  /** Rapidez con que pasa del movimiento de una actividad al de otra. */
+  ritmoDeCambio: 2.5,
   /**
    * Oleadas de esfuerzo (el temblor de antes). Desactivadas: cansaban en
    * tareas largas. Con `true` vuelven, con los parámetros de `ESFUERZO`.
@@ -432,7 +462,10 @@ export function useAnimacionLia(
   svgRef: RefObject<SVGSVGElement | null>,
   estado: EstadoLia,
   opcionesSueno: OpcionesSueno,
+  actividad: Actividad = "pensar",
 ): AccionesLia {
+  const actividadActual = useRef(actividad);
+  actividadActual.current = actividad;
   const estadoActual = useRef(estado);
   const alCambiar = useRef<(() => void) | null>(null);
   const alTocar = useRef<((lado: number) => void) | null>(null);
@@ -585,6 +618,11 @@ export function useAnimacionLia(
     let faseRespira = 0;
     let saltoHecho = false;
     let sonidoDespertar = false;
+    // Movimiento de trabajo en curso: persigue al de la actividad actual.
+    const trabajo: MovimientoDeTrabajo = { ...TRABAJO.actividades.pensar };
+    /** Fases acumuladas, para que cambiar de ritmo no dé saltos. */
+    let faseTrabajo = 0;
+    let faseBarrido = 0;
     /** Se va a descansar aunque ocultarse por inactividad esté desactivado. */
     let descansando = false;
     /** Última actividad, en ms. Solo en memoria; nunca se guarda. */
@@ -989,6 +1027,13 @@ export function useAnimacionLia(
       // en alerta, a la mitad mientras trabaja o celebra.
       pesos.ojos = peso(pesos.ojos, e === "termino" ? 0 : 1);
       pesos.trabaja = peso(pesos.trabaja, e === "trabajando" ? 1 : 0);
+      // El movimiento de trabajo se acerca poco a poco al de la actividad.
+      const meta = TRABAJO.actividades[actividadActual.current];
+      for (const clave of Object.keys(trabajo) as (keyof MovimientoDeTrabajo)[]) {
+        trabajo[clave] = acercar(trabajo[clave], meta[clave], dt, TRABAJO.ritmoDeCambio);
+      }
+      faseTrabajo += (TAU * dt) / trabajo.periodo;
+      faseBarrido += (TAU * dt) / trabajo.periodoBarrido;
       pesos.inclina = peso(
         pesos.inclina,
         e === "inactivo" || e === "necesita" ? 1 : 0.5,
@@ -1004,8 +1049,10 @@ export function useAnimacionLia(
         inclinacion.objetivo = haciaGlobo * 0.6;
       } else if (e === "trabajando" && !quieto) {
         // Trabajando no se distrae con el cursor: mira su burbuja.
-        miradaX.objetivo = TRABAJO.miradaX * MIRADA.maxDesplazamientoOjos;
-        miradaY.objetivo = TRABAJO.miradaY * MIRADA.maxDesplazamientoOjos;
+        miradaX.objetivo =
+          (trabajo.miradaX + trabajo.barrido * Math.sin(faseBarrido)) *
+          MIRADA.maxDesplazamientoOjos;
+        miradaY.objetivo = trabajo.miradaY * MIRADA.maxDesplazamientoOjos;
         inclinacion.objetivo = 0;
       } else if (
         // Dormida no sigue al cursor.
@@ -1100,8 +1147,8 @@ export function useAnimacionLia(
           pesos.inclina *
           (1 - caraMareada) +
         TOQUES.inclinacionRebote * empuje.valor +
-        TRABAJO.balanceo *
-          Math.sin((TAU * tiempo) / (2 * TRABAJO.periodo)) *
+        trabajo.balanceo *
+          Math.sin(faseTrabajo / 2) *
           pesos.trabaja +
         // Meneo de alegría al encantarse con las caricias.
         meneoEncanto +
@@ -1305,7 +1352,7 @@ export function useAnimacionLia(
         // En el salto se estira arriba y se aplasta al tocar el suelo.
         SALTAR.estiron * (bote - 0.4) * pesos.salta +
         // Vaivén tranquilo del trabajo.
-        TRABAJO.rebote * Math.sin((TAU * tiempo) / TRABAJO.periodo) * pesos.trabaja +
+        trabajo.rebote * Math.sin(faseTrabajo) * pesos.trabaja +
         // Gelatina del esfuerzo: sx y sy van en contrafase.
         ESFUERZO.amplitud * Math.sin(TAU * tiempo * ESFUERZO.frecuencia) * fuerza;
       // Derretida se aplasta y se ensancha con la base como ancla; al pasar
@@ -1372,8 +1419,8 @@ export function useAnimacionLia(
         AGITAR.amplitud *
           Math.sin(TAU * tiempo * AGITAR.frecuencia) *
           pesos.agita +
-        TRABAJO.petalo *
-          Math.sin((TAU * tiempo) / TRABAJO.periodo - 0.9) *
+        trabajo.petalo *
+          Math.sin(faseTrabajo - 0.9) *
           pesos.trabaja +
         FLOTAR.giro *
           Math.sin((TAU * tiempo) / FLOTAR.periodoGiro) *

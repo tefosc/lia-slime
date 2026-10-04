@@ -20,7 +20,7 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 use serde_json::Value;
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, State};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, State};
 
 use crate::bandeja::{self, VENTANA_LIA};
 use crate::resultados::AjustesCompartidos;
@@ -35,6 +35,8 @@ const EVENTO_LEIDO: &str = "lia-isla-leido";
 /// tauri.conf.json). El panel es algo menor: deja sitio a su sombra.
 const ANCHO: f64 = 572.0;
 const ALTO: f64 = 360.0;
+/// Agrandada: fracción del ancho y del alto del monitor que ocupa.
+const FRACCION_GRANDE: (f64, f64) = (0.5, 0.6);
 /// Separación de Lia cuando la isla tiene que apartarse de ella.
 const MARGEN: f64 = 8.0;
 /// Tiempo que el cursor debe quedarse en el borde superior para que baje.
@@ -88,6 +90,8 @@ pub struct Isla {
     abierta: AtomicBool,
     /// Bajó sin el cursor encima y todavía no ha llegado.
     fijada: AtomicBool,
+    /// Agrandada con su botón: ocupa media pantalla hasta que vuelve a subir.
+    grande: AtomicBool,
     vigia: Mutex<Vigia>,
 }
 
@@ -152,13 +156,7 @@ fn bajar(app: &AppHandle, vista: Option<Value>, fijada: bool) -> Result<(), Stri
         *actual = vista.clone();
     }
     let ventana = ventana_de_la_isla(app)?;
-    if let Some(zona) = calcular_zona(app) {
-        let _ = ventana.set_position(PhysicalPosition::new(zona.x, zona.y));
-        if let Ok(mut vigia) = isla.vigia.lock() {
-            vigia.zona = Some(zona);
-            vigia.calculada = Some(Instant::now());
-        }
-    }
+    colocar(app, &ventana);
     if let Ok(mut vigia) = isla.vigia.lock() {
         vigia.fuera_desde = None;
         vigia.en_borde_desde = None;
@@ -255,8 +253,36 @@ pub fn subir(app: &AppHandle) {
         }
         if let Some(ventana) = app.get_webview_window(VENTANA_ISLA) {
             bandeja::fijar_visible(&ventana, false);
+            // La próxima vez baja con su tamaño normal.
+            if app.state::<Isla>().grande.swap(false, Ordering::Relaxed) {
+                colocar(&app, &ventana);
+            }
         }
     });
+}
+
+/// Pone la ventana de la isla en su sitio y con su tamaño (normal o grande).
+fn colocar(app: &AppHandle, ventana: &tauri::WebviewWindow) {
+    let Some(zona) = calcular_zona(app) else {
+        return;
+    };
+    let _ = ventana.set_size(PhysicalSize::new(zona.ancho as u32, zona.alto as u32));
+    let _ = ventana.set_position(PhysicalPosition::new(zona.x, zona.y));
+    if let Some(isla) = app.try_state::<Isla>() {
+        if let Ok(mut vigia) = isla.vigia.lock() {
+            vigia.zona = Some(zona);
+            vigia.calculada = Some(Instant::now());
+        }
+    }
+}
+
+/// Agranda la isla a media pantalla, o la devuelve a su tamaño normal.
+#[tauri::command]
+pub fn agrandar_isla(grande: bool, app: AppHandle, isla: State<'_, Isla>) {
+    isla.grande.store(grande, Ordering::Relaxed);
+    if let Some(ventana) = app.get_webview_window(VENTANA_ISLA) {
+        colocar(&app, &ventana);
+    }
 }
 
 /// Dónde baja la isla: pegada al borde superior y centrada en el monitor de
@@ -269,10 +295,22 @@ fn calcular_zona(app: &AppHandle) -> Option<Rect> {
         .flatten()
         .or(lia.primary_monitor().ok().flatten())?;
     let escala = monitor.scale_factor();
-    let (ancho, alto) = ((ANCHO * escala) as i32, (ALTO * escala) as i32);
     let margen = (MARGEN * escala) as i32;
     let (mx, my) = (monitor.position().x, monitor.position().y);
-    let mw = monitor.size().width as i32;
+    let (mw, mh) = (monitor.size().width as i32, monitor.size().height as i32);
+    let normal = ((ANCHO * escala) as i32, (ALTO * escala) as i32);
+    let grande = app
+        .try_state::<Isla>()
+        .is_some_and(|isla| isla.grande.load(Ordering::Relaxed));
+    // Agrandada: una fracción de la pantalla, nunca menor que su tamaño normal.
+    let (ancho, alto) = if grande {
+        (
+            ((f64::from(mw) * FRACCION_GRANDE.0) as i32).max(normal.0),
+            ((f64::from(mh) * FRACCION_GRANDE.1) as i32).max(normal.1),
+        )
+    } else {
+        normal
+    };
 
     let mut x = mx + (mw - ancho) / 2;
     let y = my;

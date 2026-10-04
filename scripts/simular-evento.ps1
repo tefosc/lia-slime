@@ -105,8 +105,14 @@ param(
   # Abre el globo de mensajes recientes, como desde la bandeja.
   [switch]$Registro,
   # Muestra el saludo que Lia da al arrancar con Windows.
-  [switch]$Saludo
+  [switch]$Saludo,
+  # Habla con una copia de desarrollo lanzada en modo aislado (variable de
+  # entorno LIA_AISLADA), que convive con la Lia instalada en otro puerto.
+  [switch]$Aislada
 )
+
+$puerto = if ($Aislada) { 47616 } else { 47615 }
+$archivoCabecera = if ($Aislada) { 'cabecera-hook-aislada.txt' } else { 'cabecera-hook.txt' }
 
 if ($Tiempos -or $Sonido -or $Audio -or $Registro -or $Saludo) {
   $orden = if ($Sonido) { @{ orden = 'sonido'; valor = $Sonido } }
@@ -114,8 +120,8 @@ if ($Tiempos -or $Sonido -or $Audio -or $Registro -or $Saludo) {
   elseif ($Saludo) { @{ orden = 'saludo' } }
   elseif ($Audio) { @{ orden = 'audio' } }
   else { @{ orden = 'tiempos'; adormecer = $Tiempos[0]; ocultar = $Tiempos[1] } }
-  $cab = Join-Path $env:APPDATA 'io.github.tefosc.lia\cabecera-hook.txt'
-  $codigo = ($orden | ConvertTo-Json -Compress) | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' 'http://127.0.0.1:47615/dev/prueba'
+  $cab = Join-Path $env:APPDATA "io.github.tefosc.lia\$archivoCabecera"
+  $codigo = ($orden | ConvertTo-Json -Compress) | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' "http://127.0.0.1:$puerto/dev/prueba"
   switch ($codigo) {
     '204' { 'Orden de prueba enviada.' }
     '404' { 'Lia no acepta esta orden: no es una compilación de desarrollo.' }
@@ -127,8 +133,8 @@ if ($Tiempos -or $Sonido -or $Audio -or $Registro -or $Saludo) {
 if ($FalloCursor -or $ReanudarCursor -or $Ocultar -or $Salir -or $Ajustes -or $Mostrar) {
   $ruta = if ($Mostrar) { 'dev/mostrar' } elseif ($FalloCursor) { 'dev/detener-cursor' } elseif ($ReanudarCursor) { 'dev/reanudar-cursor' } elseif ($Ocultar) { 'dev/ocultar' } elseif ($Ajustes) { 'dev/ajustes' } else { 'dev/salir' }
   $hecho = if ($Mostrar) { 'Lia visible.' } elseif ($FalloCursor) { 'Bucle del cursor detenido (fallo simulado).' } elseif ($ReanudarCursor) { 'Bucle del cursor reanudado.' } elseif ($Ocultar) { 'Lia oculta.' } elseif ($Ajustes) { 'Ajustes abierto.' } else { 'Lia cerrándose.' }
-  $cab = Join-Path $env:APPDATA 'io.github.tefosc.lia\cabecera-hook.txt'
-  $codigo = '' | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' "http://127.0.0.1:47615/$ruta"
+  $cab = Join-Path $env:APPDATA "io.github.tefosc.lia\$archivoCabecera"
+  $codigo = '' | & curl.exe -s -o NUL -w '%{http_code}' --connect-timeout 0.3 -m 1 -H "@$cab" --data-binary '@-' "http://127.0.0.1:$puerto/$ruta"
   switch ($codigo) {
     '204' { $hecho }
     '404' { 'Lia no acepta esta orden: no es una compilación de desarrollo.' }
@@ -210,7 +216,7 @@ if (-not $esPermiso -and -not $Evento) {
   exit 1
 }
 
-$cabecera = Join-Path $env:APPDATA 'io.github.tefosc.lia\cabecera-hook.txt'
+$cabecera = Join-Path $env:APPDATA "io.github.tefosc.lia\$archivoCabecera"
 
 if ($CuerpoInvalido) {
   $cuerpo = '{esto no es json'
@@ -276,7 +282,7 @@ if (-not $SinToken) {
 
 if ($esPermiso) { "Solicitud enviada; decide en la tarjeta de Lia..." }
 $reloj = [Diagnostics.Stopwatch]::StartNew()
-$codigo = $cuerpo | & curl.exe @argumentos "http://127.0.0.1:47615/$ruta"
+$codigo = $cuerpo | & curl.exe @argumentos "http://127.0.0.1:$puerto/$ruta"
 $ms = $reloj.ElapsedMilliseconds
 $respuesta = if (Test-Path $salida) { Get-Content $salida -Raw } else { '' }
 Remove-Item $salida -ErrorAction Ignore

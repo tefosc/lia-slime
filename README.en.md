@@ -197,7 +197,7 @@ Code, comments and commit messages are in Spanish. Built with
 
 ## Credits
 
-- Design, character and development: `<NOMBRE QUE USARÉ EN LA LICENCIA>`.
+- Design, character and development: Alejandro Stéfano Solís Martos.
 - Initial scaffold generated with the official `create-tauri-app` template
   (MIT or Apache-2.0).
 - Much of the code was written with the help of Claude Code.

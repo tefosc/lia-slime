@@ -28,6 +28,7 @@ fn main() {
             "bajar_isla",
             "estado_isla",
             "subir_isla",
+            "agrandar_isla",
             "isla_leido",
         ]),
     ))

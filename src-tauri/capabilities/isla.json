@@ -10,6 +10,7 @@
     "core:event:allow-unlisten",
     "allow-estado-isla",
     "allow-subir-isla",
-    "allow-isla-leido"
+    "allow-isla-leido",
+    "allow-agrandar-isla"
   ]
 }

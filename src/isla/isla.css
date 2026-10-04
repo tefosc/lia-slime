@@ -408,3 +408,9 @@ body,
     animation: none;
   }
 }
+
+/* Agrandada: el texto no se estira de lado a lado; se queda en un ancho
+   cómodo de leer. */
+.isla .mensaje {
+  max-width: 78ch;
+}

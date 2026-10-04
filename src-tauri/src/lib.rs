@@ -29,12 +29,18 @@ fn retraso_inicial(retraso: tauri::State<'_, RetrasoInicial>) -> u64 {
 pub fn run() {
     let con_windows = std::env::args().any(|a| a == ajustes::ARGUMENTO_INICIO);
 
-    tauri::Builder::default()
-        // Una sola instancia (debe registrarse antes que los demás plugins):
-        // la segunda no arranca y le pide a la primera que se muestre.
-        .plugin(tauri_plugin_single_instance::init(|app, _argumentos, _carpeta| {
-            bandeja::mostrar_lia(app);
-        }))
+    let mut constructor = tauri::Builder::default();
+    // Una sola instancia (debe registrarse antes que los demás plugins): la
+    // segunda no arranca y le pide a la primera que se muestre. En modo
+    // aislado (solo desarrollo) se omite, para convivir con la instalada.
+    if !receptor::aislada() {
+        constructor = constructor.plugin(tauri_plugin_single_instance::init(
+            |app, _argumentos, _carpeta| {
+                bandeja::mostrar_lia(app);
+            },
+        ));
+    }
+    constructor
         // Depende de Windows: registra el inicio en la clave Run del usuario,
         // sin permisos de administrador.
         .plugin(tauri_plugin_autostart::init(
@@ -70,6 +76,17 @@ pub fn run() {
                 handle.manage(estado);
                 cursor::iniciar(handle.clone());
                 ajustes::reparar_inicio_automatico(&handle);
+                // En modo aislado (solo desarrollo), esta copia se aparta del
+                // centro para no tapar a la Lia instalada.
+                if receptor::aislada() {
+                    let aparte = handle.clone();
+                    thread::spawn(move || {
+                        thread::sleep(Duration::from_secs(3));
+                        if let Some(ventana) = aparte.get_webview_window(bandeja::VENTANA_LIA) {
+                            let _ = ventana.set_position(tauri::PhysicalPosition::new(260, 320));
+                        }
+                    });
+                }
                 if !con_windows {
                     ajustes::abrir_en_primera_ejecucion(&handle);
                 }
@@ -124,6 +141,7 @@ pub fn run() {
             isla::bajar_isla,
             isla::estado_isla,
             isla::subir_isla,
+            isla::agrandar_isla,
             isla::isla_leido
         ])
         .run(tauri::generate_context!())
