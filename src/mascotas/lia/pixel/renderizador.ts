@@ -30,6 +30,7 @@ import {
 import type { Cara, Pixel } from "./sprites";
 import { BURBUJA, CARAS_DE_TRABAJO, CIFRAS, DERRETIRSE, DIBUJOS, OBJETOS } from "./trabajo";
 import type { Actividad } from "../../../estado/useActividad";
+import { BAJO_OJOS, DESTELLOS, DETRAS, ENCIMA, SOBRE_CARA, vestir } from "./disfraces";
 
 // Renderizador de pixel art: pinta la pose en un canvas pequeño que el CSS
 // amplía sin suavizar. El motor es el mismo que en el clásico; aquí la pose
@@ -81,6 +82,20 @@ function coloresDe(paleta: Paleta): Colores {
     Z: hslAHex({ h: contorno.h, s: 25, l: 62 }),
     C: "#8FD8F5",
     c: "#FFFFFF",
+    // Prendas de los disfraces: colores propios, iguales con cualquier paleta.
+    g: "#574B80",
+    h: "#372E57",
+    i: "#FFC1D6",
+    n: "#4A4560",
+    m: "#2F2B40",
+    j: "#F5973A",
+    x: "#F58A2E",
+    z: "#C7601A",
+    v: "#6BAF5E",
+    e: "#3F7F3A",
+    w: "#FAF8FF",
+    b: "#B9AFD0",
+    U: "#B79CFF",
     S: "#3A3F4B",
     s: "#E9EEF3",
     T: "#8A94A6",
@@ -225,6 +240,7 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
       ? datos.actividad
       : "pensar") as Actividad;
     const trabajando = pose.estado === "trabajando";
+    const disfraz = datos.disfraz ?? "";
 
     const { efectos } = pose;
     const visible = escalon(1 - efectos.fundido);
@@ -319,6 +335,7 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
 
     // Cuerpo con su cara, en una rejilla que luego se remuestrea.
     const rejilla = CUERPO.map((fila) => [...fila]);
+    vestir(rejilla, disfraz);
     if (pose.cara.visible > 0.5) {
       const reaccion =
         pose.cara.mareo > 0.5 ||
@@ -343,9 +360,13 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
           }
         }
       };
+      const bajoOjos = BAJO_OJOS[disfraz];
+      if (bajoOjos) poner(bajoOjos, 0, 0);
       poner(cerrados ? PARPADEO : cara.ojos, dx, cerrados ? 0 : dy);
       poner(cara.boca, 0, 0);
       if (deTrabajo?.puesto) poner(deTrabajo.puesto, 0, 0);
+      const sobreCara = SOBRE_CARA[disfraz];
+      if (sobreCara) poner(sobreCara, 0, 0);
     }
 
     // Aplastar y estirar por vecino más cercano, anclado en la base.
@@ -357,6 +378,10 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
     const inclinacion = Math.tan((pose.cuerpo.giro * Math.PI) / 180);
     const cizalla = (fila: number) => Math.round((h - 1 - fila) * inclinacion);
     lapiz.globalAlpha = visible;
+    // Piezas del disfraz que van detrás (orejas, alas, cola): siguen al
+    // cuerpo, sin deformarse.
+    const caja = { x: x0 + cizalla(0), y: y0, w, h };
+    for (const pieza of DETRAS[disfraz] ?? []) sprite(pieza.sprite, ...pieza.en(caja));
     for (let ty = 0; ty < h; ty++) {
       const origen = rejilla[Math.min(ALTO_CUERPO - 1, Math.floor((ty * ALTO_CUERPO) / h))];
       const sx = cizalla(ty);
@@ -367,17 +392,27 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
     }
     cuerpo = { x: x0, y: y0, w, h };
 
+    // Piezas del disfraz que van encima (sombrero, orejas del gorro). Suben
+    // un poco cuando subiría el pétalo.
+    const piezas = ENCIMA[disfraz];
+    const conDisfraz = disfraz in ENCIMA || disfraz in DETRAS || disfraz === "fantasma";
     // Pétalo: una variante según su giro, apoyada en lo alto del cuerpo.
     const delta = pose.accesorio.giro - POSES.inactivo.petalo.giro;
     const variante =
       delta > 32 ? PETALOS.caido : delta > 12 ? PETALOS.inclinado : delta < -14 ? PETALOS.izquierda : PETALOS.reposo;
     const subida = Math.round(Math.max(0, POSES.inactivo.petalo.y - pose.accesorio.y) * POR_UNIDAD);
     const corrido = Math.round((pose.accesorio.x - POSES.inactivo.petalo.x) * POR_UNIDAD);
-    sprite(
-      variante.sprite,
-      x0 + Math.round((COLUMNA_PETALO * w) / ANCHO_CUERPO) - variante.punta + cizalla(0) + corrido,
-      y0 - variante.sprite.length - subida,
-    );
+    if (!conDisfraz) {
+      sprite(
+        variante.sprite,
+        x0 + Math.round((COLUMNA_PETALO * w) / ANCHO_CUERPO) - variante.punta + cizalla(0) + corrido,
+        y0 - variante.sprite.length - subida,
+      );
+    }
+    for (const pieza of piezas ?? []) {
+      const [px, py] = pieza.en(caja);
+      sprite(pieza.sprite, px, py - Math.min(1, subida));
+    }
 
     // Efectos: sprites pequeños, sin escalar ni girar.
     lapiz.globalAlpha = visible;
@@ -410,9 +445,20 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
     if (pose.estado === "termino") {
       // Destellos de dos fotogramas que se alternan.
       const turno = Math.floor(ahora / 400) % 2 === 0;
-      sprite(turno ? DESTELLO_A : DESTELLO_B, 6, 29 - alturaPx);
-      sprite(turno ? DESTELLO_B : DESTELLO_A, 40, 19 - alturaPx);
-      sprite(DESTELLO_B, 40, 33 - alturaPx);
+      // Con disfraz, los destellos llevan su tema.
+      const [a, b] = DESTELLOS[disfraz] ?? [DESTELLO_A, DESTELLO_B];
+      // Con alas a los lados, los destellos van más arriba.
+      const alto = disfraz === "murcielago" ? 13 : 0;
+      sprite(turno ? a : b, 4, 29 - alto - alturaPx);
+      sprite(turno ? b : a, 41, 18 - alturaPx);
+      sprite(b, 42, 33 - alto * 2 - alturaPx);
+      if (disfraz === "bruja") {
+        // "Puf": chispas que parpadean sobre la punta del sombrero.
+        const punta = { x: caja.x + Math.round(caja.w / 2) + 1, y: caja.y - 11 };
+        punto(punta.x + (turno ? -3 : 2), punta.y - (turno ? 1 : 3), "Y");
+        punto(punta.x + (turno ? 3 : -2), punta.y - (turno ? 3 : 0), "U");
+        punto(punta.x, punta.y - (turno ? 4 : 2), turno ? "U" : "Y");
+      }
     }
     if (sinLeer > 0) {
       burbuja = { x: 39, y: 18 - alturaPx };

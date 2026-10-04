@@ -5,13 +5,14 @@ import "./pixel.css";
 /**
  * Dibujo pixel art de Lia: un canvas pequeño que el CSS amplía sin suavizar.
  * Lo pinta entero el renderizador; aquí solo se le entrega, como atributos,
- * lo que no es animación (la paleta, los resultados sin leer y la actividad).
+ * lo que no es animación (la paleta, los resultados sin leer, la actividad y
+ * el disfraz).
  *
  * Depende de WebView2 (Chromium): `image-rendering: pixelated` mantiene los
  * bordes nítidos con el escalado de pantalla de Windows al 100, 125 y 150 %,
  * porque cada píxel lógico ocupa un número entero de píxeles físicos.
  */
-function DibujoPixel({ estado, resultadosSinLeer, paleta, actividad }: PropsDibujo) {
+function DibujoPixel({ estado, resultadosSinLeer, paleta, actividad, disfraz }: PropsDibujo) {
   return (
     <canvas
       className="lia-pixel"
@@ -22,6 +23,7 @@ function DibujoPixel({ estado, resultadosSinLeer, paleta, actividad }: PropsDibu
       data-paleta={JSON.stringify(paleta)}
       data-sin-leer={resultadosSinLeer}
       data-actividad={actividad}
+      data-disfraz={disfraz}
     />
   );
 }
@@ -35,6 +37,4 @@ export const PIXEL: EstiloDeMascota = {
   ancla: { x: (LADO * ESCALA) / 2, y: 45 * ESCALA },
   Dibujo: DibujoPixel,
   crearRenderizador: crearRenderizadorPixel,
-  // Los disfraces aún no están dibujados en pixel art.
-  conDisfraces: false,
 };
