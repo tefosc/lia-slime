@@ -263,6 +263,13 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   texto, qué hace Claude (pensar, leer, buscar, editar, comando, web,
   agente): `src/estado/useActividad.ts` lo saca solo del nombre de la
   herramienta de cada `PreToolUse` y espacia los cambios para no distraer.
+  Con la actividad cambian también el movimiento (`TRABAJO.actividades`) y
+  la cara: cejas, tamaño de los ojos y boca (`CARAS_DE_TRABAJO` en
+  `Lia.tsx`), con un parpadeo al cambiar.
+- Página de revisión (solo desarrollo): `http://localhost:1420/?revision`
+  muestra a Lia congelada en cada estado y reacción y compara la huella de
+  cada dibujo con `src/revision/referencia.json`. Si cambias el dibujo a
+  propósito, actualiza la referencia con `window.__revision`.
 - Caricias seguidas durante unos segundos la "encantan": dos botes, meneo y
   corazones más seguidos (`CARICIAS.tiempoParaEncanto`).
 - Las reacciones (toque, sorpresa y enojo por clics; alegría al frotar la

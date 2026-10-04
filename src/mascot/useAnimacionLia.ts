@@ -514,7 +514,12 @@ export function useAnimacionLia(
   // El guion solo se mira al montar, y solo existe en desarrollo.
   const guionInicial = useRef(import.meta.env.DEV ? guion : undefined).current;
   const actividadActual = useRef(actividad);
-  actividadActual.current = actividad;
+  const alCambiarActividad = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (actividadActual.current === actividad) return;
+    actividadActual.current = actividad;
+    alCambiarActividad.current?.();
+  }, [actividad]);
   const estadoActual = useRef(estado);
   const alCambiar = useRef<(() => void) | null>(null);
   const alTocar = useRef<((lado: number) => void) | null>(null);
@@ -1811,6 +1816,14 @@ export function useAnimacionLia(
       pedir();
     };
 
+    // Al cambiar lo que hace Claude cambia la cara: un parpadeo lo suaviza.
+    alCambiarActividad.current = () => {
+      if (estadoActual.current === "trabajando" && !reducido.matches) {
+        parpadeoInicio = tiempo;
+        pedir();
+      }
+    };
+
     alHaberActividad.current = () => {
       ultimaActividad = performance.now();
       if (fase === "adormecida") despertarSuave();
@@ -1986,6 +1999,7 @@ export function useAnimacionLia(
       alRozar.current = null;
       alHaberActividad.current = null;
       alDescansar.current = null;
+      alCambiarActividad.current = null;
       window.clearInterval(vigilancia);
       if (import.meta.env.DEV && !guionInicial) delete window.__lia;
       document.removeEventListener("visibilitychange", alCambiarVisibilidad);

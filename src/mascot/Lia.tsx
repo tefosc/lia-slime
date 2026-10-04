@@ -42,7 +42,36 @@ const SOMBRA_BASE = sombraPara(POSES.inactivo.sombra);
 const PETALO_BASE = `translate(${POSES.inactivo.petalo.x},${POSES.inactivo.petalo.y}) rotate(${POSES.inactivo.petalo.giro})`;
 
 
-function Ojos({ estado }: { estado: EstadoLia }) {
+/**
+ * Cara de `trabajando` según lo que hace Claude: cambian las cejas, el
+ * tamaño de los ojos y la boca. La mirada la mueve el motor.
+ *  - cejas: trazo de las dos cejas, o null si no lleva.
+ *  - ojos: radios de cada ojo (abiertos de más al buscar).
+ *  - boca: trazo de la boca; `redonda` la dibuja como una "o"; `lengua` asoma
+ *    la lengua, de concentración.
+ */
+const CARAS_DE_TRABAJO: Record<
+  Actividad,
+  { cejas: string | null; ojos: [number, number]; boca: string; redonda?: boolean; lengua?: boolean }
+> = {
+  // Pensando: una ceja arriba y la boca de lado, "mmm...".
+  pensar: { cejas: "M-22 -12 L-10 -10.5 M22 -8.6 L10 -8.6", ojos: [6.2, 7.6], boca: "M-2 17.5 Q2 16 6 17" },
+  // Leyendo: tranquila, boca pequeña y recta.
+  leer: { cejas: null, ojos: [6.2, 7.2], boca: "M-3.5 17 H3.5" },
+  // Buscando: ojos muy abiertos, cejas altas y boca en "o".
+  buscar: { cejas: "M-22 -12.5 Q-16 -14.5 -10 -12.5 M22 -12.5 Q16 -14.5 10 -12.5", ojos: [6.8, 8.8], boca: "", redonda: true },
+  // Editando: cejas rectas y la lengua fuera.
+  editar: { cejas: "M-22 -9.6 L-10 -9 M22 -9.6 L10 -9", ojos: [6.2, 7.6], boca: "M-4.5 16.5 Q0 18.5 4.5 16.5", lengua: true },
+  // Comando: cejas decididas y boca firme.
+  comando: { cejas: "M-22 -10.5 L-10 -7.5 M22 -10.5 L10 -7.5", ojos: [6.2, 7.2], boca: "M-5 17.5 Q0 16.2 5 17.5" },
+  // Web: curiosa, con una sonrisa.
+  web: { cejas: "M-21 -11.5 Q-16 -13 -11 -11.5 M21 -11.5 Q16 -13 11 -11.5", ojos: [6.4, 8], boca: "M-5 15.5 Q0 20 5 15.5" },
+  // Agente: contenta, con la boca abierta en sonrisa.
+  agente: { cejas: "M-21 -11.5 Q-16 -13 -11 -11.5 M21 -11.5 Q16 -13 11 -11.5", ojos: [6.2, 7.6], boca: "M-5.5 14.5 Q0 21 5.5 14.5 Z" },
+  otra: { cejas: "M-22 -9.6 L-10 -9 M22 -9.6 L10 -9", ojos: [6.2, 7.6], boca: "M-4.5 16.5 Q0 18.5 4.5 16.5", lengua: true },
+};
+
+function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }) {
   switch (estado) {
     case "inactivo":
       return (
@@ -113,21 +142,36 @@ function Ojos({ estado }: { estado: EstadoLia }) {
       );
     case "trabajando":
       return (
-        // Concentrada: ojos abiertos y cejas rectas (atenta, no enfadada).
+        // Concentrada: ojos abiertos; las cejas y el tamaño cambian con lo
+        // que hace Claude (ver CARAS_DE_TRABAJO).
         <>
-          <ellipse cx="-15" cy="2.5" rx="6.2" ry="7.6" fill={TINTA} />
-          <ellipse cx="15" cy="2.5" rx="6.2" ry="7.6" fill={TINTA} />
+          <ellipse
+            cx="-15"
+            cy="2.5"
+            rx={CARAS_DE_TRABAJO[actividad].ojos[0]}
+            ry={CARAS_DE_TRABAJO[actividad].ojos[1]}
+            fill={TINTA}
+          />
+          <ellipse
+            cx="15"
+            cy="2.5"
+            rx={CARAS_DE_TRABAJO[actividad].ojos[0]}
+            ry={CARAS_DE_TRABAJO[actividad].ojos[1]}
+            fill={TINTA}
+          />
           <circle cx="-13.2" cy="0" r="2.4" fill="#fff" />
           <circle cx="16.8" cy="0" r="2.4" fill="#fff" />
           <circle cx="-17" cy="5.5" r="1.2" fill="#fff" />
           <circle cx="13" cy="5.5" r="1.2" fill="#fff" />
-          <path
-            d="M-22 -9.6 L-10 -9 M22 -9.6 L10 -9"
-            stroke={TINTA}
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-          />
+          {CARAS_DE_TRABAJO[actividad].cejas && (
+            <path
+              d={CARAS_DE_TRABAJO[actividad].cejas}
+              stroke={TINTA}
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+            />
+          )}
         </>
       );
     case "necesita":
@@ -154,7 +198,7 @@ function Ojos({ estado }: { estado: EstadoLia }) {
   }
 }
 
-function Boca({ estado }: { estado: EstadoLia }) {
+function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }) {
   switch (estado) {
     case "inactivo":
       return (
@@ -208,17 +252,24 @@ function Boca({ estado }: { estado: EstadoLia }) {
       );
     case "trabajando":
       return (
-        // Boquita cerrada con la lengua asomando, de concentración.
-        <>
-          <path
-            d="M-4.5 16.5 Q0 18.5 4.5 16.5"
-            stroke={TINTA}
-            strokeWidth="1.8"
-            fill="none"
-            strokeLinecap="round"
-          />
-          <ellipse cx="3.6" cy="18.6" rx="2.3" ry="1.7" fill={LENGUA} />
-        </>
+        // La boca cambia con lo que hace Claude (ver CARAS_DE_TRABAJO).
+        CARAS_DE_TRABAJO[actividad].redonda ? (
+          <ellipse cx="0" cy="17.5" rx="2.6" ry="3" fill={TINTA} />
+        ) : (
+          <>
+            <path
+              d={CARAS_DE_TRABAJO[actividad].boca}
+              stroke={TINTA}
+              strokeWidth="1.8"
+              fill={CARAS_DE_TRABAJO[actividad].boca.endsWith("Z") ? TINTA : "none"}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {CARAS_DE_TRABAJO[actividad].lengua && (
+              <ellipse cx="3.6" cy="18.6" rx="2.3" ry="1.7" fill={LENGUA} />
+            )}
+          </>
+        )
       );
     case "necesita":
       return (
@@ -566,10 +617,10 @@ export function Lia({
                 que el motor le escribió (por ejemplo, una boca oculta por
                 estar dormida) y la cara nueva saldría incompleta. */}
             <g id="lia-ojos">
-              <Ojos key={estado} estado={estado} />
+              <Ojos key={estado} estado={estado} actividad={actividad} />
             </g>
             <g id="lia-boca">
-              <Boca key={estado} estado={estado} />
+              <Boca key={estado} estado={estado} actividad={actividad} />
             </g>
             <g id="lia-mejillas" fill="#FF9EB5" opacity={POSES[estado].mejillas}>
               <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
