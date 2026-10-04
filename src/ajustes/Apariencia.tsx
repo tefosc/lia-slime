@@ -24,6 +24,15 @@ function Muestra({ paleta, disfraz }: { paleta: Paleta; disfraz?: string }) {
           <circle cx="7.5" cy="-7.5" r="3.6" />
         </g>
       )}
+      {disfraz === "murcielago" && (
+        <path
+          d="M-8 0 L-12 -6 L-11.5 -1 L-12 3 Z M8 0 L12 -6 L11.5 -1 L12 3 Z M-8 -6 L-7 -11.5 L-3 -8.5 Z M8 -6 L7 -11.5 L3 -8.5 Z"
+          fill="#4B4266"
+          stroke="#2F2944"
+          strokeWidth="1"
+          strokeLinejoin="round"
+        />
+      )}
       {disfraz === SIN_DISFRAZ && (
         <path
           d="M4 -8.5 C2.5 -12.5 5.5 -14 7 -12.5 C9 -14 11 -11.5 4 -8.5 Z"
@@ -35,6 +44,31 @@ function Muestra({ paleta, disfraz }: { paleta: Paleta; disfraz?: string }) {
       )}
       <circle r="10" fill={paleta.cuerpo} stroke={paleta.contorno} strokeWidth="1.6" />
       <path d="M-9.4 3.5 A10 10 0 0 0 9.4 3.5 Q0 8 -9.4 3.5 Z" fill={paleta.banda} />
+      {disfraz === "calabaza" && (
+        <>
+          <path d="M-9.2 -4 A10 10 0 0 1 9.2 -4 Q0 -6.5 -9.2 -4 Z" fill="#F58A2E" stroke="#C7601A" strokeWidth="0.9" />
+          <path d="M-1 -10 L-0.5 -12 L1.5 -12 L1.2 -10 Z" fill="#6BAF5E" stroke="#3F7F3A" strokeWidth="0.6" />
+        </>
+      )}
+      {disfraz === "fantasma" && (
+        <path
+          d="M-11 0 A11 11 0 0 1 11 0 L11 9 L7.5 11 L3.7 9 L0 11 L-3.7 9 L-7.5 11 L-11 9 Z M-7 1 A7 5.5 0 1 0 7 1 A7 5.5 0 1 0 -7 1 Z"
+          fillRule="evenodd"
+          fill="#FAF8FF"
+          stroke="#B9AFD0"
+          strokeWidth="0.9"
+          strokeLinejoin="round"
+        />
+      )}
+      {disfraz === "bruja" && (
+        <path
+          d="M-10 -7 L10 -7 L5 -8.5 L2.5 -12 L-0.5 -8.5 Z"
+          fill="#4B3F72"
+          stroke="#2F2944"
+          strokeWidth="0.9"
+          strokeLinejoin="round"
+        />
+      )}
       <path
         d="M-6 -3 Q-5 -6.5 -1.5 -7.5"
         fill="none"

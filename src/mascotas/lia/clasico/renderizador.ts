@@ -4,7 +4,7 @@ import type { ParteTocada, Renderizador } from "../../../mascot/renderizador";
 import { TOQUES } from "../../../mascot/useAnimacionLia";
 import { elipseDe } from "../../../zonas";
 import type { Forma } from "../../../zonas";
-import { transformOreja } from "./Disfraz";
+import { transformPar, transformTocado } from "./Disfraz";
 import { bocaEsfuerzo, grosorOjosEsfuerzo, ojosEsfuerzo, sombraPara } from "./trazos";
 
 /** Centro del cuerpo dentro del viewBox (-82 -110 164 164), en fracción. */
@@ -65,7 +65,8 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
   const ojosEl = buscar(svg, "lia-ojos");
   // El pétalo o, con disfraz, las orejas: cambian al cambiar de disfraz.
   let petaloEl = buscar(svg, "lia-petalo");
-  let orejas: { disfraz: string; i: SVGElement | null; d: SVGElement | null } | null = null;
+  let par: { disfraz: string; i: SVGElement | null; d: SVGElement | null } | null = null;
+  let tocado: { disfraz: string; el: SVGElement } | null = null;
   const gotaEl = buscar(svg, "lia-gota");
   const personajeEl = buscar(svg, "lia-personaje");
   const caraEl = buscar(svg, "lia-cara");
@@ -93,13 +94,15 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
   const buscarAccesorio = () => {
     petaloEl = buscar(svg, "lia-petalo");
     const detras = buscar(svg, "lia-disfraz-detras");
-    orejas = detras
+    par = detras
       ? {
           disfraz: detras.dataset.disfraz ?? "",
-          i: buscar(svg, "lia-oreja-i"),
-          d: buscar(svg, "lia-oreja-d"),
+          i: buscar(svg, "lia-par-i"),
+          d: buscar(svg, "lia-par-d"),
         }
       : null;
+    const tocadoEl = buscar(svg, "lia-tocado");
+    tocado = tocadoEl ? { disfraz: tocadoEl.dataset.disfraz ?? "", el: tocadoEl } : null;
   };
   buscarAccesorio();
 
@@ -143,7 +146,7 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
      */
     reencontrar(): void {
       buscarAccesorio();
-      for (const clave of ["petalo", "oreja-i", "oreja-d"]) escritos.delete(clave);
+      for (const clave of ["petalo", "par-i", "par-d", "tocado"]) escritos.delete(clave);
       ojosEsfuerzoEl = buscar(svg, "lia-ojos-esfuerzo");
       bocaOnduladaEl = buscar(svg, "lia-boca-ondulada");
       // Son elementos nuevos: lo escrito en los anteriores ya no vale.
@@ -288,17 +291,27 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
         "transform",
         `translate(${pose.accesorio.x.toFixed(1)},${pose.accesorio.y.toFixed(1)}) rotate(${pose.accesorio.giro.toFixed(1)})`,
       );
-      if (orejas) {
-        // Las orejas siguen al mismo accesorio que el pétalo, pero sin
-        // soltarse de la cabeza: se balancean con su giro (con seno, para
-        // que una vuelta entera del pétalo sea un vaivén), se estiran un
-        // poco cuando el pétalo sube y se caen hacia los lados al dormirse.
+      if (par || tocado) {
+        // Las piezas del disfraz siguen al mismo accesorio que el pétalo,
+        // pero sin soltarse: se balancean con su giro (con seno, para que
+        // una vuelta entera del pétalo sea un vaivén), suben un poco cuando
+        // el pétalo sube y las orejas y alas se caen al dormirse.
         const delta = pose.accesorio.giro - POSES.inactivo.petalo.giro;
         const balanceo = 22 * Math.sin((delta * Math.PI) / 180);
         const caida = 20 * cara.dormida;
         const subida = Math.max(0, POSES.inactivo.petalo.y - pose.accesorio.y) * 0.12;
-        escribir(orejas.i, "oreja-i", "transform", transformOreja(orejas.disfraz, -1, balanceo, caida, subida));
-        escribir(orejas.d, "oreja-d", "transform", transformOreja(orejas.disfraz, 1, balanceo, caida, subida));
+        if (par) {
+          escribir(par.i, "par-i", "transform", transformPar(par.disfraz, -1, balanceo, caida, subida));
+          escribir(par.d, "par-d", "transform", transformPar(par.disfraz, 1, balanceo, caida, subida));
+        }
+        if (tocado) {
+          escribir(
+            tocado.el,
+            "tocado",
+            "transform",
+            transformTocado(tocado.disfraz, balanceo * 0.6 + caida * 0.5, subida),
+          );
+        }
       }
 
       const { gota } = efectos;

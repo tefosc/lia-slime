@@ -208,7 +208,10 @@ no está conectada.
   guarda: modo privado, ocultarse por inactividad y sus minutos, volumen,
   las dos casillas de sonido y la apariencia. Nada de uso, horarios ni
   contenido.
-- Disfraces: Lia puede ir de gatito o de panda. Un disfraz son prendas que
+- Disfraces: Lia puede ir de gatito, panda, bruja, calabaza, fantasma o
+  murciélago. Para añadir uno: su entrada en el manifiesto, sus piezas en
+  `Disfraz.tsx` (y `PARES` o `TOCADOS` si alguna se mueve) y su miniatura en
+  `src/ajustes/Apariencia.tsx`. Un disfraz son prendas que
   se pone encima, con sus propios colores: gorrita con orejas, cola y
   bigotes para el gatito; diadema con orejas y antifaz con lentes claros
   para el panda (así los ojos se siguen viendo). Va sin pétalo; el cuerpo,

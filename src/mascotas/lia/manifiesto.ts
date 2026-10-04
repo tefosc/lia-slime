@@ -9,5 +9,9 @@ export const LIA: PaqueteDeMascota = {
   disfraces: [
     { id: "gatito", nombre: "Gatito" },
     { id: "panda", nombre: "Panda" },
+    { id: "bruja", nombre: "Bruja" },
+    { id: "calabaza", nombre: "Calabaza" },
+    { id: "fantasma", nombre: "Fantasma" },
+    { id: "murcielago", nombre: "Murciélago" },
   ],
 };
