@@ -12,14 +12,14 @@ function Muestra({ paleta, disfraz }: { paleta: Paleta; disfraz?: string }) {
       {disfraz === "gatito" && (
         <path
           d="M-9.5 -3 L-9 -11.5 L-2.5 -8 Z M9.5 -3 L9 -11.5 L2.5 -8 Z"
-          fill={paleta.cuerpo}
-          stroke={paleta.contorno}
+          fill="#574B80"
+          stroke="#372E57"
           strokeWidth="1.4"
           strokeLinejoin="round"
         />
       )}
       {disfraz === "panda" && (
-        <g fill="#5E5873" stroke={paleta.contorno} strokeWidth="1">
+        <g fill="#4A4560" stroke="#2F2B40" strokeWidth="1">
           <circle cx="-7.5" cy="-7.5" r="3.6" />
           <circle cx="7.5" cy="-7.5" r="3.6" />
         </g>

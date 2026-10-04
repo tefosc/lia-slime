@@ -4,7 +4,7 @@ import type { PropsDibujo } from "../../../mascot/renderizador";
 import { SIN_DISFRAZ } from "../../tipos";
 import type { EstadoLia } from "../../../mascot/tipos";
 import type { Paleta } from "../../paletas";
-import { DisfrazBajoOjos, DisfrazDetras, DisfrazSobreCara } from "./Disfraz";
+import { DisfrazBajoOjos, DisfrazDetras, DisfrazEnCabeza, DisfrazSobreCara } from "./Disfraz";
 import { tonosDe } from "./tonos";
 import type { Tonos } from "./tonos";
 import { sombraPara } from "./trazos";
@@ -738,7 +738,7 @@ export function DibujoClasico({
           <ellipse cx="-17" cy="38" rx="6" ry="1.4" fill="#FFFFFF" />
         </g>
         <g id="lia-flotante">
-          <DisfrazDetras disfraz={disfraz} paleta={paleta} />
+          <DisfrazDetras disfraz={disfraz} />
           <path
             id="lia-cuerpo"
             d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z"
@@ -761,13 +761,14 @@ export function DibujoClasico({
             />
             <circle cx="-33" cy="0" r="2.5" fill="#fff" />
           </g>
+          <DisfrazEnCabeza disfraz={disfraz} />
           {/* La cara entera se desvanece al derretirse. */}
           <g id="lia-cara">
             {/* `key`: al cambiar de estado las piezas se crean de nuevo. Si
                 React reutilizara el mismo elemento, conservaría la opacidad
                 que el motor le escribió (por ejemplo, una boca oculta por
                 estar dormida) y la cara nueva saldría incompleta. */}
-            <DisfrazBajoOjos disfraz={disfraz} />
+            <DisfrazBajoOjos disfraz={disfraz} paleta={paleta} />
             <g id="lia-ojos">
               <Ojos key={estado} estado={estado} actividad={actividad} />
             </g>

@@ -208,9 +208,11 @@ no está conectada.
   guarda: modo privado, ocultarse por inactividad y sus minutos, volumen,
   las dos casillas de sonido y la apariencia. Nada de uso, horarios ni
   contenido.
-- Disfraces: Lia puede ir de gatito o de panda. Un disfraz cambia el pétalo
-  por orejas y añade detalles (cola y bigotes, manchas en los ojos); el
-  cuerpo, las caras y las reacciones son los mismos. Los declara el
+- Disfraces: Lia puede ir de gatito o de panda. Un disfraz son prendas que
+  se pone encima, con sus propios colores: gorrita con orejas, cola y
+  bigotes para el gatito; diadema con orejas y antifaz con lentes claros
+  para el panda (así los ojos se siguen viendo). Va sin pétalo; el cuerpo,
+  las caras y las reacciones son los mismos. Los declara el
   manifiesto de la mascota y, en el clásico, los dibuja
   `src/mascotas/lia/clasico/Disfraz.tsx`; el renderizador mueve las orejas
   con el mismo "accesorio" de la pose que mueve el pétalo. Sin disfraz, el
