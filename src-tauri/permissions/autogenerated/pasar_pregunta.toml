@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pasar-pregunta"
+description = "Enables the pasar_pregunta command without any pre-configured scope."
+commands.allow = ["pasar_pregunta"]
+
+[[permission]]
+identifier = "deny-pasar-pregunta"
+description = "Denies the pasar_pregunta command without any pre-configured scope."
+commands.deny = ["pasar_pregunta"]

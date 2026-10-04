@@ -26,6 +26,8 @@ The app's interface is in Spanish.
   Lia shows a card with what it wants to do and two buttons. Lia never decides
   for you: if you do not answer within 60 s, Claude Code asks in the terminal
   as usual.
+- **Questions.** When Claude asks you something with options, you can pick
+  the answer from Lia.
 - **Results.** When a task finishes a ✓ bubble appears; click it to read
   Claude's last message and how long the task took.
 - **Interactions.** She follows the cursor with her eyes, bounces when

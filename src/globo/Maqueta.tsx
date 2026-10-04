@@ -65,12 +65,44 @@ export function Maqueta() {
       <TarjetaPregunta
         pregunta={{
           id: 1,
-          sesion: "x",
           etiqueta: "Conversación 1",
-          texto: "¿Qué base de datos prefieres para el proyecto?",
-          total: 2,
+          expira: Date.now() + 50_000,
+          preguntas: [
+            {
+              pregunta: "¿Qué base de datos prefieres para el proyecto?",
+              multiple: false,
+              opciones: [
+                { etiqueta: "SQLite (Recomendado)", descripcion: "Sencilla y sin servidor" },
+                { etiqueta: "Postgres", descripcion: "Completa" },
+                { etiqueta: "Ninguna todavía", descripcion: "" },
+              ],
+            },
+            { pregunta: "¿Añado pruebas?", multiple: false, opciones: [{ etiqueta: "Sí", descripcion: "" }] },
+          ],
         }}
-        onCerrar={nada}
+        onResponder={nada}
+        onPasar={nada}
+      />
+      <TarjetaPregunta
+        pregunta={{
+          id: 2,
+          etiqueta: "Conversación 2",
+          expira: Date.now() + 30_000,
+          preguntas: [
+            {
+              pregunta: "¿Qué partes quieres que revise?",
+              multiple: true,
+              opciones: [
+                { etiqueta: "Interfaz", descripcion: "" },
+                { etiqueta: "Servidor", descripcion: "" },
+                { etiqueta: "Pruebas", descripcion: "" },
+                { etiqueta: "Documentación", descripcion: "" },
+              ],
+            },
+          ],
+        }}
+        onResponder={nada}
+        onPasar={nada}
       />
       <TarjetaAviso
         aviso={{

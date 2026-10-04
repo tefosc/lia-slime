@@ -139,11 +139,13 @@ export const TEXTOS_PERMISO = {
 export const TEXTO_ENTENDIDO = "Gracias, Lia";
 
 export const TEXTOS_PREGUNTA = {
-  titulo: (numero: number) =>
-    elegir(["Claude te hizo una pregunta", "Claude necesita que elijas algo"], numero),
-  mas: (n: number) => (n === 1 ? "y 1 pregunta más" : `y ${n} preguntas más`),
-  pie: (etiqueta: string) => `${etiqueta} · respóndele en Claude Code, ahí están las opciones`,
-  cerrar: "Ya voy",
+  paso: (actual: number, total: number) => `Pregunta ${actual} de ${total}`,
+  pie: (etiqueta: string, multiple: boolean) =>
+    multiple ? `${etiqueta} · puedes marcar varias` : `${etiqueta} · elige una`,
+  /** Para escribir una respuesta libre hay que ir a Claude Code. */
+  pasar: "Responder en Claude Code",
+  siguiente: "Siguiente",
+  listo: "Listo",
 };
 
 /** Con el límite de uso agotado, Lia se va a descansar tras este aviso. */

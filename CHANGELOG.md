@@ -23,8 +23,8 @@ Primera versión. Solo para Windows.
 - Aviso cuando Claude Code se detiene por un límite de uso u otro error. Con
   el límite agotado, Lia se va a descansar: suena un aviso propio, se duerme
   y se oculta hasta el siguiente evento.
-- Aviso cuando Claude te hace una pregunta con opciones (se responde en
-  Claude Code).
+- Preguntas de Claude con opciones: se pueden responder desde el globo de
+  Lia, o pasarlas a Claude Code para escribir una respuesta libre.
 - Todo lo que dice Lia sale en un mismo globo de diálogo, con su trazo y sus
   colores, y una barra con el tiempo que queda para responder un permiso.
 - Isla: panel escondido en el borde superior de la pantalla que baja al

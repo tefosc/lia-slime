@@ -28,6 +28,8 @@
     "allow-establecer-modo-privado",
     "allow-actualizar-isla",
     "allow-bajar-isla",
-    "allow-subir-isla"
+    "allow-subir-isla",
+    "allow-responder-pregunta",
+    "allow-pasar-pregunta"
   ]
 }

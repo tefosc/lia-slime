@@ -7,6 +7,8 @@ fn main() {
             "retraso_inicial",
             "error_receptor",
             "resolver_permiso",
+            "responder_pregunta",
+            "pasar_pregunta",
             "configurar_cursor",
             "definir_zonas",
             "mostrar",

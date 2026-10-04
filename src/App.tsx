@@ -50,7 +50,8 @@ function bajarIsla(vista: VistaIsla): void {
 
 function App() {
   const { estado: estadoSesiones, aviso, cerrarAviso } = useEstadoLia();
-  const { actual, pendientes, resolver, pregunta, cerrarPregunta } = usePermisos();
+  const { actual, pendientes, resolver, pregunta, responderPregunta, pasarPregunta } =
+    usePermisos();
   const resultados = useResultados();
   const actividad = useActividad();
   const registro = useRegistro();
@@ -387,7 +388,16 @@ function App() {
             onVerTodo={() => bajarIsla({ tipo: "permiso" })}
           />
         ) : pregunta ? (
-          <TarjetaPregunta key={pregunta.id} pregunta={pregunta} onCerrar={cerrarPregunta} />
+          <TarjetaPregunta
+            key={pregunta.id}
+            pregunta={pregunta}
+            onResponder={(id, respuestas) => {
+              sonar("permitir");
+              anotar("permitido", TEXTOS_REGISTRO.respondida);
+              responderPregunta(id, respuestas);
+            }}
+            onPasar={pasarPregunta}
+          />
         ) : aviso ? (
           <TarjetaAviso
             key={aviso.id}

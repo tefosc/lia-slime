@@ -102,6 +102,8 @@ pub fn run() {
             retraso_inicial,
             receptor::error_receptor,
             permisos::resolver_permiso,
+            permisos::responder_pregunta,
+            permisos::pasar_pregunta,
             cursor::configurar_cursor,
             cursor::definir_zonas,
             bandeja::mostrar,

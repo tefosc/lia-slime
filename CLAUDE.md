@@ -286,9 +286,13 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
 - Permisos (`/permiso`): el comando, la ruta o la URL viven
   solo en memoria mientras la solicitud está activa y nunca se registran.
 - Preguntas de Claude (`AskUserQuestion`): llegan por el mismo hook que los
-  permisos, pero no lo son. Lia responde "sin decisión" al instante y solo
-  muestra un globo de aviso; se contestan en Claude Code. No las trates como
-  un permiso: "permitir" las respondería en blanco.
+  permisos, pero no lo son. Lia muestra la pregunta con sus opciones y, al
+  elegir, responde "permitir" con las respuestas dentro de `updatedInput`
+  (`questions` originales más `answers`). Solo acepta respuestas a todas las
+  preguntas y formadas por opciones que existen; nunca un "permitir" sin
+  respuestas, que la contestaría en blanco. "Responder en Claude Code", el
+  tiempo agotado o una pregunta con forma inesperada devuelven "sin
+  decisión". No hay texto libre: la ventana no toma el teclado.
 - Límite de uso agotado (`StopFailure` con `error: rate_limit`): suena el
   descanso, sale el aviso y, al cerrarse (con su botón o a los 12 s), Lia se
   adormece y se oculta aunque "ocultarse por inactividad" esté desactivado.

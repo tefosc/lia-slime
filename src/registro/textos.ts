@@ -38,6 +38,7 @@ export const TEXTOS_REGISTRO = {
   permitido: (herramienta: string) => `Permitiste ${accion(herramienta)}`,
   denegado: (herramienta: string) => `No permitiste ${accion(herramienta)}`,
   termino: (etiqueta: string) => `${etiqueta} terminó`,
+  respondida: "Respondiste una pregunta de Claude",
   volver: "Volver",
   nuevas: (n: number) => (n === 1 ? "1 nueva" : `${n} nuevas`),
   /** Segunda línea de una tarea terminada en la lista. */

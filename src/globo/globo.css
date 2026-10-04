@@ -323,12 +323,36 @@
   color: #2f8a63;
 }
 
-/* Pregunta de Claude: hasta cuatro líneas. */
-.globo-pregunta {
-  flex: 0 1 auto;
-  min-height: 0;
+/* Pregunta de Claude: el título es la pregunta (hasta tres líneas) y las
+   opciones van en dos columnas. */
+.globo-dialogo-pregunta .globo-titulo,
+.globo:has(.globo-opciones) .globo-titulo {
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.globo-opciones {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  align-content: start;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--borde) transparent;
+}
+
+.boton-opcion {
+  padding: 4px 8px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.boton-opcion[aria-pressed="true"] {
+  background: var(--fuerte);
 }

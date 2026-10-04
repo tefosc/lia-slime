@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-responder-pregunta"
+description = "Enables the responder_pregunta command without any pre-configured scope."
+commands.allow = ["responder_pregunta"]
+
+[[permission]]
+identifier = "deny-responder-pregunta"
+description = "Denies the responder_pregunta command without any pre-configured scope."
+commands.deny = ["responder_pregunta"]

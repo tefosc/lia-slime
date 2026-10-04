@@ -25,6 +25,8 @@ mientras hace otra cosa.
   URL, Lia muestra una tarjeta con lo que quiere hacer y dos botones. Lia
   nunca decide por ti: si no respondes en 60 s, Claude Code pregunta en la
   terminal como siempre.
+- **Preguntas.** Si Claude te pregunta algo con opciones, puedes elegir la
+  respuesta desde Lia.
 - **Resultados.** Al terminar una tarea aparece una burbuja ✓; al pulsarla ves
   el último mensaje de Claude y cuánto tardó.
 - **Interacciones.** Sigue el cursor con la mirada, rebota si la tocas, se

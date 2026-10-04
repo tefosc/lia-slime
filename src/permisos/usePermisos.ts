@@ -12,28 +12,29 @@ interface SolicitudRecibida {
   segundos: number;
 }
 
-/** Claude hizo una pregunta y espera la respuesta en su propia ventana. */
-export interface Pregunta {
-  id: number;
-  sesion: string;
+export interface OpcionPregunta {
   etiqueta: string;
-  /** Primera pregunta. Solo vive en memoria mientras el aviso está visible. */
-  texto: string;
-  /** Cuántas preguntas vienen juntas. */
-  total: number;
+  descripcion: string;
 }
 
-/** La pregunta se olvida sola tras este tiempo (ms). */
-const DURACION_PREGUNTA_MS = 3 * 60 * 1000;
-/** Eventos de la sesión que indican que la pregunta ya se respondió. */
-const EVENTOS_QUE_LA_CIERRAN = new Set([
-  "PostToolUse",
-  "PostToolUseFailure",
-  "UserPromptSubmit",
-  "Stop",
-  "StopFailure",
-  "SessionEnd",
-]);
+export interface PreguntaDeClaude {
+  /** Texto exacto de la pregunta: es la clave de su respuesta. */
+  pregunta: string;
+  multiple: boolean;
+  opciones: OpcionPregunta[];
+}
+
+/**
+ * Preguntas que Claude le hace al usuario. Solo viven en memoria mientras la
+ * solicitud está activa.
+ */
+export interface Pregunta {
+  id: number;
+  etiqueta: string;
+  preguntas: PreguntaDeClaude[];
+  /** Momento (ms) en que Lia dejará de esperar y Claude Code preguntará. */
+  expira: number;
+}
 
 export interface Solicitud {
   id: number;
@@ -81,29 +82,25 @@ export function usePermisos() {
     });
     escuchar<{ id: number }>("lia-permiso-fin", ({ id }) => quitar(id));
 
-    // Pregunta de Claude: no es un permiso, Lia solo avisa.
-    let siguientePregunta = 1;
-    let caducidad = 0;
-    escuchar<{ sesion: string; pregunta: string; total: number }>("lia-pregunta", (p) => {
-      window.clearTimeout(caducidad);
-      caducidad = window.setTimeout(() => setPregunta(null), DURACION_PREGUNTA_MS);
-      setPregunta({
-        id: siguientePregunta++,
-        sesion: p.sesion,
-        etiqueta: etiquetaDe(p.sesion),
-        texto: p.pregunta,
-        total: p.total,
-      });
-    });
-    // Cuando esa conversación sigue adelante, la pregunta ya se respondió.
-    escuchar<{ evento: string; sesion: string }>("lia-evento", (e) => {
-      if (!EVENTOS_QUE_LA_CIERRAN.has(e.evento)) return;
-      setPregunta((actual) => (actual && actual.sesion === e.sesion ? null : actual));
-    });
+    // Pregunta de Claude: se elige la respuesta en el globo de Lia.
+    escuchar<{ id: number; sesion: string; preguntas: PreguntaDeClaude[]; segundos: number }>(
+      "lia-pregunta",
+      (p) => {
+        setPregunta({
+          id: p.id,
+          etiqueta: etiquetaDe(p.sesion),
+          preguntas: p.preguntas,
+          expira: Date.now() + p.segundos * 1000,
+        });
+      },
+    );
+    // Respondida, pasada a Claude Code, caducada o cancelada.
+    escuchar<{ id: number }>("lia-permiso-fin", ({ id }) =>
+      setPregunta((actual) => (actual && actual.id === id ? null : actual)),
+    );
 
     return () => {
       cancelado = true;
-      window.clearTimeout(caducidad);
       dejar.forEach((fn) => fn());
     };
   }, []);
@@ -117,13 +114,29 @@ export function usePermisos() {
     });
   }, []);
 
-  const cerrarPregunta = useCallback(() => setPregunta(null), []);
+  /** Envía las respuestas elegidas: pregunta → opción (u opciones, con ", "). */
+  const responderPregunta = useCallback(
+    (id: number, respuestas: Record<string, string>) => {
+      setPregunta((actual) => (actual && actual.id === id ? null : actual));
+      invoke<boolean>("responder_pregunta", { id, respuestas }).catch(() => {
+        console.error("No se pudo entregar la respuesta a Claude Code");
+      });
+    },
+    [],
+  );
+
+  /** Deja la pregunta para responderla en Claude Code. */
+  const pasarPregunta = useCallback((id: number) => {
+    setPregunta((actual) => (actual && actual.id === id ? null : actual));
+    invoke<boolean>("pasar_pregunta", { id }).catch(() => {});
+  }, []);
 
   return {
     actual: cola[0] ?? null,
     pendientes: cola.length,
     resolver,
     pregunta,
-    cerrarPregunta,
+    responderPregunta,
+    pasarPregunta,
   };
 }
