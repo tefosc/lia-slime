@@ -42,6 +42,9 @@ struct EventoHook {
     session_id: String,
     notification_type: Option<String>,
     /// Solo en `StopFailure`: motivo del fallo (`rate_limit`, `overloaded`...).
+    /// Claude Code lo envía en el campo `error`; se acepta también el nombre
+    /// `error_type`, que usaba una versión anterior de esta app.
+    #[serde(alias = "error")]
     error_type: Option<String>,
     /// En `PreToolUse`: solo se usa el nombre, nunca la entrada.
     tool_name: Option<String>,

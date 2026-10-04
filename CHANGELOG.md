@@ -19,7 +19,11 @@ Primera versión. Solo para Windows.
   peligrosos.
 - Resultado al terminar una tarea: burbuja ✓ y tarjeta con el último mensaje
   de Claude, la duración y las herramientas usadas. Modo privado.
-- Aviso cuando Claude Code se detiene por un límite de uso u otro error.
+- Aviso cuando Claude Code se detiene por un límite de uso u otro error. Con
+  el límite agotado, Lia se va a descansar: suena un aviso propio, se duerme
+  y se oculta hasta el siguiente evento.
+- Aviso cuando Claude te hace una pregunta con opciones (se responde en
+  Claude Code).
 - Todo lo que dice Lia sale en un mismo globo de diálogo, con su trazo y sus
   colores, y una barra con el tiempo que queda para responder un permiso.
 - Isla: panel escondido en el borde superior de la pantalla que baja al

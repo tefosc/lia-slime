@@ -36,6 +36,12 @@ const DETALLE_MAXIMO: usize = 2000;
 
 const EVENTO_NUEVO: &str = "lia-permiso";
 const EVENTO_FIN: &str = "lia-permiso-fin";
+const EVENTO_PREGUNTA: &str = "lia-pregunta";
+/// Herramienta con la que Claude le hace una pregunta al usuario. No es un
+/// permiso: "permitir" desde Lia la respondería en blanco.
+const HERRAMIENTA_PREGUNTA: &str = "AskUserQuestion";
+/// Longitud máxima de la pregunta que se muestra.
+const PREGUNTA_MAXIMA: usize = 300;
 
 const RESPUESTA_PERMITIR: &str = r#"{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}"#;
 const RESPUESTA_DENEGAR: &str = r#"{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"deny","message":"Denegado desde Lia"}}}"#;
@@ -71,6 +77,16 @@ struct FinSolicitud {
     id: u64,
 }
 
+/// Aviso de que Claude espera una respuesta en su propia ventana. El texto
+/// de la pregunta solo vive en memoria mientras el aviso está visible.
+#[derive(Clone, Serialize)]
+struct PreguntaLia {
+    sesion: String,
+    pregunta: String,
+    /// Preguntas que vienen juntas en la misma solicitud.
+    total: usize,
+}
+
 /// Decisión del usuario desde la tarjeta. Devuelve `false` si la solicitud ya
 /// no existe (resuelta, caducada o cancelada): los clics repetidos se ignoran.
 #[tauri::command]
@@ -96,6 +112,32 @@ pub fn recibir(
     };
     if !es_identificador(&hook.session_id, 128) || !es_identificador(&hook.tool_name, 128) {
         return Err((conexion, 400));
+    }
+
+    // Una pregunta de Claude se responde en Claude Code: Lia contesta "sin
+    // decisión" al instante, para no retrasar su diálogo, y solo avisa.
+    if hook.tool_name == HERRAMIENTA_PREGUNTA {
+        let preguntas = hook.tool_input.get("questions").and_then(Value::as_array);
+        let aviso = PreguntaLia {
+            sesion: hook.session_id,
+            pregunta: preguntas
+                .and_then(|lista| lista.first())
+                .and_then(|primera| primera.get("question"))
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .chars()
+                .take(PREGUNTA_MAXIMA)
+                .collect(),
+            total: preguntas.map_or(0, Vec::len),
+        };
+        let mut conexion = conexion;
+        responder(&mut conexion, 200, RESPUESTA_SIN_DECISION);
+        if cfg!(debug_assertions) {
+            eprintln!("[lia] pregunta de Claude: se responde en Claude Code");
+        }
+        bandeja::mostrar_lia(&app);
+        let _ = app.emit_to(VENTANA_LIA, EVENTO_PREGUNTA, aviso);
+        return Ok(());
     }
 
     let id = SIGUIENTE_ID.fetch_add(1, Ordering::Relaxed);

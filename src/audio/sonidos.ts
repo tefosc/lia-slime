@@ -19,7 +19,8 @@ export type Sonido =
   | "permitir"
   | "denegar"
   | "derretirse"
-  | "despertar";
+  | "despertar"
+  | "descanso";
 
 type Categoria = "avisos" | "juego";
 type Onda = "sine" | "triangle";
@@ -64,6 +65,7 @@ export const AUDIO = {
     denegar: 0.2,
     derretirse: 1,
     despertar: 1,
+    descanso: 5,
   } satisfies Record<Sonido, number>,
 };
 
@@ -78,6 +80,8 @@ const CATEGORIAS: Record<Sonido, Categoria> = {
   mareo: "juego",
   derretirse: "juego",
   despertar: "juego",
+  // Se acabó el límite de uso: Lia se va a descansar.
+  descanso: "avisos",
 };
 
 /** Arpegio de `termino`: do, mi, sol, cada uno con su octava muy suave. */
@@ -159,6 +163,12 @@ const SONIDOS: Record<Sonido, Nota[]> = {
       frecuencia: 500,
       hacia: [[0.4, 200]],
     },
+  ],
+  // Tres notas que bajan despacio, como un bostezo.
+  descanso: [
+    { onda: "sine", inicio: 0, duracion: 0.3, pico: 0.15, frecuencia: 659 },
+    { onda: "sine", inicio: 0.2, duracion: 0.3, pico: 0.14, frecuencia: 523 },
+    { onda: "sine", inicio: 0.4, duracion: 0.42, pico: 0.14, frecuencia: 392, hacia: [[0.4, 370]] },
   ],
   despertar: [
     {

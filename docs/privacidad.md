@@ -16,6 +16,7 @@ solo llegan los hooks de Claude Code de tu propia máquina.
 | Último mensaje de Claude | Hook `Stop` (`last_assistant_message`) | Mostrarlo en el globo de resultado | Memoria | A los 10 min de terminar la tarea, lo hayas leído o no (hasta entonces puedes volver a abrirlo en la isla), o al activar el modo privado |
 | Final de la transcripción (últimos 256 KB) | Archivo en `~/.claude/projects`, solo si el hook no trae el mensaje | Plan B para el último mensaje | Memoria | Igual |
 | Comando, ruta o URL de una solicitud de permiso | Hook `PermissionRequest` | Enseñarte qué quiere hacer Claude | Memoria | Al responder, al cancelarse o a los 60 s |
+| Texto de una pregunta de Claude | Hook `PermissionRequest` (herramienta `AskUserQuestion`) | Avisarte de que Claude espera tu respuesta | Memoria | Al responder en Claude Code, al cerrar el aviso o a los 3 min |
 | Posición del cursor | Windows | Mirada, caricias, mareo y saber dónde recibe clics la ventana | Memoria | No se guarda: solo se usa la última lectura |
 | Sección `hooks` de `settings.json` | `~/.claude/settings.json`, solo al abrir Ajustes o al instalar o quitar hooks | Saber si los hooks están instalados y enseñarte el cambio | Memoria | Al cerrar la vista previa |
 

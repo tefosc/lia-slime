@@ -322,3 +322,13 @@
   background: var(--suave);
   color: #2f8a63;
 }
+
+/* Pregunta de Claude: hasta cuatro líneas. */
+.globo-pregunta {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

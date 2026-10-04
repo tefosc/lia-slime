@@ -485,11 +485,15 @@ export function Lia({
           </g>
           {/* La cara entera se desvanece al derretirse. */}
           <g id="lia-cara">
+            {/* `key`: al cambiar de estado las piezas se crean de nuevo. Si
+                React reutilizara el mismo elemento, conservaría la opacidad
+                que el motor le escribió (por ejemplo, una boca oculta por
+                estar dormida) y la cara nueva saldría incompleta. */}
             <g id="lia-ojos">
-              <Ojos estado={estado} />
+              <Ojos key={estado} estado={estado} />
             </g>
             <g id="lia-boca">
-              <Boca estado={estado} />
+              <Boca key={estado} estado={estado} />
             </g>
             <g id="lia-mejillas" fill="#FF9EB5" opacity={POSES[estado].mejillas}>
               <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
@@ -552,7 +556,7 @@ export function Lia({
         </g>
         {/* Sube con el cuerpo, pero no se deforma con él. */}
         <g id="lia-extras">
-          <Extras estado={estado} />
+          <Extras key={estado} estado={estado} />
           {/* Corazones de las caricias y estrellas del mareo: el motor los
               mueve; no reciben el mouse. */}
           {estado === "inactivo" && (

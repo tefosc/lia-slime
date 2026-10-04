@@ -247,6 +247,9 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   cabeza; mareo al girar el cursor a su alrededor) solo cambian la cara en
   `inactivo`; los estados de Claude Code mandan siempre. Sus parámetros están
   en `TOQUES`, `CARICIAS` y `MAREO` de `useAnimacionLia.ts`.
+- En `Lia.tsx`, ojos, boca y extras llevan `key={estado}`: sin eso React
+  reutiliza el mismo elemento entre estados y conserva la opacidad que el
+  motor le escribió (la boca desaparecía al pasar de dormida a trabajando).
 - Mareo: `src/mascot/detectorMareo.ts` es una función pura que cuenta las
   vueltas del cursor; se verifica con `pnpm verificar` (Node 22.18 o superior
   ejecuta el TypeScript directamente, sin runner de pruebas). En desarrollo,
@@ -274,6 +277,15 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   `~/.claude/projects`; no relajes esa comprobación.
 - Permisos (`/permiso`): el comando, la ruta o la URL viven
   solo en memoria mientras la solicitud está activa y nunca se registran.
+- Preguntas de Claude (`AskUserQuestion`): llegan por el mismo hook que los
+  permisos, pero no lo son. Lia responde "sin decisión" al instante y solo
+  muestra un globo de aviso; se contestan en Claude Code. No las trates como
+  un permiso: "permitir" las respondería en blanco.
+- Límite de uso agotado (`StopFailure` con `error: rate_limit`): suena el
+  descanso, sale el aviso y, al cerrarse (con su botón o a los 12 s), Lia se
+  adormece y se oculta aunque "ocultarse por inactividad" esté desactivado.
+  El hook no trae la hora en que se renueva el límite, así que Lia no puede
+  avisar de eso: se despierta con el siguiente evento.
 - Seguridad de los permisos: Lia solo permite o deniega cuando el usuario
   pulsa un botón. Ante tiempo agotado, cierre o fallo responde "sin decisión"
   para que Claude Code muestre su diálogo normal. No cambies esto.

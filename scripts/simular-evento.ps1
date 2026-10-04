@@ -29,6 +29,7 @@
   # Solicitudes de permiso (esperan la decisión en la tarjeta de Lia):
   .\scripts\simular-evento.ps1 -Permiso 'echo prueba'
   .\scripts\simular-evento.ps1 -Peligroso
+  .\scripts\simular-evento.ps1 -Pregunta                  # Claude pregunta algo
   .\scripts\simular-evento.ps1 -Permiso 'echo prueba' -CortarTras 5  # cancela
 
   # Inactividad y sonidos (solo con Lia en modo desarrollo):
@@ -55,6 +56,8 @@ param(
   [string]$Permiso,
   # Solicitud de permiso con un comando falso que parece peligroso.
   [switch]$Peligroso,
+  # Pregunta de Claude con opciones (AskUserQuestion): Lia solo avisa.
+  [switch]$Pregunta,
   # Corta la conexión tras estos segundos, como si Claude Code se interrumpiera.
   [int]$CortarTras = 0,
   # Envía la petición sin la cabecera de autorización.
@@ -94,7 +97,7 @@ param(
   # Con 0,0 vuelven los de Ajustes.
   [int[]]$Tiempos,
   # Reproduce un sonido; Lia anota en su salida la duración y el pico medidos.
-  [ValidateSet('toque', 'sorpresa', 'enojo', 'mareo', 'necesita', 'termino', 'permitir', 'denegar', 'derretirse', 'despertar')]
+  [ValidateSet('toque', 'sorpresa', 'enojo', 'mareo', 'necesita', 'termino', 'permitir', 'denegar', 'derretirse', 'despertar', 'descanso')]
   [string]$Sonido,
   # Lia anota en su salida el estado del contexto de audio.
   [switch]$Audio,
@@ -197,7 +200,7 @@ if ($Tarea) {
 }
 
 if ($Peligroso) { $Permiso = 'rm -rf ./build && del /s /q C:\proyecto\.env' }
-$esPermiso = [bool]$Permiso
+$esPermiso = [bool]$Permiso -or $Pregunta
 if (-not $esPermiso -and -not $Evento) {
   Write-Error 'Indica un evento o usa -Permiso / -Peligroso.'
   exit 1
@@ -215,11 +218,20 @@ if ($CuerpoInvalido) {
     tool_name       = 'Bash'
     tool_input      = @{ command = $Permiso; description = 'Simulación' }
     cwd             = 'C:\ruta\de\prueba'
-  } | ConvertTo-Json -Compress
+  }
+  if ($Pregunta) {
+    # Pregunta de Claude: Lia no decide, solo avisa (responde "sin decisión").
+    $cuerpo.tool_name = 'AskUserQuestion'
+    $cuerpo.tool_input = @{ questions = @(
+        @{ question = '¿Qué base de datos prefieres para el proyecto?'; header = 'Base'; multiSelect = $false; options = @(@{ label = 'SQLite'; description = 'Sencilla' }, @{ label = 'Postgres'; description = 'Completa' }) },
+        @{ question = '¿Añado pruebas?'; header = 'Pruebas'; multiSelect = $false; options = @(@{ label = 'Sí'; description = '' }, @{ label = 'No'; description = '' }) }
+      ) }
+  }
+  $cuerpo = $cuerpo | ConvertTo-Json -Compress -Depth 8
 } else {
   $datos = [ordered]@{ session_id = $Sesion; hook_event_name = $Evento }
   if ($Notificacion) { $datos.notification_type = $Notificacion }
-  if ($Evento -eq 'StopFailure') { $datos.error_type = $Motivo }
+  if ($Evento -eq 'StopFailure') { $datos.error = $Motivo }
   if ($Evento -eq 'PreToolUse') {
     $datos.tool_name = $Herramienta
     $datos.tool_input = @{ command = 'comando de prueba que Lia no debe conservar' }

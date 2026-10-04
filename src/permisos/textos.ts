@@ -12,14 +12,16 @@ function elegir(opciones: readonly string[], numero: number): string {
 export interface TextoAviso {
   titulo: string;
   texto: string;
+  /** Tras este aviso, Lia se duerme y se oculta (límite de uso agotado). */
+  descansa: boolean;
 }
 
 const AVISOS: Record<string, { titulos: string[]; textos: string[] }> = {
   rate_limit: {
-    titulos: ["¡Ay, me quedé sin energía!", "Toca descansar un ratito"],
+    titulos: ["Me voy a descansar un ratito", "Toca siesta: se acabó el límite"],
     textos: [
-      "Se nos acabó el límite de Claude por ahora. En cuanto se renueve, seguimos juntos donde lo dejamos.",
-      "Usaste todo tu límite de Claude por hoy. Descansa un poquito, que yo te espero aquí.",
+      "Se nos acabó el límite de Claude por ahora. Voy a echarme una siesta; en cuanto vuelvas a escribirle, aquí estaré.",
+      "Usaste todo tu límite de Claude. Descanso un rato y me despierto cuando le vuelvas a escribir.",
     ],
   },
   billing_error: {
@@ -62,7 +64,7 @@ const AVISOS: Record<string, { titulos: string[]; textos: string[] }> = {
   },
 };
 
-/** Por qué Claude Code se detuvo (`error_type` de `StopFailure`). */
+/** Por qué Claude Code se detuvo (campo `error` de `StopFailure`). */
 export function avisoDeError(tipo: string | null, numero: number): TextoAviso {
   const clave =
     tipo === "authentication_failed" ||
@@ -76,6 +78,7 @@ export function avisoDeError(tipo: string | null, numero: number): TextoAviso {
   return {
     titulo: elegir(aviso.titulos, numero),
     texto: elegir(aviso.textos, numero),
+    descansa: clave === ERROR_DE_LIMITE,
   };
 }
 
@@ -133,3 +136,14 @@ export const TEXTOS_PERMISO = {
 };
 
 export const TEXTO_ENTENDIDO = "Gracias, Lia";
+
+export const TEXTOS_PREGUNTA = {
+  titulo: (numero: number) =>
+    elegir(["Claude te hizo una pregunta", "Claude necesita que elijas algo"], numero),
+  mas: (n: number) => (n === 1 ? "y 1 pregunta más" : `y ${n} preguntas más`),
+  pie: (etiqueta: string) => `${etiqueta} · respóndele en Claude Code, ahí están las opciones`,
+  cerrar: "Ya voy",
+};
+
+/** Con el límite de uso agotado, Lia se va a descansar tras este aviso. */
+export const ERROR_DE_LIMITE = "rate_limit";

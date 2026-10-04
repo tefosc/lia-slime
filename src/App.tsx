@@ -17,6 +17,7 @@ import { SUENO } from "./mascot/useAnimacionLia";
 import type { FaseSueno } from "./mascot/useAnimacionLia";
 import { TarjetaAviso } from "./permisos/TarjetaAviso";
 import { TarjetaPermiso } from "./permisos/TarjetaPermiso";
+import { TarjetaPregunta } from "./permisos/TarjetaPregunta";
 import { usePermisos } from "./permisos/usePermisos";
 import { usePreferencias } from "./preferencias";
 import type { EstadoIsla, VistaIsla } from "./isla/tipos";
@@ -36,6 +37,9 @@ import type { Lado } from "./window";
 import { enviarZonas, marcarLadoTarjeta, marcarTarjeta } from "./zonas";
 import "./App.css";
 
+/** El aviso de límite agotado se cierra solo tras este tiempo (ms). */
+const CIERRE_AVISO_DESCANSO_MS = 12_000;
+
 /** Baja la isla con la vista pedida. */
 function bajarIsla(vista: VistaIsla): void {
   invoke("bajar_isla", { vista }).catch(() => {
@@ -45,7 +49,7 @@ function bajarIsla(vista: VistaIsla): void {
 
 function App() {
   const { estado: estadoSesiones, aviso, cerrarAviso } = useEstadoLia();
-  const { actual, pendientes, resolver } = usePermisos();
+  const { actual, pendientes, resolver, pregunta, cerrarPregunta } = usePermisos();
   const resultados = useResultados();
   const registro = useRegistro();
   // Resultado cuyo globo abrió el usuario.
@@ -55,7 +59,7 @@ function App() {
       ? null
       : (resultados.historial.find((r) => r.id === abierto) ?? null);
   // Mientras haya solicitudes pendientes, Lia necesita al usuario.
-  const estado = pendientes > 0 ? "necesita" : estadoSesiones;
+  const estado = pendientes > 0 || pregunta !== null ? "necesita" : estadoSesiones;
   const preferencias = usePreferencias();
 
   // Sueño por inactividad. Mientras Lia está derretida, oculta o volviendo a
@@ -159,9 +163,23 @@ function App() {
   );
   const idAviso = aviso?.id;
   const tituloAviso = aviso?.titulo;
+  const avisoDescansa = aviso?.descansa === true;
   useEffect(() => {
     if (idAviso !== undefined && tituloAviso) anotar("aviso", tituloAviso);
   }, [idAviso, tituloAviso, anotar]);
+  // Límite de uso agotado: suena el descanso y, al cerrarse el aviso (con su
+  // botón o solo, tras un rato), Lia se duerme y se oculta.
+  const [descanso, setDescanso] = useState(0);
+  const cerrarAvisoYDescansar = useCallback(() => {
+    cerrarAviso();
+    setDescanso((n) => n + 1);
+  }, [cerrarAviso]);
+  useEffect(() => {
+    if (idAviso === undefined || !avisoDescansa) return;
+    sonar("descanso");
+    const espera = window.setTimeout(cerrarAvisoYDescansar, CIERRE_AVISO_DESCANSO_MS);
+    return () => window.clearTimeout(espera);
+  }, [idAviso, avisoDescansa, cerrarAvisoYDescansar]);
 
   const { marcarLeido, historial } = resultados;
   const abrirResultado = useCallback(
@@ -261,7 +279,8 @@ function App() {
   const [lado, setLado] = useState<Lado | null>(null);
   const ladoActual = useRef<Lado | null>(null);
   const cambios = useRef(Promise.resolve());
-  const hayTarjeta = actual !== null || aviso !== null || abierto !== null;
+  const hayTarjeta =
+    actual !== null || pregunta !== null || aviso !== null || abierto !== null;
 
   // Lia no se duerme con algo pendiente: una solicitud, una tarjeta, un
   // resultado sin leer o una sesión que no está en reposo.
@@ -280,6 +299,7 @@ function App() {
       tiempoParaOcultar: ocultar,
       bloqueada,
       pulso,
+      descanso,
       onFase: alCambiarFase,
     };
   }, [
@@ -288,6 +308,7 @@ function App() {
     tiemposDePrueba,
     bloqueada,
     pulso,
+    descanso,
     alCambiarFase,
   ]);
 
@@ -352,7 +373,7 @@ function App() {
           onClickBurbuja={alPulsarBurbuja}
         />
       </div>
-      {/* Prioridad: permiso, después aviso de error, después resultado. */}
+      {/* Prioridad: permiso, pregunta, aviso de error y resultado. */}
       {lado &&
         (actual ? (
           <TarjetaPermiso
@@ -362,8 +383,14 @@ function App() {
             onResolver={resolverConSonido}
             onVerTodo={() => bajarIsla({ tipo: "permiso" })}
           />
+        ) : pregunta ? (
+          <TarjetaPregunta key={pregunta.id} pregunta={pregunta} onCerrar={cerrarPregunta} />
         ) : aviso ? (
-          <TarjetaAviso key={aviso.id} aviso={aviso} onCerrar={cerrarAviso} />
+          <TarjetaAviso
+            key={aviso.id}
+            aviso={aviso}
+            onCerrar={aviso.descansa ? cerrarAvisoYDescansar : cerrarAviso}
+          />
         ) : (
           resultadoAbierto && (
             <TarjetaResultado

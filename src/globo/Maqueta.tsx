@@ -1,5 +1,6 @@
 import { TarjetaAviso } from "../permisos/TarjetaAviso";
 import { TarjetaPermiso } from "../permisos/TarjetaPermiso";
+import { TarjetaPregunta } from "../permisos/TarjetaPregunta";
 import { TarjetaResultado } from "../resultados/TarjetaResultado";
 import type { Resultado } from "../resultados/useResultados";
 
@@ -61,12 +62,23 @@ export function Maqueta() {
         onResolver={nada}
         onVerTodo={nada}
       />
+      <TarjetaPregunta
+        pregunta={{
+          id: 1,
+          sesion: "x",
+          etiqueta: "Conversación 1",
+          texto: "¿Qué base de datos prefieres para el proyecto?",
+          total: 2,
+        }}
+        onCerrar={nada}
+      />
       <TarjetaAviso
         aviso={{
           id: 1,
-          titulo: "¡Ay, me quedé sin energía!",
+          titulo: "Me voy a descansar un ratito",
           texto:
-            "Se nos acabó el límite de Claude por ahora. En cuanto se renueve, seguimos juntos donde lo dejamos.",
+            "Se nos acabó el límite de Claude por ahora. Voy a echarme una siesta; en cuanto vuelvas a escribirle, aquí estaré.",
+          descansa: true,
         }}
         onCerrar={nada}
       />

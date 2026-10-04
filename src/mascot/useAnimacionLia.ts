@@ -228,6 +228,8 @@ export const SUENO = {
   duracionDespertar: 0.9,
   /** Con movimiento reducido solo hay un fundido de esta duración. */
   fundidoReducido: 0.5,
+  /** Al irse a descansar, segundos adormecida antes de derretirse. */
+  esperaDescanso: 3,
 };
 
 /** Fases del sueño. `oculta` es solo la ocultación por inactividad. */
@@ -250,6 +252,11 @@ export interface OpcionesSueno {
   bloqueada: boolean;
   /** Cambia con cada evento de Claude Code: cuenta como actividad. */
   pulso: number;
+  /**
+   * Cambia cuando Lia debe irse a descansar ya (se acabó el límite de uso):
+   * se adormece y se oculta sin esperar al tiempo de inactividad.
+   */
+  descanso: number;
   onFase?: (fase: FaseSueno) => void;
 }
 
@@ -417,6 +424,12 @@ export function useAnimacionLia(
   useEffect(() => {
     alHaberActividad.current?.();
   }, [opcionesSueno.pulso, opcionesSueno.bloqueada, opcionesSueno.activa]);
+  // Va después del efecto anterior: al cerrarse el aviso cambia `bloqueada`
+  // y eso cuenta como actividad; el descanso debe ganar.
+  const alDescansar = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (opcionesSueno.descanso > 0) alDescansar.current?.();
+  }, [opcionesSueno.descanso]);
 
   useEffect(() => {
     if (estadoActual.current === estado) return;
@@ -542,6 +555,8 @@ export function useAnimacionLia(
     let faseRespira = 0;
     let saltoHecho = false;
     let sonidoDespertar = false;
+    /** Se va a descansar aunque ocultarse por inactividad esté desactivado. */
+    let descansando = false;
     /** Última actividad, en ms. Solo en memoria; nunca se guarda. */
     let ultimaActividad = performance.now();
     /** Ronroneo (0 a 1): sigue a las caricias recientes, en cualquier estado. */
@@ -657,6 +672,7 @@ export function useAnimacionLia(
 
     /** Adormecida: se despierta con un pequeño estirón y un parpadeo. */
     const despertarSuave = () => {
+      descansando = false;
       cambiarFase("despierta");
       ultimaActividad = performance.now();
       if (!reducido.matches) aplaste.impulso(0.6);
@@ -676,6 +692,7 @@ export function useAnimacionLia(
 
     /** Vuelve a formarse, desde el charquito o a medio derretir. */
     const empezarDespertar = () => {
+      descansando = false;
       cambiarFase("despertando");
       // Resorte rápido con rebote: se pasa un poco y vuelve.
       derretida.rigidez = 170;
@@ -1593,6 +1610,17 @@ export function useAnimacionLia(
       if (fase === "adormecida") despertarSuave();
     };
 
+    // Descanso: se adormece ya y se derrite a los pocos segundos.
+    alDescansar.current = () => {
+      if (fase !== "despierta" || estadoActual.current !== "inactivo") return;
+      descansando = true;
+      reaccion = "ninguna";
+      cambiarFase("adormecida");
+      ultimaActividad =
+        performance.now() - suenoActual.current.tiempoParaOcultar * 1000 + SUENO.esperaDescanso * 1000;
+      pedir();
+    };
+
     alHaberActividad.current = () => {
       ultimaActividad = performance.now();
       if (fase === "adormecida") despertarSuave();
@@ -1607,7 +1635,7 @@ export function useAnimacionLia(
       const opciones = suenoActual.current;
       const ahora = performance.now();
       if (
-        !opciones.activa ||
+        (!opciones.activa && !descansando) ||
         opciones.bloqueada ||
         estadoActual.current !== "inactivo" ||
         reaccion !== "ninguna" ||
@@ -1719,6 +1747,7 @@ export function useAnimacionLia(
       alAcariciar.current = null;
       alRozar.current = null;
       alHaberActividad.current = null;
+      alDescansar.current = null;
       window.clearInterval(vigilancia);
       if (import.meta.env.DEV) delete window.__lia;
       document.removeEventListener("visibilitychange", alCambiarVisibilidad);
