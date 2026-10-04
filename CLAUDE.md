@@ -220,6 +220,13 @@ no está conectada.
   `src/mascotas/lia/clasico/Disfraz.tsx`; el renderizador mueve las orejas
   con el mismo "accesorio" de la pose que mueve el pétalo. Sin disfraz, el
   dibujo es exactamente el de antes.
+- Efectos con tema: un disfraz puede cambiar la figura de los efectos que ya
+  existen (`TEMAS` en `Disfraz.tsx`): destellos al terminar (murciélagos,
+  caramelos, fantasmitas, huellas, estrellas y luna), lo que gira al
+  marearse y el color de los corazones. Se mueven igual que siempre; el
+  motor no cambia. La única animación nueva es el "puf" de la bruja al
+  terminar: chispas que saltan del sombrero una vez, animadas con CSS
+  (`lia-chispa` en `lia.css`), que no salen con movimiento reducido.
 - Apariencia: solo se guardan identificadores (`mascota`, `estilo`,
   `disfraz`, `paleta`) y el `matiz` del color libre. Rust comprueba que tengan forma de
   identificador y la interfaz resuelve uno desconocido al valor por defecto

@@ -339,3 +339,177 @@ export function DisfrazSobreCara({ disfraz }: { disfraz: string }) {
     />
   );
 }
+
+// ---------------------------------------------------------------------------
+// Efectos con tema. Un disfraz puede cambiar el dibujo de los efectos que ya
+// existen (destellos al terminar, corazones de las caricias y estrellas del
+// mareo): se mueven igual que siempre, solo cambia la figura. Sin disfraz, o
+// si el disfraz no dice nada, se dibujan los de siempre.
+
+type Motivo = "estrella" | "luna" | "murcielago" | "fantasma" | "caramelo" | "huella";
+
+interface Tema {
+  /** Los tres destellos de `termino`: izquierda, derecha arriba y derecha abajo. */
+  destellos?: [Motivo, Motivo, Motivo];
+  /** Dónde van, si los sitios de siempre chocan con el disfraz. */
+  sitios?: [string, string, string];
+  /** Lo que gira sobre la cabeza al marearse. */
+  mareo?: Motivo;
+  /** Color de los corazones de las caricias. */
+  corazon?: { relleno: string; borde: string };
+  /** Chispas que saltan del sombrero al terminar una tarea. */
+  puf?: boolean;
+}
+
+const TEMAS: Record<string, Tema> = {
+  bruja: {
+    destellos: ["estrella", "luna", "estrella"],
+    mareo: "estrella",
+    corazon: { relleno: "#B79CFF", borde: "#7A5FD0" },
+    puf: true,
+  },
+  murcielago: {
+    destellos: ["murcielago", "murcielago", "murcielago"],
+    // Más arriba: en los sitios de siempre quedarían sobre las alas.
+    sitios: ["translate(-56,-38)", "translate(54,-40)", "translate(34,-56) scale(0.65)"],
+    mareo: "murcielago",
+  },
+  calabaza: { destellos: ["caramelo", "caramelo", "caramelo"] },
+  fantasma: { destellos: ["fantasma", "fantasma", "fantasma"], mareo: "fantasma" },
+  gatito: { destellos: ["huella", "huella", "huella"] },
+};
+
+/** Una figura pequeña (unas 6 unidades de radio) centrada en el origen. */
+function Figura({ motivo }: { motivo: Motivo }) {
+  switch (motivo) {
+    case "estrella":
+      return (
+        <path
+          d="M0 -6 L1.5 -1.5 L6 0 L1.5 1.5 L0 6 L-1.5 1.5 L-6 0 L-1.5 -1.5 Z"
+          fill="#B79CFF"
+          stroke="#7A5FD0"
+          strokeWidth="0.6"
+          strokeLinejoin="round"
+        />
+      );
+    case "luna":
+      return (
+        <path
+          d="M2.5 -5.5 A5.8 5.8 0 1 0 2.5 5.5 A4.4 4.4 0 1 1 2.5 -5.5 Z"
+          fill="#FFD95A"
+          stroke="#E0A800"
+          strokeWidth="0.6"
+          strokeLinejoin="round"
+        />
+      );
+    case "murcielago":
+      return (
+        <path
+          d="M0 -1.5 L-1.6 -3.8 L-1 -1.4 C-3 -3.6 -5.8 -3.2 -7.2 -0.6 C-5.8 -1.2 -4.6 -0.6 -4.2 1 C-3.2 -0.2 -2 0.2 -1.4 1.8 C-0.8 2.8 0.8 2.8 1.4 1.8 C2 0.2 3.2 -0.2 4.2 1 C4.6 -0.6 5.8 -1.2 7.2 -0.6 C5.8 -3.2 3 -3.6 1 -1.4 L1.6 -3.8 Z"
+          fill="#9C8AD6"
+          stroke="#574B80"
+          strokeWidth="0.6"
+          strokeLinejoin="round"
+        />
+      );
+    case "fantasma":
+      return (
+        <>
+          <path
+            d="M-4.2 5 L-4.2 -1.2 A4.2 4.2 0 0 1 4.2 -1.2 L4.2 5 L2.5 3.6 L0.8 5 L-0.8 3.6 L-2.5 5 Z"
+            fill={FANTASMA.tela}
+            stroke={FANTASMA.borde}
+            strokeWidth="0.6"
+            strokeLinejoin="round"
+          />
+          <circle cx="-1.5" cy="-1" r="0.8" fill={TINTA} />
+          <circle cx="1.5" cy="-1" r="0.8" fill={TINTA} />
+        </>
+      );
+    case "caramelo":
+      return (
+        <g transform="rotate(-25)">
+          <path
+            d="M-3 0 L-7 -2.8 L-7 2.8 Z M3 0 L7 -2.8 L7 2.8 Z"
+            fill="#FFD95A"
+            stroke="#E0A800"
+            strokeWidth="0.6"
+            strokeLinejoin="round"
+          />
+          <circle r="3.4" fill="#FF8FB1" stroke="#E0608A" strokeWidth="0.6" />
+          <path d="M-1.8 -2.2 Q1 0 -1 2.6" fill="none" stroke="#FFFFFF" strokeWidth="0.9" strokeLinecap="round" />
+        </g>
+      );
+    case "huella":
+      return (
+        <g fill="#FF9EB5" stroke="#F2648A" strokeWidth="0.5">
+          <ellipse cx="0" cy="2" rx="3.2" ry="2.6" />
+          <circle cx="-3.6" cy="-1.4" r="1.4" />
+          <circle cx="0" cy="-3.2" r="1.4" />
+          <circle cx="3.6" cy="-1.4" r="1.4" />
+        </g>
+      );
+  }
+}
+
+/** ¿Tiene ese disfraz sus propios destellos? */
+export function tieneDestellos(disfraz: string): boolean {
+  return TEMAS[disfraz]?.destellos !== undefined;
+}
+
+/** Destellos de `termino` con el tema del disfraz. */
+export function DestellosDeDisfraz({ disfraz }: { disfraz: string }) {
+  const tema = TEMAS[disfraz];
+  if (!tema?.destellos) return null;
+  const sitios = tema.sitios ?? [
+    "translate(-54,-8)",
+    "translate(54,-40)",
+    "translate(52,8) scale(0.65)",
+  ];
+  return (
+    <g id="lia-destellos" pointerEvents="none">
+      {tema.destellos.map((motivo, i) => (
+        <g key={i} transform={sitios[i]}>
+          <Figura motivo={motivo} />
+        </g>
+      ))}
+      {tema.puf && (
+        // "Puf": chispas que saltan de la punta del sombrero al terminar.
+        // Las anima el CSS, una sola vez; con movimiento reducido no salen.
+        <g transform="translate(1,-80)">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <g key={i} className={`lia-chispa lia-chispa-${i}`}>
+              <path
+                d="M0 -3 L0.8 -0.8 L3 0 L0.8 0.8 L0 3 L-0.8 0.8 L-3 0 L-0.8 -0.8 Z"
+                fill={i % 2 ? "#FFD95A" : "#B79CFF"}
+                stroke={i % 2 ? "#E0A800" : "#7A5FD0"}
+                strokeWidth="0.4"
+                strokeLinejoin="round"
+              />
+            </g>
+          ))}
+        </g>
+      )}
+    </g>
+  );
+}
+
+/** ¿Gira otra figura sobre la cabeza al marearse con ese disfraz? */
+export function tieneMareo(disfraz: string): boolean {
+  return TEMAS[disfraz]?.mareo !== undefined;
+}
+
+/** Figura que gira sobre la cabeza al marearse. */
+export function FiguraDeMareo({ disfraz }: { disfraz: string }) {
+  const motivo = TEMAS[disfraz]?.mareo;
+  return motivo ? (
+    <g transform="scale(0.95)">
+      <Figura motivo={motivo} />
+    </g>
+  ) : null;
+}
+
+/** Color de los corazones con ese disfraz, o null para el de siempre. */
+export function corazonDe(disfraz: string): { relleno: string; borde: string } | null {
+  return TEMAS[disfraz]?.corazon ?? null;
+}

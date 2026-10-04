@@ -84,6 +84,19 @@ export function Revision() {
           dibujo instanceof HTMLCanvasElement ? dibujo.toDataURL() : (dibujo?.outerHTML ?? ""),
         );
       }
+      // `&chispas=0.6`: deja el "puf" de la bruja quieto en ese punto de su
+      // recorrido (de 0 a 1), para poder verlo en una captura.
+      const chispas = Number(new URLSearchParams(location.search).get("chispas"));
+      if (chispas > 0) {
+        for (const chispa of document.querySelectorAll<SVGElement>(".lia-chispa")) {
+          const estilo = getComputedStyle(chispa);
+          const dx = parseFloat(estilo.getPropertyValue("--dx")) * chispas;
+          const dy = parseFloat(estilo.getPropertyValue("--dy")) * chispas;
+          chispa.style.animation = "none";
+          chispa.style.opacity = "1";
+          chispa.style.transform = `translate(${dx}px, ${dy}px)`;
+        }
+      }
       window.__revision = nuevas;
       setHuellas(nuevas);
     }, 60);

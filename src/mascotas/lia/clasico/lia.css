@@ -94,3 +94,63 @@
     animation: none;
   }
 }
+
+/* "Puf" del sombrero de bruja al terminar: chispas que saltan una vez. */
+.lia-chispa {
+  opacity: 0;
+  animation: lia-puf 1000ms ease-out 350ms both;
+}
+
+.lia-chispa-1 {
+  --dx: -15px;
+  --dy: -9px;
+}
+
+.lia-chispa-2 {
+  --dx: -8px;
+  --dy: -19px;
+  animation-delay: 410ms;
+}
+
+.lia-chispa-3 {
+  --dx: 2px;
+  --dy: -24px;
+}
+
+.lia-chispa-4 {
+  --dx: 11px;
+  --dy: -17px;
+  animation-delay: 430ms;
+}
+
+.lia-chispa-5 {
+  --dx: 17px;
+  --dy: -7px;
+}
+
+.lia-chispa-6 {
+  --dx: -2px;
+  --dy: -13px;
+  animation-delay: 480ms;
+}
+
+@keyframes lia-puf {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3);
+  }
+  20%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lia-chispa {
+    animation: none;
+  }
+}

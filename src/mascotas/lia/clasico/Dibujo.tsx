@@ -4,7 +4,17 @@ import type { PropsDibujo } from "../../../mascot/renderizador";
 import { SIN_DISFRAZ } from "../../tipos";
 import type { EstadoLia } from "../../../mascot/tipos";
 import type { Paleta } from "../../paletas";
-import { DisfrazBajoOjos, DisfrazDetras, DisfrazEnCabeza, DisfrazSobreCara } from "./Disfraz";
+import {
+  corazonDe,
+  DestellosDeDisfraz,
+  DisfrazBajoOjos,
+  DisfrazDetras,
+  DisfrazEnCabeza,
+  DisfrazSobreCara,
+  FiguraDeMareo,
+  tieneDestellos,
+  tieneMareo,
+} from "./Disfraz";
 import { tonosDe } from "./tonos";
 import type { Tonos } from "./tonos";
 import { sombraPara } from "./trazos";
@@ -339,12 +349,14 @@ function Extras({
   actividad,
   colores,
   conPetalo,
+  disfraz,
 }: {
   estado: EstadoLia;
   actividad: Actividad;
   colores: Colores;
   /** Con disfraz no hay pétalos sueltos. */
   conPetalo: boolean;
+  disfraz: string;
 }) {
   switch (estado) {
     case "trabajando":
@@ -384,25 +396,29 @@ function Extras({
               />
             </g>
           )}
-          <g
-            id="lia-destellos"
-            fill={AMARILLO}
-            stroke={AMARILLO_BORDE}
-            strokeLinejoin="round"
-          >
-            <path
-              d="M-54 -14 L-52.5 -9.5 L-48 -8 L-52.5 -6.5 L-54 -2 L-55.5 -6.5 L-60 -8 L-55.5 -9.5 Z"
-              strokeWidth="0.6"
-            />
-            <path
-              d="M54 -46 L55.5 -41.5 L60 -40 L55.5 -38.5 L54 -34 L52.5 -38.5 L48 -40 L52.5 -41.5 Z"
-              strokeWidth="0.6"
-            />
-            <path
-              d="M52 4 L53 7 L56 8 L53 9 L52 12 L51 9 L48 8 L51 7 Z"
-              strokeWidth="0.5"
-            />
-          </g>
+          {tieneDestellos(disfraz) ? (
+            <DestellosDeDisfraz disfraz={disfraz} />
+          ) : (
+            <g
+              id="lia-destellos"
+              fill={AMARILLO}
+              stroke={AMARILLO_BORDE}
+              strokeLinejoin="round"
+            >
+              <path
+                d="M-54 -14 L-52.5 -9.5 L-48 -8 L-52.5 -6.5 L-54 -2 L-55.5 -6.5 L-60 -8 L-55.5 -9.5 Z"
+                strokeWidth="0.6"
+              />
+              <path
+                d="M54 -46 L55.5 -41.5 L60 -40 L55.5 -38.5 L54 -34 L52.5 -38.5 L48 -40 L52.5 -41.5 Z"
+                strokeWidth="0.6"
+              />
+              <path
+                d="M52 4 L53 7 L56 8 L53 9 L52 12 L51 9 L48 8 L51 7 Z"
+                strokeWidth="0.5"
+              />
+            </g>
+          )}
         </>
       );
     default:
@@ -848,6 +864,7 @@ export function DibujoClasico({
             actividad={actividad}
             colores={colores}
             conPetalo={conPetalo}
+            disfraz={disfraz}
           />
           {/* Corazones de las caricias y estrellas del mareo: el motor los
               mueve; no reciben el mouse. */}
@@ -858,8 +875,8 @@ export function DibujoClasico({
                   key={i}
                   id={`lia-corazon-${i}`}
                   d="M0 3.4 C-5.6 -0.8 -4 -5.4 0 -2.6 C4 -5.4 5.6 -0.8 0 3.4 Z"
-                  fill="#FF7F9E"
-                  stroke="#F2648A"
+                  fill={corazonDe(disfraz)?.relleno ?? "#FF7F9E"}
+                  stroke={corazonDe(disfraz)?.borde ?? "#F2648A"}
                   strokeWidth="0.6"
                   strokeLinejoin="round"
                   opacity="0"
@@ -880,17 +897,23 @@ export function DibujoClasico({
                 />
               ))}
               <g id="lia-estrellas-mareo" opacity="0">
-                {[0, 1, 2].map((i) => (
-                  <path
-                    key={i}
-                    id={`lia-estrella-${i}`}
-                    d="M0 -4 L1.1 -1.1 L4 0 L1.1 1.1 L0 4 L-1.1 1.1 L-4 0 L-1.1 -1.1 Z"
-                    fill={AMARILLO}
-                    stroke={AMARILLO_BORDE}
-                    strokeWidth="0.5"
-                    strokeLinejoin="round"
-                  />
-                ))}
+                {[0, 1, 2].map((i) =>
+                  tieneMareo(disfraz) ? (
+                    <g key={i} id={`lia-estrella-${i}`}>
+                      <FiguraDeMareo disfraz={disfraz} />
+                    </g>
+                  ) : (
+                    <path
+                      key={i}
+                      id={`lia-estrella-${i}`}
+                      d="M0 -4 L1.1 -1.1 L4 0 L1.1 1.1 L0 4 L-1.1 1.1 L-4 0 L-1.1 -1.1 Z"
+                      fill={AMARILLO}
+                      stroke={AMARILLO_BORDE}
+                      strokeWidth="0.5"
+                      strokeLinejoin="round"
+                    />
+                  ),
+                )}
               </g>
             </g>
           )}
