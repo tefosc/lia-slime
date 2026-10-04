@@ -42,6 +42,7 @@ Primera versión. Solo para Windows.
 - Ventana de Ajustes con instalación y retirada de los hooks de Claude Code:
   vista previa del cambio, confirmación, respaldo y escritura atómica.
 - Receptor local de eventos en `127.0.0.1:47615` con token por arranque.
+- Saludo al arrancar con Windows.
 - Instalador NSIS por usuario, sin permisos de administrador, en español e
   inglés.
 

@@ -148,5 +148,37 @@ export const TEXTOS_PREGUNTA = {
   listo: "Listo",
 };
 
+export const TEXTOS_SALUDO = {
+  cerrar: "¡Hola, Lia!",
+};
+
+/** Saludo al arrancar con Windows, según la hora del día. */
+export function saludoDe(hora: number, numero: number): TextoSaludo {
+  const titulo =
+    hora < 5
+      ? "¡Qué horas son estas!"
+      : hora < 12
+        ? "¡Buenos días!"
+        : hora < 20
+          ? "¡Buenas tardes!"
+          : "¡Buenas noches!";
+  return {
+    titulo,
+    texto: elegir(
+      [
+        "Ya estoy por aquí. Cuando abras Claude Code, me pongo a trabajar contigo.",
+        "¿Con qué empezamos hoy? Abre Claude Code y yo te voy avisando de todo.",
+        "Lista y con el pétalo peinado. En cuanto le escribas a Claude, me entero.",
+      ],
+      numero,
+    ),
+  };
+}
+
+export interface TextoSaludo {
+  titulo: string;
+  texto: string;
+}
+
 /** Con el límite de uso agotado, Lia se va a descansar tras este aviso. */
 export const ERROR_DE_LIMITE = "rate_limit";

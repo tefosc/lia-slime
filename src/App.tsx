@@ -19,6 +19,7 @@ import type { FaseSueno } from "./mascot/useAnimacionLia";
 import { TarjetaAviso } from "./permisos/TarjetaAviso";
 import { TarjetaPermiso } from "./permisos/TarjetaPermiso";
 import { TarjetaPregunta } from "./permisos/TarjetaPregunta";
+import { TarjetaSaludo } from "./permisos/TarjetaSaludo";
 import { usePermisos } from "./permisos/usePermisos";
 import { usePreferencias } from "./preferencias";
 import type { EstadoIsla, VistaIsla } from "./isla/tipos";
@@ -55,6 +56,9 @@ function App() {
   const resultados = useResultados();
   const actividad = useActividad();
   const registro = useRegistro();
+  // Saludo al arrancar con Windows (el número elige la frase).
+  const [saludo, setSaludo] = useState<number | null>(null);
+  const cerrarSaludo = useCallback(() => setSaludo(null), []);
   // Resultado cuyo globo abrió el usuario.
   const [abierto, setAbierto] = useState<number | null>(null);
   const resultadoAbierto =
@@ -115,6 +119,8 @@ function App() {
               );
             } else if (p.orden === "audio") {
               console.error(`[lia-dev] audio: ${estadoAudio()}`);
+            } else if (p.orden === "saludo") {
+              setSaludo(Date.now());
             } else if (p.orden === "registro") {
               bajarIsla({ tipo: "lista" });
             } else if (
@@ -283,7 +289,11 @@ function App() {
   const ladoActual = useRef<Lado | null>(null);
   const cambios = useRef(Promise.resolve());
   const hayTarjeta =
-    actual !== null || pregunta !== null || aviso !== null || abierto !== null;
+    actual !== null ||
+    pregunta !== null ||
+    aviso !== null ||
+    abierto !== null ||
+    saludo !== null;
 
   // Lia no se duerme con algo pendiente: una solicitud, una tarjeta, un
   // resultado sin leer o una sesión que no está en reposo.
@@ -320,8 +330,20 @@ function App() {
     // para no competir con el inicio del sistema.
     invoke<number>("retraso_inicial")
       .catch(() => 0)
-      .then((ms) => new Promise((seguir) => window.setTimeout(seguir, ms)))
-      .then(placeAtTopCenter)
+      .then(
+        (ms) =>
+          new Promise<number>((seguir) => window.setTimeout(() => seguir(ms), ms)),
+      )
+      .then(async (ms) => {
+        await placeAtTopCenter();
+        // Un retraso inicial significa que Lia arrancó con Windows: saluda.
+        if (ms > 0) {
+          window.setTimeout(() => {
+            sonar("despertar");
+            setSaludo(Date.now());
+          }, 900);
+        }
+      })
       .catch((error: unknown) => {
         console.error("No se pudo posicionar la ventana:", error);
       });
@@ -377,7 +399,7 @@ function App() {
           onClickBurbuja={alPulsarBurbuja}
         />
       </div>
-      {/* Prioridad: permiso, pregunta, aviso de error y resultado. */}
+      {/* Prioridad: permiso, pregunta, aviso de error, saludo y resultado. */}
       {lado &&
         (actual ? (
           <TarjetaPermiso
@@ -404,6 +426,8 @@ function App() {
             aviso={aviso}
             onCerrar={aviso.descansa ? cerrarAvisoYDescansar : cerrarAviso}
           />
+        ) : saludo !== null ? (
+          <TarjetaSaludo numero={saludo} onCerrar={cerrarSaludo} />
         ) : (
           resultadoAbierto && (
             <TarjetaResultado

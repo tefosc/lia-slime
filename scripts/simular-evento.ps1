@@ -39,6 +39,7 @@
   .\scripts\simular-evento.ps1 -Sonido termino  # suena y Lia anota su duración y su pico
   .\scripts\simular-evento.ps1 -Audio           # Lia anota el estado del audio
   .\scripts\simular-evento.ps1 -Registro        # abre los mensajes recientes
+  .\scripts\simular-evento.ps1 -Saludo          # el saludo de arranque con Windows
 #>
 param(
   [Parameter(Position = 0)]
@@ -102,12 +103,15 @@ param(
   # Lia anota en su salida el estado del contexto de audio.
   [switch]$Audio,
   # Abre el globo de mensajes recientes, como desde la bandeja.
-  [switch]$Registro
+  [switch]$Registro,
+  # Muestra el saludo que Lia da al arrancar con Windows.
+  [switch]$Saludo
 )
 
-if ($Tiempos -or $Sonido -or $Audio -or $Registro) {
+if ($Tiempos -or $Sonido -or $Audio -or $Registro -or $Saludo) {
   $orden = if ($Sonido) { @{ orden = 'sonido'; valor = $Sonido } }
   elseif ($Registro) { @{ orden = 'registro' } }
+  elseif ($Saludo) { @{ orden = 'saludo' } }
   elseif ($Audio) { @{ orden = 'audio' } }
   else { @{ orden = 'tiempos'; adormecer = $Tiempos[0]; ocultar = $Tiempos[1] } }
   $cab = Join-Path $env:APPDATA 'io.github.tefosc.lia\cabecera-hook.txt'

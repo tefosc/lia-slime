@@ -225,6 +225,9 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   restauración; nunca registrar su contenido.
 - Para probar sin tocar el archivo real: `LIA_CONFIG_DIR` apunta a otra
   carpeta de configuración. Solo existe en compilaciones de desarrollo.
+- Al arrancar con Windows, Lia saluda con un globo (`TarjetaSaludo`): es
+  solo un mensaje, no abre ni lee nada. En desarrollo se prueba con
+  `scripts/simular-evento.ps1 -Saludo`.
 - Plugins oficiales: `tauri-plugin-single-instance` (una sola Lia) y
   `tauri-plugin-autostart` (inicio con Windows, clave Run del usuario). Al
   arrancar con Windows (`--inicio-automatico`) el receptor y la ventana
