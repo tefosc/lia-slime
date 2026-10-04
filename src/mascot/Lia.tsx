@@ -329,7 +329,12 @@ function Petalo() {
 function Extras({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }) {
   switch (estado) {
     case "trabajando":
-      return <BurbujaActividad actividad={actividad} />;
+      return (
+        <>
+          <BurbujaActividad actividad={actividad} />
+          <ObjetoDeTrabajo actividad={actividad} />
+        </>
+      );
     case "necesita":
       return (
         <g id="lia-burbuja-alerta">
@@ -382,6 +387,176 @@ function Extras({ estado, actividad }: { estado: EstadoLia; actividad: Actividad
     default:
       return null;
   }
+}
+
+const MONTURA = "#3A3F4B";
+
+/**
+ * Lo que Lia se pone en la cara según lo que hace Claude: gafas para el
+ * código (editar y comandos) y una lupa para buscar. Entra con un pequeño
+ * salto y no recibe el mouse.
+ */
+function PuestoEnLaCara({ actividad }: { actividad: Actividad }) {
+  if (actividad === "editar" || actividad === "comando" || actividad === "otra") {
+    return (
+      <g key="gafas" className="lia-objeto" pointerEvents="none">
+        {[-15, 15].map((x) => (
+          <rect
+            key={x}
+            x={x - 10.5}
+            y="-7.5"
+            width="21"
+            height="19"
+            rx="7"
+            fill="#FFFFFF"
+            fillOpacity="0.16"
+            stroke={MONTURA}
+            strokeWidth="2"
+          />
+        ))}
+        {/* Puente y patillas. */}
+        <path
+          d="M-4.5 0.5 Q0 -1.5 4.5 0.5 M-25.5 0 L-31 -2 M25.5 0 L31 -2"
+          fill="none"
+          stroke={MONTURA}
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        {/* Reflejo en cada cristal. */}
+        <path
+          d="M-21 -3 L-17.5 -5 M9 -3 L12.5 -5"
+          stroke="#FFFFFF"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          opacity="0.8"
+        />
+      </g>
+    );
+  }
+  if (actividad === "buscar") {
+    return (
+      <g key="lupa" className="lia-objeto" pointerEvents="none">
+        <path d="M24.5 11.5 L33 22" stroke="#8A5A2B" strokeWidth="4.2" strokeLinecap="round" />
+        <circle
+          cx="15"
+          cy="2"
+          r="12"
+          fill="#D8F3FF"
+          fillOpacity="0.3"
+          stroke={MONTURA}
+          strokeWidth="2.4"
+        />
+        <path
+          d="M7.5 -3.5 Q10 -8 15 -8.5"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          opacity="0.85"
+        />
+      </g>
+    );
+  }
+  return null;
+}
+
+/**
+ * Lo que Lia tiene delante según lo que hace Claude: un libro al leer, un
+ * portátil con la web o con un comando, y una ayudante pequeña cuando delega
+ * en un agente. Sube con el cuerpo, pero no se deforma con él.
+ */
+function ObjetoDeTrabajo({ actividad }: { actividad: Actividad }) {
+  if (actividad === "leer") {
+    return (
+      <g key="libro" className="lia-objeto" pointerEvents="none">
+        {/* Libro abierto visto por fuera: dos tapas y el lomo. */}
+        <path
+          d="M0 25 Q-11 20.5 -22 24 L-22 38.5 Q-11 35 0 39.5 Z"
+          fill="#F79BBB"
+          stroke="#D9668F"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M0 25 Q11 20.5 22 24 L22 38.5 Q11 35 0 39.5 Z"
+          fill="#FFC1D6"
+          stroke="#D9668F"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+        <path d="M0 25 L0 39.5" stroke="#D9668F" strokeWidth="1.6" strokeLinecap="round" />
+        {/* Canto de las páginas, por arriba. */}
+        <path
+          d="M-20.5 23 Q-11 19.5 -1 23.5 M20.5 23 Q11 19.5 1 23.5"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </g>
+    );
+  }
+  if (actividad === "web" || actividad === "comando") {
+    return (
+      <g key="portatil" className="lia-objeto" pointerEvents="none">
+        {/* Portátil visto por detrás de la tapa, con un pétalo de logotipo. */}
+        <rect
+          x="-19"
+          y="20"
+          width="38"
+          height="17"
+          rx="2.6"
+          fill="#E9EEF3"
+          stroke="#8A94A6"
+          strokeWidth="1.2"
+        />
+        <path
+          d="M0 32 C-3.4 29.7 -4 25.8 -1.7 24.4 L0 25.8 L1.7 24.4 C4 25.8 3.4 29.7 0 32 Z"
+          fill="#FFC1D6"
+          stroke={PETALO_BORDE}
+          strokeWidth="0.6"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M-23.5 37 H23.5 L21.5 40.6 H-21.5 Z"
+          fill="#C9D1DC"
+          stroke="#8A94A6"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+        {/* Resplandor de la pantalla en su cara. */}
+        <ellipse cx="0" cy="19.5" rx="17" ry="2.2" fill="#BFE9FF" opacity="0.55" />
+      </g>
+    );
+  }
+  if (actividad === "agente") {
+    return (
+      <g key="ayudante" className="lia-objeto lia-ayudante" pointerEvents="none">
+        {/* Una Lia pequeña que le echa una mano. */}
+        <g transform="translate(47,25) scale(0.3)">
+          <path
+            d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z"
+            fill="#FFE58A"
+            stroke="#D9AE1F"
+            strokeWidth="4"
+          />
+          <ellipse cx="-15" cy="2" rx="7" ry="9.5" fill={TINTA} />
+          <ellipse cx="15" cy="2" rx="7" ry="9.5" fill={TINTA} />
+          <path
+            d="M-7 15 Q0 22 7 15"
+            fill="none"
+            stroke={TINTA}
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+          <g transform="translate(18,-36) rotate(18)">
+            <path d={PETALO_CONTORNO} fill="#FFC1D6" stroke={PETALO_BORDE} strokeWidth="3" />
+          </g>
+        </g>
+      </g>
+    );
+  }
+  return null;
 }
 
 /**
@@ -666,6 +841,9 @@ export function Lia({
               </>
             )}
           </g>
+          {/* Lo que lleva puesto mientras trabaja (gafas, lupa): va sobre la
+              cara y se deforma con el cuerpo. */}
+          {estado === "trabajando" && <PuestoEnLaCara actividad={actividad} />}
           {/* Gota de esfuerzo: oculta salvo cuando el motor la anima. */}
           <g id="lia-gota" opacity="0">
             <path

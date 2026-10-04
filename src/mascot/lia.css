@@ -59,3 +59,38 @@
     animation: none;
   }
 }
+
+/* Objetos de trabajo (gafas, lupa, libro, portátil, ayudante): entran con un
+   pequeño salto al cambiar de actividad. */
+.lia-objeto {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: lia-objeto 320ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes lia-objeto {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* La ayudante da botecitos. */
+.lia-ayudante {
+  animation:
+    lia-objeto 320ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    lia-ayudante 0.9s ease-in-out 320ms infinite;
+}
+
+@keyframes lia-ayudante {
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lia-objeto,
+  .lia-ayudante {
+    animation: none;
+  }
+}

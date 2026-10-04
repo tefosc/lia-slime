@@ -265,7 +265,10 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   herramienta de cada `PreToolUse` y espacia los cambios para no distraer.
   Con la actividad cambian también el movimiento (`TRABAJO.actividades`) y
   la cara: cejas, tamaño de los ojos y boca (`CARAS_DE_TRABAJO` en
-  `Lia.tsx`), con un parpadeo al cambiar.
+  `Lia.tsx`), con un parpadeo al cambiar. Y lleva un objeto: gafas para
+  editar y para los comandos, lupa para buscar, libro para leer, portátil
+  para la web y los comandos, y una ayudante pequeña cuando delega en un
+  agente (`PuestoEnLaCara` y `ObjetoDeTrabajo`).
 - Página de revisión (solo desarrollo): `http://localhost:1420/?revision`
   muestra a Lia congelada en cada estado y reacción y compara la huella de
   cada dibujo con `src/revision/referencia.json`. Si cambias el dibujo a
