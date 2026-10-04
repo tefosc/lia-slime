@@ -197,14 +197,14 @@ function Ruta-De-Caso([string]$caso) {
 
 if ($Tarea) {
   $yo = $MyInvocation.MyCommand.Path
-  & $yo UserPromptSubmit -Sesion $Sesion
+  & $yo UserPromptSubmit -Sesion $Sesion -Aislada:$Aislada
   if ($Caso -ne 'corta') {
     foreach ($h in 'Read', 'Read', 'Edit', 'Bash', 'Edit', 'Grep') {
-      & $yo PreToolUse -Sesion $Sesion -Herramienta $h | Out-Null
+      & $yo PreToolUse -Sesion $Sesion -Herramienta $h -Aislada:$Aislada | Out-Null
     }
     Start-Sleep -Seconds 2
   }
-  & $yo Stop -Sesion $Sesion -Caso $Caso
+  & $yo Stop -Sesion $Sesion -Caso $Caso -Aislada:$Aislada
   "Caso '$Caso' enviado."
   exit 0
 }
