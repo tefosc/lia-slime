@@ -7,8 +7,8 @@
 }
 
 /* Mientras se arrastra a Lia. */
-#lia-personaje.arrastrando,
-#lia-personaje.arrastrando .lia-burbuja-resultado {
+.mascota.arrastrando #lia-personaje,
+.mascota.arrastrando .lia-burbuja-resultado {
   cursor: grabbing;
 }
 

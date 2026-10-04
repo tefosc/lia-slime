@@ -1,11 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import { TOQUES } from "./mascot/useAnimacionLia";
 
 // Zonas activas de la ventana: donde debe recibir el mouse. Fuera de ellas,
 // Rust pone la ventana en modo ignorar y los clics pasan a la aplicación de
 // debajo (ver src-tauri/src/cursor.rs). Coordenadas en píxeles CSS.
 
-type Forma =
+export type Forma =
   | { tipo: "elipse"; cx: number; cy: number; rx: number; ry: number }
   | { tipo: "rect"; x: number; y: number; ancho: number; alto: number };
 
@@ -15,6 +14,15 @@ let ultimasFormas: Forma[] | null = null;
 let ultimoCapturar = false;
 /** Cambio mínimo, en px, para volver a enviar las zonas a Rust. */
 const TOLERANCIA_PX = 3;
+
+/** Zonas de la mascota: las calcula el renderizador que la dibuja. */
+let zonasDeMascota: (() => Forma[]) | null = null;
+
+/** El renderizador activo registra aquí cómo medir sus zonas. */
+export function registrarZonasDeMascota(medir: (() => Forma[]) | null): void {
+  zonasDeMascota = medir;
+  ultimasFormas = null;
+}
 
 /** Mientras se arrastra a Lia, la ventana nunca ignora el mouse. */
 export function marcarArrastre(valor: boolean): void {
@@ -52,7 +60,8 @@ export function hayArrastre(): boolean {
   return arrastrando;
 }
 
-function elipseDe(caja: DOMRect, margen: number): Forma {
+/** Elipse inscrita en una caja, con un margen alrededor. */
+export function elipseDe(caja: DOMRect, margen: number): Forma {
   return {
     tipo: "elipse",
     cx: Math.round(caja.left + caja.width / 2),
@@ -64,15 +73,9 @@ function elipseDe(caja: DOMRect, margen: number): Forma {
 
 /** Mide las zonas en el dibujo real y las envía si cambiaron. */
 export function enviarZonas(): void {
-  const formas: Forma[] = [];
-  const margen = TOQUES.margenZonaActiva;
-
-  // El cuerpo se mide donde está ahora (salta, respira, se inclina).
-  const cuerpo = document.querySelector("#lia-cuerpo");
-  if (cuerpo) formas.push(elipseDe(cuerpo.getBoundingClientRect(), margen));
-
-  const burbuja = document.querySelector("#lia-burbuja");
-  if (burbuja) formas.push(elipseDe(burbuja.getBoundingClientRect(), 3));
+  // El cuerpo y la burbuja los mide el renderizador, donde están ahora
+  // (la mascota salta, respira y se inclina).
+  const formas: Forma[] = zonasDeMascota ? zonasDeMascota() : [];
 
   for (const tarjeta of document.querySelectorAll(".tarjeta")) {
     const caja = tarjeta.getBoundingClientRect();

@@ -1,11 +1,14 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { PointerEvent } from "react";
 import { useWindowDrag } from "../useWindowDrag";
+import { registrarZonasDeMascota } from "../zonas";
 import { crearDetectorDeCaricias } from "./caricias";
 import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
 import type { Actividad } from "../estado/useActividad";
 import type { Guion, OpcionesSueno } from "./useAnimacionLia";
+import type { EstiloDeMascota, PropsDibujo } from "./renderizador";
+import { crearRenderizadorClasico } from "./renderizadorClasico";
 import { useAnimacionLia } from "./useAnimacionLia";
 import "./lia.css";
 
@@ -674,6 +677,12 @@ interface LiaProps {
   guion?: Guion;
 }
 
+/**
+ * La mascota: un contenedor con el dibujo del estilo elegido dentro. Aquí
+ * se unen el motor de animación (que calcula la pose), el renderizador del
+ * estilo (que la pinta) y el mouse (arrastre, toques y caricias), que
+ * pregunta al renderizador qué hay bajo el cursor.
+ */
 export function Lia({
   estado,
   resultadosSinLeer = 0,
@@ -682,50 +691,94 @@ export function Lia({
   actividad = "pensar",
   guion,
 }: LiaProps) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const { tocar, acariciar, rozar } = useAnimacionLia(
-    svgRef,
+  const estilo = ESTILO_CLASICO;
+  const contenedorRef = useRef<HTMLDivElement>(null);
+  const { tocar, acariciar, rozar, renderizador } = useAnimacionLia(
+    contenedorRef,
+    estilo.crearRenderizador,
     estado,
     sueno,
     actividad,
     guion,
   );
-  const cajaDelCuerpo = () =>
-    svgRef.current?.querySelector("#lia-cuerpo")?.getBoundingClientRect();
+
+  // El click-through usa las zonas del renderizador activo.
+  useEffect(() => {
+    registrarZonasDeMascota(() => renderizador.current?.zonaActiva() ?? []);
+    return () => registrarZonasDeMascota(null);
+  }, [renderizador]);
+
   // Un clic sin arrastre sobre la burbuja abre el resultado y no cuenta como
-  // toque; sobre el cuerpo es un toque a Lia.
-  const arrastre = useWindowDrag<SVGGElement>(({ origen, x }) => {
-    if (!(origen instanceof Element)) return;
-    if (origen.closest("#lia-burbuja")) {
+  // toque; sobre el cuerpo es un toque a la mascota.
+  const arrastre = useWindowDrag<HTMLDivElement>(({ origen, x, y }) => {
+    const parte = renderizador.current?.queHay(origen, x, y);
+    if (parte === "burbuja") {
       onClickBurbuja?.();
       return;
     }
-    if (!origen.closest("#lia-flotante")) return;
-    const cuerpo = cajaDelCuerpo();
+    if (parte !== "cuerpo") return;
+    const cuerpo = renderizador.current?.cajaDelCuerpo();
     if (!cuerpo) return;
     // Lado del clic: -1 en el borde izquierdo del cuerpo, 1 en el derecho.
     const centro = cuerpo.left + cuerpo.width / 2;
     tocar(Math.max(-1, Math.min(1, (x - centro) / (cuerpo.width / 2))));
   });
 
+  /** El puntero está sobre alguna parte pintada de la mascota. */
+  const sobreLaMascota = (evento: PointerEvent<HTMLDivElement>) =>
+    (renderizador.current?.queHay(evento.target, evento.clientX, evento.clientY) ?? null) !==
+    null;
+
+  // Solo se puede agarrar lo que está pintado.
+  const alPulsar = (evento: PointerEvent<HTMLDivElement>) => {
+    if (sobreLaMascota(evento)) arrastre.onPointerDown(evento);
+  };
+
   // Caricias: frotar el cursor sobre la cabeza sin pulsar ningún botón.
   const detectarCaricia = useRef(crearDetectorDeCaricias(acariciar)).current;
-  const alMoverPuntero = (evento: PointerEvent<SVGGElement>) => {
+  const alMoverPuntero = (evento: PointerEvent<HTMLDivElement>) => {
     arrastre.onPointerMove(evento);
+    // Durante un arrastre el puntero está capturado y cuenta como encima.
+    const capturado = evento.currentTarget.hasPointerCapture(evento.pointerId);
+    if (!capturado && !sobreLaMascota(evento)) return;
     rozar();
     if (evento.buttons !== 0) return;
-    const cuerpo = cajaDelCuerpo();
+    const cuerpo = renderizador.current?.cajaDelCuerpo();
     if (cuerpo) {
       detectarCaricia(evento.clientX, evento.clientY, cuerpo, evento.timeStamp);
     }
   };
 
+  return (
+    <div
+      ref={contenedorRef}
+      className="mascota"
+      style={{ width: estilo.tamano.ancho, height: estilo.tamano.alto }}
+      onPointerDown={alPulsar}
+      onPointerMove={alMoverPuntero}
+      onPointerUp={arrastre.onPointerUp}
+      onPointerCancel={arrastre.onPointerCancel}
+    >
+      <estilo.Dibujo
+        estado={estado}
+        resultadosSinLeer={resultadosSinLeer}
+        actividad={actividad}
+      />
+    </div>
+  );
+}
+
+/**
+ * Dibujo clásico de Lia: el SVG con sus partes. Solo pinta lo que no es
+ * animación; el movimiento lo escribe el renderizador clásico sobre estos
+ * mismos elementos, por su id.
+ */
+function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDibujo) {
   // La elevación, la sombra y la pose del pétalo las escribe el motor de
   // animación (useAnimacionLia). Aquí solo van los valores de reposo de
   // `inactivo`, que son constantes para que React no los vuelva a escribir.
   return (
     <svg
-      ref={svgRef}
       className="lia"
       viewBox="-82 -110 164 164"
       width="200"
@@ -733,8 +786,8 @@ export function Lia({
       role="img"
       aria-label={`Lia: ${estado}`}
     >
-      {/* El arrastre va en este grupo: solo responde lo que está pintado. */}
-      <g id="lia-personaje" {...arrastre} onPointerMove={alMoverPuntero}>
+      {/* Todo lo pintado del personaje: lo que se puede agarrar. */}
+      <g id="lia-personaje">
         <ellipse id="lia-sombra" cx="0" fill="#000" {...SOMBRA_BASE} />
         {/* Charquito en el que queda al derretirse por inactividad: oculto
             hasta que el motor lo muestra. No recibe el mouse. */}
@@ -913,3 +966,14 @@ export function Lia({
     </svg>
   );
 }
+
+/** Estilo clásico de Lia: vector animado. */
+const ESTILO_CLASICO: EstiloDeMascota = {
+  id: "clasico",
+  nombre: "Clásico",
+  tamano: { ancho: 200, alto: 200 },
+  // Base del cuerpo: (0, 38) del viewBox -82 -110 164 164, en px.
+  ancla: { x: 100, y: (148 * 200) / 164 },
+  Dibujo: DibujoClasico,
+  crearRenderizador: crearRenderizadorClasico,
+};

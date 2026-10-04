@@ -1,6 +1,12 @@
+import { elipseDe } from "../zonas";
+import type { Forma } from "../zonas";
 import type { Pose } from "./pose";
 import { sombraPara } from "./poses";
-import { bocaEsfuerzo, grosorOjosEsfuerzo, ojosEsfuerzo } from "./useAnimacionLia";
+import type { ParteTocada, Renderizador } from "./renderizador";
+import { bocaEsfuerzo, grosorOjosEsfuerzo, ojosEsfuerzo, TOQUES } from "./useAnimacionLia";
+
+/** Centro del cuerpo dentro del viewBox (-82 -110 164 164), en fracción. */
+const CENTRO_CUERPO = { x: 82 / 164, y: 110 / 164 };
 
 /** Punto de apoyo del cuerpo: la deformación se ancla en su base. */
 const BASE_Y = 38;
@@ -39,16 +45,17 @@ const IDS_REACCION = [
   "lia-z-1",
 ];
 
-function buscar(svg: SVGSVGElement, id: string): SVGElement | null {
-  return svg.querySelector<SVGElement>(`#${id}`);
+function buscar(svg: Element | null, id: string): SVGElement | null {
+  return svg?.querySelector<SVGElement>(`#${id}`) ?? null;
 }
 
 /**
- * Renderizador clásico: pinta la pose sobre el SVG de `Lia.tsx`, escribiendo
- * los atributos de sus elementos por id. No tiene lógica de animación: solo
- * traduce números a `transform`, `opacity` y demás.
+ * Renderizador clásico: pinta la pose sobre el SVG de `DibujoClasico`,
+ * escribiendo los atributos de sus elementos por id. No tiene lógica de
+ * animación: solo traduce números a `transform`, `opacity` y demás.
  */
-export function crearRenderizadorClasico(svg: SVGSVGElement) {
+export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador {
+  const svg = contenedor.querySelector<SVGSVGElement>("svg.lia");
   const caras: Record<string, SVGElement | null> = {};
   const sombraEl = buscar(svg, "lia-sombra");
   const flotanteEl = buscar(svg, "lia-flotante");
@@ -80,6 +87,39 @@ export function crearRenderizadorClasico(svg: SVGSVGElement) {
     escribir(caras[id], id, "opacity", valor.toFixed(2));
 
   return {
+    zonaActiva(): Forma[] {
+      const formas: Forma[] = [];
+      // El cuerpo se mide donde está ahora (salta, respira, se inclina). El
+      // pétalo y la sombra no son zona activa.
+      const cuerpo = buscar(svg, "lia-cuerpo");
+      if (cuerpo) {
+        formas.push(elipseDe(cuerpo.getBoundingClientRect(), TOQUES.margenZonaActiva));
+      }
+      const burbuja = buscar(svg, "lia-burbuja");
+      if (burbuja) formas.push(elipseDe(burbuja.getBoundingClientRect(), 3));
+      return formas;
+    },
+
+    // En SVG solo responde lo que está pintado: basta mirar el elemento.
+    queHay(origen: EventTarget | null): ParteTocada {
+      if (!(origen instanceof Element) || !origen.closest("#lia-personaje")) return null;
+      if (origen.closest("#lia-burbuja")) return "burbuja";
+      return origen.closest("#lia-flotante") ? "cuerpo" : "otro";
+    },
+
+    cajaDelCuerpo(): DOMRect | null {
+      return buscar(svg, "lia-cuerpo")?.getBoundingClientRect() ?? null;
+    },
+
+    centro(): { x: number; y: number } | null {
+      if (!svg) return null;
+      const caja = svg.getBoundingClientRect();
+      return {
+        x: caja.left + caja.width * CENTRO_CUERPO.x,
+        y: caja.top + caja.height * CENTRO_CUERPO.y,
+      };
+    },
+
     /**
      * Vuelve a buscar las partes que cambian con el estado. Hay que llamarlo
      * después de que React haya pintado el estado nuevo.

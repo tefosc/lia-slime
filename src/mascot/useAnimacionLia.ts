@@ -12,7 +12,7 @@ import {
 } from "./detectorMareo";
 import { acercar, limitarPaso, Resorte } from "./movimiento";
 import { crearPose } from "./pose";
-import { crearRenderizadorClasico } from "./renderizadorClasico";
+import type { Renderizador } from "./renderizador";
 import { POSES } from "./poses";
 import type { EstadoLia } from "./tipos";
 
@@ -53,8 +53,6 @@ const POP = { aplaste: -0.8, celebracionAplaste: -0.5, celebracionSalto: 55 };
 const PX_POR_UNIDAD = 200 / 164;
 /** Radio del cuerpo en px (medio ancho: 44 unidades del viewBox). */
 const RADIO_CUERPO_PX = 44 * PX_POR_UNIDAD;
-/** Centro del cuerpo dentro del viewBox (-82 -110 164 164), en fracción. */
-const CENTRO_CUERPO = { x: 82 / 164, y: 110 / 164 };
 
 /**
  * Mirada: Lia sigue el cursor con los ojos y se inclina un poco hacia él.
@@ -496,10 +494,13 @@ export interface AccionesLia {
   acariciar: () => void;
   /** El cursor pasa por encima de Lia: la despierta si está adormecida. */
   rozar: () => void;
+  /** Renderizador en uso, para preguntarle por la geometría del dibujo. */
+  renderizador: RefObject<Renderizador | null>;
 }
 
 export function useAnimacionLia(
-  svgRef: RefObject<SVGSVGElement | null>,
+  contenedorRef: RefObject<HTMLElement | null>,
+  crearRenderizador: (contenedor: HTMLElement) => Renderizador,
   estado: EstadoLia,
   opcionesSueno: OpcionesSueno,
   actividad: Actividad = "pensar",
@@ -524,6 +525,7 @@ export function useAnimacionLia(
   const tocar = useRef((lado: number) => alTocar.current?.(lado)).current;
   const alAcariciar = useRef<(() => void) | null>(null);
   const acariciar = useRef(() => alAcariciar.current?.()).current;
+  const renderizadorActual = useRef<Renderizador | null>(null);
   const alRozar = useRef<(() => void) | null>(null);
   const rozar = useRef(() => alRozar.current?.()).current;
   const suenoActual = useRef(opcionesSueno);
@@ -549,11 +551,12 @@ export function useAnimacionLia(
   }, [estado]);
 
   useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
+    const contenedor = contenedorRef.current;
+    if (!contenedor) return;
 
     // El motor calcula la pose; el renderizador la pinta en el SVG.
-    const renderizador = crearRenderizadorClasico(svg);
+    const renderizador = crearRenderizador(contenedor);
+    renderizadorActual.current = renderizador;
     const pose = crearPose(estadoActual.current);
 
     const inicial = POSES[estadoActual.current];
@@ -1731,11 +1734,9 @@ export function useAnimacionLia(
     let cancelado = false;
     let dejarCursor: (() => void) | undefined;
     listen<{ x: number; y: number }>("lia-cursor", ({ payload }) => {
-      const caja = svg.getBoundingClientRect();
-      cursor = {
-        x: payload.x - (caja.left + caja.width * CENTRO_CUERPO.x),
-        y: payload.y - (caja.top + caja.height * CENTRO_CUERPO.y),
-      };
+      const centro = renderizador.centro();
+      if (!centro) return;
+      cursor = { x: payload.x - centro.x, y: payload.y - centro.y };
       ultimoCursor = tiempo;
       procesarMuestra(cursor.x, cursor.y, performance.now() / 1000);
       pedir();
@@ -1827,13 +1828,14 @@ export function useAnimacionLia(
       alHaberActividad.current = null;
       alDescansar.current = null;
       alCambiarActividad.current = null;
+      renderizadorActual.current = null;
       window.clearInterval(vigilancia);
       if (import.meta.env.DEV && !guionInicial) delete window.__lia;
       document.removeEventListener("visibilitychange", alCambiarVisibilidad);
       reducido.removeEventListener("change", alCambiarReducido);
       alCambiar.current = null;
     };
-  }, [svgRef]);
+  }, [contenedorRef, crearRenderizador]);
 
-  return { tocar, acariciar, rozar };
+  return { tocar, acariciar, rozar, renderizador: renderizadorActual };
 }
