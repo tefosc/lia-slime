@@ -40,22 +40,3 @@ export const POSES: Record<EstadoLia, Pose> = {
     mejillas: 0.95,
   },
 };
-
-/**
- * Atributos de la sombra para un tamaño dado. Con 1, 0.85 y 0.7 reproduce
- * exactamente las tres sombras de la referencia.
- */
-export function sombraPara(tamano: number): {
-  cy: number;
-  rx: number;
-  ry: number;
-  opacity: number;
-} {
-  const falta = 1 - tamano;
-  return {
-    cy: 44 + Math.min(2, Math.max(0, falta * (40 / 3))),
-    rx: 40 * tamano,
-    ry: 5 - falta * (10 / 3),
-    opacity: 0.12 - falta * (0.4 / 3),
-  };
-}

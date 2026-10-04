@@ -1,9 +1,9 @@
-import { elipseDe } from "../zonas";
-import type { Forma } from "../zonas";
-import type { Pose } from "./pose";
-import { sombraPara } from "./poses";
-import type { ParteTocada, Renderizador } from "./renderizador";
-import { bocaEsfuerzo, grosorOjosEsfuerzo, ojosEsfuerzo, TOQUES } from "./useAnimacionLia";
+import type { Pose } from "../../../mascot/pose";
+import type { ParteTocada, Renderizador } from "../../../mascot/renderizador";
+import { TOQUES } from "../../../mascot/useAnimacionLia";
+import { elipseDe } from "../../../zonas";
+import type { Forma } from "../../../zonas";
+import { bocaEsfuerzo, grosorOjosEsfuerzo, ojosEsfuerzo, sombraPara } from "./trazos";
 
 /** Centro del cuerpo dentro del viewBox (-82 -110 164 164), en fracción. */
 const CENTRO_CUERPO = { x: 82 / 164, y: 110 / 164 };

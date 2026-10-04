@@ -174,7 +174,8 @@ To try it without Claude Code, use `scripts/simular-evento.ps1`.
 | Folder | Contents |
 |---|---|
 | `src/` | Interface (React and TypeScript) |
-| `src/mascot/` | The character: SVG drawing, animation and reactions |
+| `src/mascot/` | The character engine: animation and reactions |
+| `src/mascotas/` | The drawings: each pet with its styles |
 | `src/estado/`, `src/permisos/`, `src/resultados/` | Sessions, permission cards and results |
 | `src/audio/` | Synthesized sounds |
 | `src/ajustes/` | Settings window |

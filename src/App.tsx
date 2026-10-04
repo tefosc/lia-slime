@@ -13,7 +13,8 @@ import {
 import type { Sonido } from "./audio/sonidos";
 import { useActividad } from "./estado/useActividad";
 import { useEstadoLia } from "./estado/useEstadoLia";
-import { Lia } from "./mascot/Lia";
+import { Mascota } from "./mascot/Mascota";
+import { estiloDe } from "./mascotas/indice";
 import { SUENO } from "./mascot/useAnimacionLia";
 import type { FaseSueno } from "./mascot/useAnimacionLia";
 import { TarjetaAviso } from "./permisos/TarjetaAviso";
@@ -388,7 +389,8 @@ function App() {
   return (
     <div className={`escena${lado === "izquierda" ? " escena-izquierda" : ""}`}>
       <div className="lia-caja">
-        <Lia
+        <Mascota
+          estilo={estiloDe()}
           estado={estadoMostrado}
           sueno={sueno}
           actividad={actividad}

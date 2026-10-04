@@ -32,7 +32,7 @@ real, define `LIA_CONFIG_DIR` con otra carpeta antes de `pnpm tauri dev`.
 
 - TypeScript estricto. Rust solo para lo que el frontend no puede hacer.
 - Comentarios y mensajes de commit en español neutro.
-- Estructura: `src/` (interfaz), `src/mascot/` (personaje), `src-tauri/`
+- Estructura: `src/` (interfaz), `src/mascot/` (motor del personaje), `src/mascotas/` (dibujos), `src-tauri/`
   (Rust).
 - Si algo depende de Windows o de WebView2, dilo en el código.
 - Sigue el estilo del código que rodea a tu cambio.

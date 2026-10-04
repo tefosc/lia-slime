@@ -30,10 +30,22 @@ no está conectada.
 ## Estructura
 
 - `src/` — UI (React).
-- `src/mascot/` — SVG y estados de la mascota.
-  - `Lia.tsx` — geometría del personaje; `poses.ts` — valores de reposo por
-    estado; `movimiento.ts` — resorte amortiguado; `useAnimacionLia.ts` — bucle
-    de animación que escribe los `transform` directamente en el SVG.
+- `src/mascot/` — motor de la mascota: estados y animación, sin dibujo.
+  - `useAnimacionLia.ts` — bucle de animación: calcula en cada fotograma una
+    `Pose` (`pose.ts`, datos puros) y se la entrega a un renderizador;
+    `poses.ts` — valores de reposo por estado; `movimiento.ts` — resorte
+    amortiguado.
+  - `renderizador.ts` — contrato de un estilo (`EstiloDeMascota`) y de su
+    `Renderizador`: pinta la pose y responde por la geometría (zonas activas
+    del click-through, qué hay bajo el cursor, caja y centro del cuerpo).
+  - `Mascota.tsx` — contenedor genérico: une motor, renderizador y mouse
+    (arrastre, toques y caricias). No sabe si el dibujo es SVG o canvas.
+- `src/mascotas/` — paquetes de mascotas incluidos en la app. `indice.ts` es
+  el catálogo fijo (nunca se cargan mascotas del disco, la red ni carpetas
+  del usuario) y `estiloDe` resuelve ids desconocidos al valor por defecto.
+  - `lia/manifiesto.ts` — Lia y sus estilos. `lia/clasico/` — el estilo
+    clásico: `Dibujo.tsx` (SVG del personaje), `renderizador.ts` (escribe
+    los `transform` directamente en el SVG), `trazos.ts` y `lia.css`.
 - `src/estado/` — sesiones de Claude Code: `sesiones.ts` (evento → estado,
   registro por `session_id`, prioridad y caducidad), `useEstadoLia.ts` (escucha
   el evento `lia-evento`) y `config.ts` (tiempos).
@@ -265,13 +277,15 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   herramienta de cada `PreToolUse` y espacia los cambios para no distraer.
   Con la actividad cambian también el movimiento (`TRABAJO.actividades`) y
   la cara: cejas, tamaño de los ojos y boca (`CARAS_DE_TRABAJO` en
-  `Lia.tsx`), con un parpadeo al cambiar. Y lleva un objeto: gafas para
+  `src/mascotas/lia/clasico/Dibujo.tsx`), con un parpadeo al cambiar. Y
+  lleva un objeto: gafas para
   editar y para los comandos, lupa para buscar, libro para leer, portátil
   para la web y los comandos, y una ayudante pequeña cuando delega en un
   agente (`PuestoEnLaCara` y `ObjetoDeTrabajo`).
 - Página de revisión (solo desarrollo): `http://localhost:1420/?revision`
   muestra a Lia congelada en cada estado y reacción y compara la huella de
-  cada dibujo con `src/revision/referencia.json`. Si cambias el dibujo a
+  cada dibujo con `src/revision/referencia.json`. Tras tocar el motor o un
+  renderizador, las huellas deben seguir idénticas. Si cambias el dibujo a
   propósito, actualiza la referencia con `window.__revision`.
 - Caricias seguidas durante unos segundos la "encantan": dos botes, meneo y
   corazones más seguidos (`CARICIAS.tiempoParaEncanto`).
@@ -279,7 +293,7 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   cabeza; mareo al girar el cursor a su alrededor) solo cambian la cara en
   `inactivo`; los estados de Claude Code mandan siempre. Sus parámetros están
   en `TOQUES`, `CARICIAS` y `MAREO` de `useAnimacionLia.ts`.
-- En `Lia.tsx`, ojos, boca y extras llevan `key={estado}`: sin eso React
+- En `Dibujo.tsx`, ojos, boca y extras llevan `key={estado}`: sin eso React
   reutiliza el mismo elemento entre estados y conserva la opacidad que el
   motor le escribió (la boca desaparecía al pasar de dormida a trabajando).
 - Mareo: `src/mascot/detectorMareo.ts` es una función pura que cuenta las
@@ -383,7 +397,7 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
 
 - Todo en TypeScript estricto; Rust solo para lo que el frontend no pueda hacer.
 - Comentarios y mensajes de commit en español neutro.
-- Respeta la estructura: `src/` (UI), `src/mascot/` (SVG y estados),
-  `src-tauri/` (Rust).
+- Respeta la estructura: `src/` (UI), `src/mascot/` (motor de la mascota),
+  `src/mascotas/` (dibujos) y `src-tauri/` (Rust).
 - Si algo del sistema (ventana, cursor, pipe) depende de Windows, dilo
   explícitamente en el código o en este archivo.

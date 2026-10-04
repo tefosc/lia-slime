@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { configurarSonidos } from "../audio/sonidos";
-import { Lia } from "../mascot/Lia";
+import { Mascota } from "../mascot/Mascota";
+import { estiloDe } from "../mascotas/indice";
 import { CASOS } from "./casos";
 import referencia from "./referencia.json";
 
@@ -96,7 +97,8 @@ export function Revision() {
                   data-caso={c.nombre}
                   style={{ transform: `scale(${zoom})`, transformOrigin: "0 0" }}
                 >
-                  <Lia
+                  <Mascota
+                    estilo={estiloDe()}
                     estado={c.estado}
                     sueno={SUENO_QUIETO}
                     actividad={c.actividad}

@@ -173,7 +173,8 @@ Para probar sin Claude Code, usa `scripts/simular-evento.ps1`.
 | Carpeta | Contenido |
 |---|---|
 | `src/` | Interfaz (React y TypeScript) |
-| `src/mascot/` | El personaje: dibujo SVG, animación y reacciones |
+| `src/mascot/` | El motor del personaje: animación y reacciones |
+| `src/mascotas/` | Los dibujos: cada mascota con sus estilos |
 | `src/estado/`, `src/permisos/`, `src/resultados/` | Sesiones, tarjetas de permiso y resultados |
 | `src/audio/` | Sonidos sintetizados |
 | `src/ajustes/` | Ventana de Ajustes |
