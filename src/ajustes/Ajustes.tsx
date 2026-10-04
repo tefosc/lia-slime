@@ -7,6 +7,7 @@ import {
   usePreferencias,
 } from "../preferencias";
 import type { Preferencias } from "../preferencias";
+import { Apariencia } from "./Apariencia";
 
 type EstadoHooks = "no-instalados" | "instalados" | "desactualizados" | "error";
 type Accion = "instalar" | "quitar";
@@ -228,6 +229,8 @@ export function Ajustes() {
 
         {aviso && <p className={`nota nota-${aviso.tipo}`}>{aviso.texto}</p>}
       </section>
+
+      <Apariencia preferencias={preferencias} cambiar={cambiar} />
 
       <section>
         <h2>Opciones</h2>

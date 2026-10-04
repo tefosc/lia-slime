@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { Actividad } from "../estado/useActividad";
+import type { Paleta } from "../mascotas/paletas";
 import type { Forma } from "../zonas";
 import type { Pose } from "./pose";
 import type { EstadoLia } from "./tipos";
@@ -43,6 +44,8 @@ export interface PropsDibujo {
   resultadosSinLeer: number;
   /** Qué está haciendo Claude, para la burbuja y los objetos de trabajo. */
   actividad: Actividad;
+  /** Colores con los que se pinta. */
+  paleta: Paleta;
 }
 
 /** Un estilo de una mascota: cómo se dibuja. */

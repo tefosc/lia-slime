@@ -17,6 +17,15 @@ export interface Preferencias {
   sonidosJuego: boolean;
   /** La isla baja al dejar el cursor en el borde superior de la pantalla. */
   islaAlBorde: boolean;
+  /**
+   * Apariencia: solo identificadores. Uno desconocido se resuelve al valor
+   * por defecto con `estiloDe` y `paletaDe`.
+   */
+  mascota: string;
+  estilo: string;
+  paleta: string;
+  /** Matiz del color libre, en grados (0 a 359). */
+  matiz: number;
 }
 
 export const MINUTOS_INACTIVIDAD = [2, 3, 5, 10];
@@ -29,6 +38,10 @@ export const PREFERENCIAS_POR_DEFECTO: Preferencias = {
   sonidosAvisos: true,
   sonidosJuego: true,
   islaAlBorde: true,
+  mascota: "lia",
+  estilo: "clasico",
+  paleta: "menta",
+  matiz: 155,
 };
 
 export function guardarPreferencias(nuevas: Preferencias): Promise<Preferencias> {

@@ -54,3 +54,26 @@ body,
 .revision code {
   opacity: 0.6;
 }
+
+.revision-paletas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.revision-paletas a {
+  padding: 2px 9px;
+  border: 2px solid;
+  border-radius: 999px;
+  color: #2b2b2b;
+  text-decoration: none;
+}
+
+.fondo-claro .revision-lienzo {
+  background: #ffffff;
+}
+
+.fondo-oscuro .revision-lienzo {
+  background: #1e1e1e;
+}

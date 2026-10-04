@@ -46,6 +46,13 @@ no está conectada.
   - `lia/manifiesto.ts` — Lia y sus estilos. `lia/clasico/` — el estilo
     clásico: `Dibujo.tsx` (SVG del personaje), `renderizador.ts` (escribe
     los `transform` directamente en el SVG), `trazos.ts` y `lia.css`.
+  - `paletas.ts` — colores: seis paletas fijas y el color libre, que sale de
+    un matiz (`paletaLibre`, con el contorno corregido para que contraste
+    sobre fondos claros y oscuros). Son datos puros; cada estilo los usa a su
+    manera. En el clásico, `lia/clasico/tonos.ts` deriva de la paleta los
+    tonos que no son slots (burbujas, charquito, "z", gota, marca de enojo).
+    Menta conserva exactamente los colores originales: con ella las huellas
+    de la página de revisión no cambian. Se verifica con `pnpm verificar`.
 - `src/estado/` — sesiones de Claude Code: `sesiones.ts` (evento → estado,
   registro por `session_id`, prioridad y caducidad), `useEstadoLia.ts` (escucha
   el evento `lia-evento`) y `config.ts` (tiempos).
@@ -198,8 +205,14 @@ no está conectada.
 ## Preferencias
 
 - `ajustes.json`, en la carpeta de datos de la app, es lo único que Lia
-  guarda: modo privado, ocultarse por inactividad y sus minutos, volumen y
-  las dos casillas de sonido. Nada de uso, horarios ni contenido.
+  guarda: modo privado, ocultarse por inactividad y sus minutos, volumen,
+  las dos casillas de sonido y la apariencia. Nada de uso, horarios ni
+  contenido.
+- Apariencia: solo se guardan identificadores (`mascota`, `estilo`,
+  `paleta`) y el `matiz` del color libre. Rust comprueba que tengan forma de
+  identificador y la interfaz resuelve uno desconocido al valor por defecto
+  (lia, clásico, menta) con `estiloDe` y `paletaDe`, sin errores. El color se
+  elige en Ajustes (`src/ajustes/Apariencia.tsx`) y cambia en caliente.
 - Se cambian desde la bandeja o desde Ajustes; Rust las normaliza, las guarda
   y avisa a las ventanas con `lia-preferencias`.
 
@@ -284,7 +297,8 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   agente (`PuestoEnLaCara` y `ObjetoDeTrabajo`).
 - Página de revisión (solo desarrollo): `http://localhost:1420/?revision`
   muestra a Lia congelada en cada estado y reacción y compara la huella de
-  cada dibujo con `src/revision/referencia.json`. Tras tocar el motor o un
+  cada dibujo con `src/revision/referencia.json`. Con `&paleta=lila` (o
+  `&paleta=libre&matiz=210`) y `&fondo=claro` se revisan los colores. Tras tocar el motor o un
   renderizador, las huellas deben seguir idénticas. Si cambias el dibujo a
   propósito, actualiza la referencia con `window.__revision`.
 - Caricias seguidas durante unos segundos la "encantan": dos botes, meneo y

@@ -15,6 +15,7 @@ import { useActividad } from "./estado/useActividad";
 import { useEstadoLia } from "./estado/useEstadoLia";
 import { Mascota } from "./mascot/Mascota";
 import { estiloDe } from "./mascotas/indice";
+import { paletaDe } from "./mascotas/paletas";
 import { SUENO } from "./mascot/useAnimacionLia";
 import type { FaseSueno } from "./mascot/useAnimacionLia";
 import { TarjetaAviso } from "./permisos/TarjetaAviso";
@@ -390,7 +391,8 @@ function App() {
     <div className={`escena${lado === "izquierda" ? " escena-izquierda" : ""}`}>
       <div className="lia-caja">
         <Mascota
-          estilo={estiloDe()}
+          estilo={estiloDe(preferencias.mascota, preferencias.estilo)}
+          paleta={paletaDe(preferencias.paleta, preferencias.matiz)}
           estado={estadoMostrado}
           sueno={sueno}
           actividad={actividad}

@@ -51,6 +51,33 @@ pub struct Preferencias {
     pub sonidos_juego: bool,
     /// La isla baja al dejar el cursor en el borde superior de la pantalla.
     pub isla_al_borde: bool,
+    /// Apariencia: solo identificadores. Qué mascotas, estilos y paletas
+    /// existen lo sabe la interfaz, que resuelve un id desconocido al valor
+    /// por defecto; aquí solo se comprueba que tengan forma de identificador.
+    pub mascota: String,
+    pub estilo: String,
+    pub paleta: String,
+    /// Matiz del color libre, en grados (0 a 359).
+    pub matiz: u32,
+}
+
+const MASCOTA_POR_DEFECTO: &str = "lia";
+const ESTILO_POR_DEFECTO: &str = "clasico";
+const PALETA_POR_DEFECTO: &str = "menta";
+const MATIZ_POR_DEFECTO: u32 = 155;
+
+/// Un identificador de apariencia: corto y solo con minúsculas, cifras y
+/// guiones. Cualquier otra cosa se cambia por el valor por defecto.
+fn identificador(valor: String, por_defecto: &str) -> String {
+    let valido = (1..=24).contains(&valor.len())
+        && valor
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
+    if valido {
+        valor
+    } else {
+        por_defecto.to_string()
+    }
 }
 
 impl Default for Preferencias {
@@ -63,6 +90,10 @@ impl Default for Preferencias {
             sonidos_avisos: true,
             sonidos_juego: true,
             isla_al_borde: true,
+            mascota: MASCOTA_POR_DEFECTO.to_string(),
+            estilo: ESTILO_POR_DEFECTO.to_string(),
+            paleta: PALETA_POR_DEFECTO.to_string(),
+            matiz: MATIZ_POR_DEFECTO,
         }
     }
 }
@@ -78,6 +109,12 @@ impl Preferencias {
         } else {
             0.35
         };
+        self.mascota = identificador(self.mascota, MASCOTA_POR_DEFECTO);
+        self.estilo = identificador(self.estilo, ESTILO_POR_DEFECTO);
+        self.paleta = identificador(self.paleta, PALETA_POR_DEFECTO);
+        if self.matiz >= 360 {
+            self.matiz = MATIZ_POR_DEFECTO;
+        }
         self
     }
 }
@@ -368,8 +405,34 @@ mod pruebas {
                 "volumen",
                 "sonidosAvisos",
                 "sonidosJuego",
-                "islaAlBorde"
+                "islaAlBorde",
+                "mascota",
+                "estilo",
+                "paleta",
+                "matiz"
             ]
         );
+    }
+
+    #[test]
+    fn la_apariencia_invalida_vuelve_a_los_valores_por_defecto() {
+        let leidas: Preferencias = serde_json::from_str(
+            r#"{"mascota":"../otra","estilo":"","paleta":"Lila Ñ","matiz":999}"#,
+        )
+        .unwrap();
+        let normales = leidas.normalizar();
+        assert_eq!(normales.mascota, "lia");
+        assert_eq!(normales.estilo, "clasico");
+        assert_eq!(normales.paleta, "menta");
+        assert_eq!(normales.matiz, 155);
+        // Un id con buena forma se conserva aunque Rust no lo conozca: la
+        // interfaz decide si existe.
+        let validas: Preferencias =
+            serde_json::from_str(r#"{"paleta":"libre","matiz":210}"#).unwrap();
+        let validas = validas.normalizar();
+        assert_eq!(validas.paleta, "libre");
+        assert_eq!(validas.matiz, 210);
+        // Un tipo inesperado invalida el archivo entero, sin error.
+        assert!(serde_json::from_str::<Preferencias>(r#"{"paleta":7}"#).is_err());
     }
 }

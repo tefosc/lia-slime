@@ -175,3 +175,61 @@ button:disabled {
 .ajustes input {
   accent-color: #12b886;
 }
+
+/* Apariencia: una muestra por paleta. */
+.paletas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button.paleta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 72px;
+  padding: 8px 6px 6px;
+  border: 1.5px solid #d5e5dc;
+  border-radius: 10px;
+  background: #ffffff;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+button.paleta[aria-checked="true"] {
+  border-color: #12b886;
+  background: #eefaf5;
+}
+
+.muestra {
+  display: block;
+}
+
+/* El control del tono muestra el círculo cromático. */
+.campo input.matiz {
+  max-width: 320px;
+  height: 10px;
+  border-radius: 5px;
+  appearance: none;
+  background: linear-gradient(
+    to right,
+    hsl(0 60% 79%),
+    hsl(60 60% 79%),
+    hsl(120 60% 79%),
+    hsl(180 60% 79%),
+    hsl(240 60% 79%),
+    hsl(300 60% 79%),
+    hsl(360 60% 79%)
+  );
+}
+
+.campo input.matiz::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #23302a;
+  border-radius: 50%;
+  appearance: none;
+  background: #ffffff;
+}

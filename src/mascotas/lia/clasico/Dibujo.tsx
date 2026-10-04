@@ -2,6 +2,9 @@ import type { Actividad } from "../../../estado/useActividad";
 import { POSES } from "../../../mascot/poses";
 import type { PropsDibujo } from "../../../mascot/renderizador";
 import type { EstadoLia } from "../../../mascot/tipos";
+import type { Paleta } from "../../paletas";
+import { tonosDe } from "./tonos";
+import type { Tonos } from "./tonos";
 import { sombraPara } from "./trazos";
 import "./lia.css";
 
@@ -12,7 +15,14 @@ const TINTA = "#2B2B2B";
 const LENGUA = "#FF7F9E";
 const AMARILLO = "#FFD95A";
 const AMARILLO_BORDE = "#E0A800";
+/** Pétalo de la ayudante, que no cambia con la paleta. */
 const PETALO_BORDE = "#F28FB2";
+
+/** Colores con los que se pinta: la paleta y los tonos que salen de ella. */
+interface Colores {
+  paleta: Paleta;
+  tonos: Tonos;
+}
 const PETALO_CONTORNO =
   "M0 0 C-12 -8 -14 -22 -6 -27 L0 -22 L6 -27 C14 -22 12 -8 0 0 Z";
 
@@ -291,21 +301,21 @@ function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
 }
 
 /** Las 5 capas del pétalo, con el origen en su punta inferior. */
-function Petalo() {
+function Petalo({ petalo }: { petalo: Paleta["petalo"] }) {
   return (
     <>
-      <path d={PETALO_CONTORNO} fill="#FFC1D6" />
+      <path d={PETALO_CONTORNO} fill={petalo.base} />
       <path
         d="M0 0 C-6 -4 -9 -9 -9.5 -13 C-5 -10 5 -10 9.5 -13 C9 -9 6 -4 0 0 Z"
-        fill="#F79BBB"
+        fill={petalo.oscura}
       />
       <path
         d="M-9 -20 C-10 -24 -8 -26 -6 -27 L0 -22 L6 -27 C8 -26 10 -24 9 -20 C5 -16 -5 -16 -9 -20 Z"
-        fill="#FFE3EC"
+        fill={petalo.luz}
       />
       <path
         d="M0 -2 L0 -13 M0 -6 L-4 -14 M0 -6 L4 -14"
-        stroke={PETALO_BORDE}
+        stroke={petalo.contorno}
         strokeWidth="0.6"
         fill="none"
         strokeLinecap="round"
@@ -313,7 +323,7 @@ function Petalo() {
       <path
         d={PETALO_CONTORNO}
         fill="none"
-        stroke={PETALO_BORDE}
+        stroke={petalo.contorno}
         strokeWidth="0.8"
         strokeLinejoin="round"
       />
@@ -322,12 +332,20 @@ function Petalo() {
 }
 
 /** Elementos que solo aparecen en algunos estados. */
-function Extras({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }) {
+function Extras({
+  estado,
+  actividad,
+  colores,
+}: {
+  estado: EstadoLia;
+  actividad: Actividad;
+  colores: Colores;
+}) {
   switch (estado) {
     case "trabajando":
       return (
         <>
-          <BurbujaActividad actividad={actividad} />
+          <BurbujaActividad actividad={actividad} colores={colores} />
           <ObjetoDeTrabajo actividad={actividad} />
         </>
       );
@@ -353,8 +371,8 @@ function Extras({ estado, actividad }: { estado: EstadoLia; actividad: Actividad
           <g id="lia-petalo-2" transform="translate(-44,-34) rotate(-50) scale(0.5)">
             <path
               d={PETALO_CONTORNO}
-              fill="#FFD3E2"
-              stroke={PETALO_BORDE}
+              fill={colores.tonos.petaloSuelto}
+              stroke={colores.paleta.petalo.contorno}
               strokeWidth="1.4"
               strokeLinejoin="round"
             />
@@ -561,21 +579,21 @@ function ObjetoDeTrabajo({ actividad }: { actividad: Actividad }) {
  * Va a la izquierda de la cabeza, donde sale la de alerta. El dibujo cambia
  * con un fundido corto; no se mueve ni parpadea, para no distraer.
  */
-function BurbujaActividad({ actividad }: { actividad: Actividad }) {
+function BurbujaActividad({ actividad, colores }: { actividad: Actividad; colores: Colores }) {
   const trazo = {
     fill: "none",
-    stroke: "#2F8A63",
+    stroke: colores.tonos.tinta,
     strokeWidth: 1.9,
     strokeLinecap: "round",
     strokeLinejoin: "round",
   } as const;
   return (
     <g id="lia-actividad" pointerEvents="none">
-      <circle cx="-48" cy="-46" r="12" fill="#FFFFFF" stroke="#45B084" strokeWidth="1.5" />
+      <circle cx="-48" cy="-46" r="12" fill="#FFFFFF" stroke={colores.paleta.contorno} strokeWidth="1.5" />
       {/* `key`: al cambiar de actividad el dibujo entra con su fundido. */}
       <g key={actividad} className="lia-actividad-dibujo" transform="translate(-48,-46)">
         {actividad === "pensar" && (
-          <g fill="#2F8A63">
+          <g fill={colores.tonos.tinta}>
             <circle className="lia-punto lia-punto-1" cx="-5" cy="0" r="1.8" />
             <circle className="lia-punto lia-punto-2" cx="0" cy="0" r="1.8" />
             <circle className="lia-punto lia-punto-3" cx="5" cy="0" r="1.8" />
@@ -624,14 +642,14 @@ function BurbujaActividad({ actividad }: { actividad: Actividad }) {
  * Dibujada con formas; el número de resultados sin leer solo aparece si hay
  * más de uno.
  */
-function BurbujaResultado({ sinLeer }: { sinLeer: number }) {
+function BurbujaResultado({ sinLeer, colores }: { sinLeer: number; colores: Colores }) {
   return (
     <g id="lia-burbuja" className="lia-burbuja-resultado">
-      <circle cx="54" cy="-40" r="11" fill="#FFFFFF" stroke="#45B084" strokeWidth="1.5" />
+      <circle cx="54" cy="-40" r="11" fill="#FFFFFF" stroke={colores.paleta.contorno} strokeWidth="1.5" />
       <path
         d="M48.5 -40 L52.5 -36 L59.5 -44"
         fill="none"
-        stroke="#2F8A63"
+        stroke={colores.tonos.tinta}
         strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -661,7 +679,9 @@ function BurbujaResultado({ sinLeer }: { sinLeer: number }) {
  * animación; el movimiento lo escribe el renderizador clásico sobre estos
  * mismos elementos, por su id.
  */
-export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDibujo) {
+export function DibujoClasico({ estado, resultadosSinLeer, actividad, paleta }: PropsDibujo) {
+  const tonos = tonosDe(paleta);
+  const colores: Colores = { paleta, tonos };
   // La elevación, la sombra y la pose del pétalo las escribe el motor de
   // animación (useAnimacionLia). Aquí solo van los valores de reposo de
   // `inactivo`, que son constantes para que React no los vuelva a escribir.
@@ -687,7 +707,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDib
             rx="58"
             ry="10"
             fill="none"
-            stroke="#74D0A8"
+            stroke={paleta.banda}
             strokeWidth="0.8"
             opacity="0"
           />
@@ -696,25 +716,25 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDib
             cy="40"
             rx="46"
             ry="7"
-            fill="#9BE3C3"
-            stroke="#45B084"
+            fill={paleta.cuerpo}
+            stroke={paleta.contorno}
             strokeWidth="1"
           />
-          <ellipse cx="0" cy="39" rx="32" ry="3.5" fill="#B8EDD6" />
+          <ellipse cx="0" cy="39" rx="32" ry="3.5" fill={tonos.charcoLuz} />
           <ellipse cx="-17" cy="38" rx="6" ry="1.4" fill="#FFFFFF" />
         </g>
         <g id="lia-flotante">
           <path
             id="lia-cuerpo"
             d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z"
-            fill="#9BE3C3"
-            stroke="#45B084"
+            fill={paleta.cuerpo}
+            stroke={paleta.contorno}
             strokeWidth="1.2"
           />
           <path
             id="lia-banda"
             d="M-42 14 C-34 30 -18 38 0 38 C18 38 34 30 42 14 C28 24 14 26 0 26 C-14 26 -28 24 -42 14 Z"
-            fill="#74D0A8"
+            fill={paleta.banda}
           />
           <g id="lia-brillo">
             <path
@@ -738,7 +758,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDib
             <g id="lia-boca">
               <Boca key={estado} estado={estado} actividad={actividad} />
             </g>
-            <g id="lia-mejillas" fill="#FF9EB5" opacity={POSES[estado].mejillas}>
+            <g id="lia-mejillas" fill={paleta.mejillas} opacity={POSES[estado].mejillas}>
               <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
               <ellipse cx="27" cy="13" rx="5.5" ry="3" />
             </g>
@@ -747,7 +767,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDib
             {estado === "inactivo" && (
               <>
                 {/* Mejillas más sonrosadas al recibir caricias. */}
-                <g id="lia-mejillas-feliz" fill="#FF9EB5" opacity="0">
+                <g id="lia-mejillas-feliz" fill={paleta.mejillas} opacity="0">
                   <ellipse cx="-27" cy="13" rx="6.5" ry="3.6" />
                   <ellipse cx="27" cy="13" rx="6.5" ry="3.6" />
                 </g>
@@ -770,7 +790,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDib
                   opacity="0"
                   transform="translate(-36,-31) scale(0)"
                   fill="none"
-                  stroke="#E8745A"
+                  stroke={tonos.marcaEnojo}
                   strokeWidth="1.9"
                   strokeLinecap="round"
                 >
@@ -789,20 +809,20 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDib
           <g id="lia-gota" opacity="0">
             <path
               d="M0 -4.5 C1.8 -1.6 3 0.2 3 2 A3 3 0 0 1 -3 2 C-3 0.2 -1.8 -1.6 0 -4.5 Z"
-              fill="#8FD8F5"
-              stroke="#4BAEDB"
+              fill={tonos.gota.relleno}
+              stroke={tonos.gota.borde}
               strokeWidth="0.8"
               strokeLinejoin="round"
             />
             <circle cx="-1" cy="1.8" r="0.8" fill="#fff" opacity="0.8" />
           </g>
           <g id="lia-petalo" transform={PETALO_BASE}>
-            <Petalo />
+            <Petalo petalo={paleta.petalo} />
           </g>
         </g>
         {/* Sube con el cuerpo, pero no se deforma con él. */}
         <g id="lia-extras">
-          <Extras key={estado} estado={estado} actividad={actividad} />
+          <Extras key={estado} estado={estado} actividad={actividad} colores={colores} />
           {/* Corazones de las caricias y estrellas del mareo: el motor los
               mueve; no reciben el mouse. */}
           {estado === "inactivo" && (
@@ -826,7 +846,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDib
                   id={`lia-z-${i}`}
                   d="M-3 -3 L3 -3 L-3 3 L3 3"
                   fill="none"
-                  stroke="#5F8F7C"
+                  stroke={tonos.zzz}
                   strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -848,7 +868,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad }: PropsDib
               </g>
             </g>
           )}
-          {resultadosSinLeer > 0 && <BurbujaResultado sinLeer={resultadosSinLeer} />}
+          {resultadosSinLeer > 0 && <BurbujaResultado sinLeer={resultadosSinLeer} colores={colores} />}
         </g>
       </g>
     </svg>

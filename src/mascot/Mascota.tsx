@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { PointerEvent } from "react";
 import type { Actividad } from "../estado/useActividad";
+import type { Paleta } from "../mascotas/paletas";
 import { useWindowDrag } from "../useWindowDrag";
 import { registrarZonasDeMascota } from "../zonas";
 import { crearDetectorDeCaricias } from "./caricias";
@@ -12,6 +13,8 @@ import type { Guion, OpcionesSueno } from "./useAnimacionLia";
 interface MascotaProps {
   /** Cómo se dibuja: el estilo elegido de la mascota elegida. */
   estilo: EstiloDeMascota;
+  /** Con qué colores se pinta. */
+  paleta: Paleta;
   estado: EstadoLia;
   /** Resultados sin leer: con alguno se ve la burbuja ✓. */
   resultadosSinLeer?: number;
@@ -33,6 +36,7 @@ interface MascotaProps {
  */
 export function Mascota({
   estilo,
+  paleta,
   estado,
   resultadosSinLeer = 0,
   onClickBurbuja,
@@ -111,6 +115,7 @@ export function Mascota({
         estado={estado}
         resultadosSinLeer={resultadosSinLeer}
         actividad={actividad}
+        paleta={paleta}
       />
     </div>
   );
