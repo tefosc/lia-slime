@@ -69,6 +69,7 @@ pub fn run() {
                     receptor::iniciar(handle.clone(), pendientes, ajustes_guardados, token);
                 handle.manage(estado);
                 cursor::iniciar(handle.clone());
+                ajustes::reparar_inicio_automatico(&handle);
                 if !con_windows {
                     ajustes::abrir_en_primera_ejecucion(&handle);
                 }

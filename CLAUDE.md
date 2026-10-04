@@ -228,6 +228,11 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
 - Al arrancar con Windows, Lia saluda con un globo (`TarjetaSaludo`): es
   solo un mensaje, no abre ni lee nada. En desarrollo se prueba con
   `scripts/simular-evento.ps1 -Saludo`.
+- El inicio con Windows se registra con la ruta del ejecutable que lo
+  activa. Por eso solo se puede activar desde la versión instalada (una
+  compilación de desarrollo lo rechaza: Windows arrancaría esa copia, que
+  necesita el servidor de Vite y abre una consola), y la versión instalada lo
+  vuelve a registrar con su ruta en cada arranque si está activado.
 - Plugins oficiales: `tauri-plugin-single-instance` (una sola Lia) y
   `tauri-plugin-autostart` (inicio con Windows, clave Run del usuario). Al
   arrancar con Windows (`--inicio-automatico`) el receptor y la ventana

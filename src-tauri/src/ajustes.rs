@@ -182,8 +182,32 @@ pub fn inicio_automatico_activo(app: &AppHandle) -> bool {
     app.autolaunch().is_enabled().unwrap_or(false)
 }
 
+/// Si el inicio con Windows está activado, lo vuelve a registrar con la ruta
+/// de este ejecutable. Así, si quedó apuntando a otra copia de Lia (una
+/// instalación anterior o una compilación de desarrollo), se corrige solo al
+/// abrir la versión instalada. Solo en compilaciones de producción.
+pub fn reparar_inicio_automatico(app: &AppHandle) {
+    if cfg!(debug_assertions) {
+        return;
+    }
+    let gestor = app.autolaunch();
+    if gestor.is_enabled().unwrap_or(false) {
+        let _ = gestor.enable();
+    }
+}
+
 /// Activa o desactiva el inicio con Windows y lo refleja en la bandeja.
 pub fn fijar_inicio_automatico(app: &AppHandle, valor: bool) -> Result<bool, String> {
+    // Depende de Windows: el inicio se registra con la ruta del ejecutable
+    // actual. Activarlo desde una compilación de desarrollo dejaría a Windows
+    // arrancando esa copia, que necesita el servidor de desarrollo y abre una
+    // consola. Desactivarlo sí se permite, para poder deshacerlo.
+    if cfg!(debug_assertions) && valor {
+        bandeja::marcar_inicio(app, inicio_automatico_activo(app));
+        return Err(
+            "El inicio con Windows solo se activa desde la versión instalada de Lia.".to_string(),
+        );
+    }
     let gestor = app.autolaunch();
     let resultado = if valor { gestor.enable() } else { gestor.disable() };
     let activo = inicio_automatico_activo(app);
