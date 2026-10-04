@@ -51,3 +51,6 @@ settings.local.json
 
 # Salidas de compilación (src-tauri/.gitignore cubre target y gen/schemas)
 target/
+
+# Copias de trabajo de otras ramas (git worktree)
+.worktrees/
