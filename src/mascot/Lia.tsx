@@ -5,7 +5,7 @@ import { crearDetectorDeCaricias } from "./caricias";
 import { POSES, sombraPara } from "./poses";
 import type { EstadoLia } from "./tipos";
 import type { Actividad } from "../estado/useActividad";
-import type { OpcionesSueno } from "./useAnimacionLia";
+import type { Guion, OpcionesSueno } from "./useAnimacionLia";
 import { useAnimacionLia } from "./useAnimacionLia";
 import "./lia.css";
 
@@ -444,6 +444,8 @@ interface LiaProps {
   sueno: OpcionesSueno;
   /** Qué está haciendo Claude: se ve en una burbuja mientras trabaja. */
   actividad?: Actividad;
+  /** Solo en la página de revisión (desarrollo): fotograma congelado. */
+  guion?: Guion;
 }
 
 export function Lia({
@@ -452,6 +454,7 @@ export function Lia({
   onClickBurbuja,
   sueno,
   actividad = "pensar",
+  guion,
 }: LiaProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const { tocar, acariciar, rozar } = useAnimacionLia(
@@ -459,6 +462,7 @@ export function Lia({
     estado,
     sueno,
     actividad,
+    guion,
   );
   const cajaDelCuerpo = () =>
     svgRef.current?.querySelector("#lia-cuerpo")?.getBoundingClientRect();

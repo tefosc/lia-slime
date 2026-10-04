@@ -1,0 +1,56 @@
+/* Página de revisión (solo desarrollo). */
+html,
+body,
+#root {
+  height: auto !important;
+  overflow: auto !important;
+  background: #4a4d57 !important;
+}
+
+.revision {
+  padding: 12px;
+  color: #eef2f3;
+  font: 13px/1.4 system-ui, "Segoe UI", sans-serif;
+}
+
+.revision h1 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.revision-casos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.revision figure {
+  margin: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #3b3d47;
+}
+
+.revision figure.distinto {
+  border-color: #ff7f9e;
+}
+
+.revision figure.igual {
+  border-color: #45b084;
+}
+
+.revision-lienzo {
+  overflow: hidden;
+}
+
+.revision figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 6px 5px;
+  font-size: 11px;
+}
+
+.revision code {
+  opacity: 0.6;
+}

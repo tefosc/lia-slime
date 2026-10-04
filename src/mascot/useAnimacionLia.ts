@@ -419,8 +419,54 @@ export function bocaEsfuerzo(t: number): string {
 /** Cuánto se encoge la sombra por cada unidad que sube el cuerpo. */
 const SOMBRA_POR_ALTURA = 0.015;
 
+/**
+ * Fuente de números al azar. Siempre es `Math.random`, salvo mientras la
+ * página de revisión (solo desarrollo) ejecuta un guion con semilla fija.
+ */
+let aleatorio: () => number = Math.random;
+
+/** Generador con semilla (mulberry32), para que un guion sea repetible. */
+function conSemilla(semilla: number): () => number {
+  let a = semilla >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Guion de la página de revisión (solo desarrollo): en lugar de animarse con
+ * el reloj, el motor avanza a pasos fijos hasta `hasta` segundos, ejecuta
+ * estas acciones por el camino y se queda en ese fotograma. Con la misma
+ * semilla, el resultado es siempre el mismo: sirve para comparar el dibujo
+ * antes y después de un cambio.
+ */
+export interface Guion {
+  semilla: number;
+  /** Segundo en el que se congela. */
+  hasta: number;
+  pasos: {
+    t: number;
+    accion:
+      | "tocar"
+      | "acariciar"
+      | "vueltas"
+      | "cursor"
+      | "adormecer"
+      | "derretir"
+      | "despertar";
+    /** Lado del toque, número de vueltas o x del cursor. */
+    valor?: number;
+    /** y del cursor. */
+    valor2?: number;
+  }[];
+}
+
 function azar(min: number, max: number): number {
-  return min + Math.random() * (max - min);
+  return min + aleatorio() * (max - min);
 }
 
 function enteroAzar(min: number, max: number): number {
@@ -463,7 +509,10 @@ export function useAnimacionLia(
   estado: EstadoLia,
   opcionesSueno: OpcionesSueno,
   actividad: Actividad = "pensar",
+  guion?: Guion,
 ): AccionesLia {
+  // El guion solo se mira al montar, y solo existe en desarrollo.
+  const guionInicial = useRef(import.meta.env.DEV ? guion : undefined).current;
   const actividadActual = useRef(actividad);
   actividadActual.current = actividad;
   const estadoActual = useRef(estado);
@@ -1523,6 +1572,8 @@ export function useAnimacionLia(
     // WebView2 aunque no se dibuje nada. Por eso se espera con un
     // temporizador y solo se pide el fotograma cuando toca.
     const pedir = (retraso = 0) => {
+      // Con un guion no hay bucle: el motor avanza a mano (ver el final).
+      if (guionInicial) return;
       if (cuadro !== 0 || espera !== 0 || document.hidden || oculta) return;
       if (retraso > 1) {
         espera = window.setTimeout(() => {
@@ -1717,7 +1768,7 @@ export function useAnimacionLia(
 
     // Solo en desarrollo: alimenta el detector con vueltas sintéticas para
     // probar sin mover el mouse. Vite lo excluye de la compilación final.
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV && !guionInicial) {
       window.__lia = {
         simularVueltas: (vueltas = 3, sentido = 1, velocidad = 1) => {
           detector = estadoInicial();
@@ -1769,6 +1820,7 @@ export function useAnimacionLia(
     // Temporizador de inactividad. No cuenta mientras haya algo pendiente,
     // una sesión trabajando, una reacción en curso o un arrastre.
     const vigilancia = window.setInterval(() => {
+      if (guionInicial) return;
       if (oculta || document.hidden || fase === "oculta") return;
       if (fase === "derritiendo" || fase === "despertando") return;
       const opciones = suenoActual.current;
@@ -1875,6 +1927,53 @@ export function useAnimacionLia(
     buscarCara();
     pedir();
 
+    // Página de revisión (solo desarrollo): avanza a pasos fijos, ejecuta el
+    // guion y se queda en el último fotograma.
+    if (import.meta.env.DEV && guionInicial) {
+      const PASO = 1 / 60;
+      aleatorio = conSemilla(guionInicial.semilla);
+      parpadeoInicio = -1;
+      proximoParpadeo = azar(PARPADEO.esperaMin, PARPADEO.esperaMax);
+      let siguiente = 0;
+      for (let t = 0; t < guionInicial.hasta; t += PASO) {
+        for (
+          let paso = guionInicial.pasos[siguiente];
+          paso && paso.t <= t;
+          paso = guionInicial.pasos[++siguiente]
+        ) {
+          switch (paso.accion) {
+            case "tocar":
+              alTocar.current?.(paso.valor ?? 0.3);
+              break;
+            case "acariciar":
+              alAcariciar.current?.();
+              break;
+            case "vueltas":
+              for (const m of muestrasDeVueltas(paso.valor ?? 3, 1, 1, 100, t)) {
+                procesarMuestra(m.x, m.y, m.t);
+              }
+              break;
+            case "cursor":
+              cursor = { x: paso.valor ?? 0, y: paso.valor2 ?? 0 };
+              ultimoCursor = tiempo;
+              break;
+            case "adormecer":
+              cambiarFase("adormecida");
+              break;
+            case "derretir":
+              empezarDerretir();
+              break;
+            case "despertar":
+              empezarDespertar();
+              break;
+          }
+        }
+        simular(PASO);
+        dibujar();
+      }
+      aleatorio = Math.random;
+    }
+
     return () => {
       detener();
       cancelado = true;
@@ -1888,7 +1987,7 @@ export function useAnimacionLia(
       alHaberActividad.current = null;
       alDescansar.current = null;
       window.clearInterval(vigilancia);
-      if (import.meta.env.DEV) delete window.__lia;
+      if (import.meta.env.DEV && !guionInicial) delete window.__lia;
       document.removeEventListener("visibilitychange", alCambiarVisibilidad);
       reducido.removeEventListener("change", alCambiarReducido);
       alCambiar.current = null;
