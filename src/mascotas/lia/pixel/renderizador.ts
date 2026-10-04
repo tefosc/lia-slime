@@ -10,7 +10,6 @@ import type { Paleta } from "../../paletas";
 import {
   ALTO_CUERPO,
   ANCHO_CUERPO,
-  BURBUJA_ACTIVIDAD,
   BURBUJA_ALERTA,
   BURBUJA_RESULTADO,
   CARAS,
@@ -29,6 +28,8 @@ import {
   ZETA_GRANDE,
 } from "./sprites";
 import type { Cara, Pixel } from "./sprites";
+import { BURBUJA, CARAS_DE_TRABAJO, CIFRAS, DERRETIRSE, DIBUJOS, OBJETOS } from "./trabajo";
+import type { Actividad } from "../../../estado/useActividad";
 
 // Renderizador de pixel art: pinta la pose en un canvas pequeño que el CSS
 // amplía sin suavizar. El motor es el mismo que en el clásico; aquí la pose
@@ -80,6 +81,11 @@ function coloresDe(paleta: Paleta): Colores {
     Z: hslAHex({ h: contorno.h, s: 25, l: 62 }),
     C: "#8FD8F5",
     c: "#FFFFFF",
+    S: "#3A3F4B",
+    s: "#E9EEF3",
+    T: "#8A94A6",
+    F: "#D9668F",
+    f: "#FFC1D6",
   };
 }
 
@@ -124,11 +130,55 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
   let cuerpo = { x: CENTRO - ANCHO_CUERPO / 2, y: BASE - ALTO_CUERPO + 1, w: ANCHO_CUERPO, h: ALTO_CUERPO };
   let burbuja: { x: number; y: number } | null = null;
 
+  // El fotograma se compone primero como una lista de órdenes. Si es igual
+  // al anterior no se toca el canvas: en reposo casi todos lo son, y pintar
+  // de más es lo que gasta CPU.
+  const ordenes: (string | number)[] = [];
+  let ultimaClave = "";
+  const lapiz = {
+    set fillStyle(valor: string) {
+      ordenes.push("c", valor);
+    },
+    set globalAlpha(valor: number) {
+      ordenes.push("a", valor);
+    },
+    fillRect(x: number, y: number, w: number, h: number) {
+      ordenes.push("r", x, y, w, h);
+    },
+  };
+  const volcar = () => {
+    const clave = ordenes.join(",");
+    if (ctx && clave !== ultimaClave) {
+      ultimaClave = clave;
+      ctx.clearRect(0, 0, LADO, LADO);
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < ordenes.length; ) {
+        const orden = ordenes[i];
+        if (orden === "c") {
+          ctx.fillStyle = ordenes[i + 1] as string;
+          i += 2;
+        } else if (orden === "a") {
+          ctx.globalAlpha = ordenes[i + 1] as number;
+          i += 2;
+        } else {
+          ctx.fillRect(
+            ordenes[i + 1] as number,
+            ordenes[i + 2] as number,
+            ordenes[i + 3] as number,
+            ordenes[i + 4] as number,
+          );
+          i += 5;
+        }
+      }
+    }
+    ordenes.length = 0;
+  };
+
   const punto = (x: number, y: number, letra: string) => {
     const color = colores[letra];
-    if (!ctx || !color) return;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, 1, 1);
+    if (!color) return;
+    lapiz.fillStyle = color;
+    lapiz.fillRect(x, y, 1, 1);
   };
   const sprite = (filas: string[], x: number, y: number) => {
     filas.forEach((fila, j) => {
@@ -154,7 +204,7 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
     return CARAS[pose.estado];
   };
 
-  const pintar = () => {
+  const componer = () => {
     const pose = ultima;
     if (!ctx || !lienzo || !pose) return;
     const ahora = performance.now();
@@ -171,8 +221,11 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
       }
     }
     const sinLeer = Number(datos.sinLeer) || 0;
+    const actividad = (datos.actividad && datos.actividad in DIBUJOS
+      ? datos.actividad
+      : "pensar") as Actividad;
+    const trabajando = pose.estado === "trabajando";
 
-    ctx.clearRect(0, 0, LADO, LADO);
     const { efectos } = pose;
     const visible = escalon(1 - efectos.fundido);
     if (visible <= 0) return;
@@ -180,34 +233,104 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
     const alturaPx = Math.round(pose.cuerpo.altura * POR_UNIDAD);
 
     // Sombra: una línea de un píxel cuyo ancho cambia por pasos.
-    ctx.globalAlpha = 0.16 * visible;
+    lapiz.globalAlpha = 0.16 * visible;
     const anchoSombra = Math.max(4, Math.round(13 * pose.sombra.escala) * 2);
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(CENTRO - anchoSombra / 2, BASE + 3, anchoSombra, 1);
+    lapiz.fillStyle = "#000000";
+    lapiz.fillRect(CENTRO - anchoSombra / 2, BASE + 3, anchoSombra, 1);
 
-    // Charquito: aparece mientras el cuerpo se deshace.
-    if (charco > 0.02) {
-      ctx.globalAlpha = escalon(charco) * visible;
-      ctx.fillStyle = colores.O;
-      ctx.fillRect(CENTRO - 14, BASE + 2, 28, 1);
-      ctx.fillRect(CENTRO - 12, BASE + 1, 24, 1);
-      ctx.fillRect(CENTRO - 12, BASE + 3, 24, 1);
-      ctx.fillStyle = colores.B;
-      ctx.fillRect(CENTRO - 13, BASE + 2, 26, 1);
-      ctx.fillStyle = colores.W;
-      ctx.fillRect(CENTRO - 7, BASE + 2, 3, 1);
+    // Derretirse y volver a formarse: fotogramas dibujados, elegidos por lo
+    // que queda del cuerpo (de 1, entero, a 0, charquito).
+    const queda = pose.cuerpo.escalaY * (1 - charco);
+    const derritiendose = charco > 0.02 || (pose.cara.dormida > 0.5 && pose.cuerpo.escalaY < 0.82);
+    const fotograma = !derritiendose
+      ? -1
+      : queda > 0.72
+        ? 0
+        : queda > 0.6
+          ? 1
+          : queda > 0.47
+            ? 2
+            : queda > 0.34
+              ? 3
+              : queda > 0.22
+                ? 4
+                : queda > 0.12
+                  ? 5
+                  : queda > 0.05
+                    ? 6
+                    : 7;
+
+    // Charquito: lo que queda al final.
+    if (fotograma === 7) {
+      lapiz.globalAlpha = visible;
+      lapiz.fillStyle = colores.O;
+      lapiz.fillRect(CENTRO - 14, BASE, 28, 1);
+      lapiz.fillRect(CENTRO - 12, BASE - 1, 24, 1);
+      lapiz.fillRect(CENTRO - 12, BASE + 1, 24, 1);
+      lapiz.fillStyle = colores.B;
+      lapiz.fillRect(CENTRO - 13, BASE, 26, 1);
+      lapiz.fillStyle = colores.W;
+      lapiz.fillRect(CENTRO - 7, BASE, 3, 1);
       if (efectos.charquito.onda.visible) {
-        ctx.fillStyle = colores.D;
+        lapiz.fillStyle = colores.D;
         const medio = Math.round(15 + 4 * efectos.charquito.onda.escala);
-        ctx.fillRect(CENTRO - medio - 2, BASE + 2, 2, 1);
-        ctx.fillRect(CENTRO + medio, BASE + 2, 2, 1);
+        lapiz.fillRect(CENTRO - medio - 2, BASE, 2, 1);
+        lapiz.fillRect(CENTRO + medio, BASE, 2, 1);
       }
+    }
+
+    if (fotograma >= 0) {
+      lapiz.globalAlpha = visible;
+      const perfil = DERRETIRSE[fotograma];
+      if (perfil) {
+        const alto = perfil.length;
+        const arriba = BASE + 1 - alto;
+        perfil.forEach((medio, j) => {
+          const y = arriba + j;
+          // Con dos filas, la de arriba no es contorno: quedaría una raya.
+          const borde = (j === 0 && alto > 2) || j === alto - 1;
+          for (let x = CENTRO - medio; x < CENTRO + medio; x++) {
+            const orilla = x === CENTRO - medio || x === CENTRO + medio - 1;
+            // El contorno también cubre los escalones entre filas.
+            const escalonado =
+              Math.abs(x + 0.5 - CENTRO) > Math.min(perfil[j - 1] ?? 0, perfil[j + 1] ?? 0) - 0.5;
+            punto(x, y, borde || orilla || escalonado ? "O" : j >= alto - Math.ceil(alto / 4) - 1 ? "D" : "B");
+          }
+        });
+        // Brillo y, mientras aún tiene forma, los ojos cerrados.
+        if (alto >= 3) {
+          punto(CENTRO - perfil[1] + 3, arriba + 1, "W");
+          punto(CENTRO - perfil[1] + 4, arriba + 1, "W");
+        }
+        if (alto >= 10) {
+          const ojos = arriba + Math.round(alto * 0.5);
+          for (const x of [-7, -6, -5, 4, 5, 6]) punto(CENTRO + x, ojos, "E");
+        }
+        // El pétalo queda recostado encima.
+        sprite(PETALOS.caido.sprite, CENTRO + 2, arriba - PETALOS.caido.sprite.length + 1);
+        cuerpo = { x: CENTRO - 16, y: arriba, w: 32, h: alto };
+      } else {
+        sprite(PETALOS.caido.sprite, CENTRO - 2, BASE - 4);
+      }
+      burbuja = null;
+      lapiz.globalAlpha = 1;
+      return;
     }
 
     // Cuerpo con su cara, en una rejilla que luego se remuestrea.
     const rejilla = CUERPO.map((fila) => [...fila]);
     if (pose.cara.visible > 0.5) {
-      const cara = caraDe(pose, ahora);
+      const reaccion =
+        pose.cara.mareo > 0.5 ||
+        pose.cara.dormida > 0.5 ||
+        pose.cara.enojo > 0.5 ||
+        pose.cara.sorpresa > 0.5 ||
+        pose.cara.feliz > 0.5;
+      // Trabajando, la cara y lo que lleva puesto dependen de la actividad.
+      const deTrabajo = trabajando && !reaccion ? CARAS_DE_TRABAJO[actividad] : null;
+      const cara: Cara = deTrabajo
+        ? { ojos: deTrabajo.ojos, boca: deTrabajo.boca, abiertos: true }
+        : caraDe(pose, ahora);
       const cerrados = cara.abiertos && pose.ojos.apertura < 0.55;
       // La mirada desplaza los ojos abiertos uno o dos píxeles.
       const dx = cara.abiertos ? Math.max(-2, Math.min(2, Math.round(pose.ojos.x * POR_UNIDAD))) : 0;
@@ -222,6 +345,7 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
       };
       poner(cerrados ? PARPADEO : cara.ojos, dx, cerrados ? 0 : dy);
       poner(cara.boca, 0, 0);
+      if (deTrabajo?.puesto) poner(deTrabajo.puesto, 0, 0);
     }
 
     // Aplastar y estirar por vecino más cercano, anclado en la base.
@@ -232,7 +356,7 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
     // Inclinación: cada fila se desplaza un número entero de píxeles.
     const inclinacion = Math.tan((pose.cuerpo.giro * Math.PI) / 180);
     const cizalla = (fila: number) => Math.round((h - 1 - fila) * inclinacion);
-    ctx.globalAlpha = escalon(pose.cuerpo.opacidad) * visible;
+    lapiz.globalAlpha = visible;
     for (let ty = 0; ty < h; ty++) {
       const origen = rejilla[Math.min(ALTO_CUERPO - 1, Math.floor((ty * ALTO_CUERPO) / h))];
       const sx = cizalla(ty);
@@ -256,7 +380,7 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
     );
 
     // Efectos: sprites pequeños, sin escalar ni girar.
-    ctx.globalAlpha = visible;
+    lapiz.globalAlpha = visible;
     const g = efectos.gota;
     if (g.opacidad > 0.3) sprite(GOTA, aX(g.x) - 1, aY(g.y) - alturaPx - 2);
     if (efectos.marcaEnojo.opacidad > 0.4) sprite(MARCA_ENOJO, aX(-36) - 1, aY(-31) - 1);
@@ -276,7 +400,13 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
 
     burbuja = null;
     if (pose.estado === "necesita") sprite(BURBUJA_ALERTA, 7, 16 - alturaPx);
-    if (pose.estado === "trabajando") sprite(BURBUJA_ACTIVIDAD, 7, 16 - alturaPx);
+    if (trabajando) {
+      sprite(BURBUJA, 5, 14 - alturaPx);
+      sprite(DIBUJOS[actividad], 7, 16 - alturaPx);
+      // El objeto de trabajo va delante o al lado, sin deformarse.
+      const objeto = OBJETOS[actividad];
+      if (objeto) sprite(objeto.sprite, objeto.x, BASE - objeto.arriba - alturaPx);
+    }
     if (pose.estado === "termino") {
       // Destellos de dos fotogramas que se alternan.
       const turno = Math.floor(ahora / 400) % 2 === 0;
@@ -287,8 +417,20 @@ export function crearRenderizadorPixel(contenedor: HTMLElement): Renderizador {
     if (sinLeer > 0) {
       burbuja = { x: 39, y: 18 - alturaPx };
       sprite(BURBUJA_RESULTADO, burbuja.x, burbuja.y);
+      if (sinLeer > 1) {
+        // Número de resultados sin leer, en una chapa rosa.
+        const cifra = CIFRAS[sinLeer > 9 ? "+" : String(sinLeer)];
+        lapiz.fillStyle = colores.H;
+        lapiz.fillRect(burbuja.x + 4, burbuja.y - 4, 5, 7);
+        if (cifra) sprite(cifra, burbuja.x + 5, burbuja.y - 3);
+      }
     }
-    ctx.globalAlpha = 1;
+    lapiz.globalAlpha = 1;
+  };
+
+  const pintar = () => {
+    componer();
+    volcar();
   };
 
   /** De píxeles lógicos a píxeles CSS de la ventana. */

@@ -53,7 +53,12 @@ no está conectada.
     cuantiza la pose: 15 fps como mucho, desplazamientos enteros, aplastar y
     estirar por vecino más cercano anclado en la base, inclinación por
     cizalla de filas y variantes del pétalo dibujadas a mano en vez de
-    girarlo. Los disfraces aún no existen en pixel art (`conDisfraces`).
+    girarlo. `trabajo.ts` tiene lo que cambia con la actividad (dibujo de la
+    burbuja, cara, gafas, lupa, libro, portátil, ayudante), los fotogramas de
+    derretirse (perfiles dibujados a mano) y las cifras de la burbuja ✓. El
+    fotograma se compone como lista de órdenes y solo se pinta si cambió:
+    así en reposo gasta menos CPU que el clásico (medido: 0,4 % frente a
+    0,7 %). Los disfraces aún no existen en pixel art (`conDisfraces`).
     Depende de WebView2: `image-rendering: pixelated`.
   - `paletas.ts` — colores: seis paletas fijas y el color libre, que sale de
     un matiz (`paletaLibre`, con el contorno corregido para que contraste

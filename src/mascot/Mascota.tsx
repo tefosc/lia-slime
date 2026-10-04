@@ -62,7 +62,7 @@ export function Mascota({
   // al día. El motor y todo lo pendiente siguen como estaban.
   useLayoutEffect(() => {
     renderizador.current?.reencontrar();
-  }, [renderizador, disfraz, paleta, resultadosSinLeer]);
+  }, [renderizador, disfraz, paleta, resultadosSinLeer, actividad]);
 
   // El click-through usa las zonas del renderizador activo.
   useEffect(() => {

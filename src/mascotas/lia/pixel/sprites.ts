@@ -151,16 +151,6 @@ export const BURBUJA_RESULTADO = [
   "..OOO..",
 ];
 
-export const BURBUJA_ACTIVIDAD = [
-  "..OOO..",
-  ".OWWWO.",
-  "OWWWWWO",
-  "OGWGWGO",
-  "OWWWWWO",
-  ".OWWWO.",
-  "..OOO..",
-];
-
 export const CORAZON = [".H.H.", "HHHHH", ".HHH.", "..H.."];
 export const ESTRELLA = [".Y.", "YAY", ".Y."];
 export const DESTELLO_A = ["..Y..", "..Y..", "YYAYY", "..Y..", "..Y.."];
