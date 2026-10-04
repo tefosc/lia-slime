@@ -1,5 +1,6 @@
 import type { EstiloDeMascota } from "../mascot/renderizador";
 import { LIA } from "./lia/manifiesto";
+import { SIN_DISFRAZ } from "./tipos";
 import type { PaqueteDeMascota } from "./tipos";
 
 /**
@@ -21,4 +22,13 @@ export function mascotaDe(id?: string): PaqueteDeMascota {
 export function estiloDe(mascota?: string, estilo?: string): EstiloDeMascota {
   const paquete = mascotaDe(mascota);
   return paquete.estilos.find((e) => e.id === estilo) ?? paquete.estilos[0];
+}
+
+/**
+ * El id del disfraz pedido si esa mascota lo tiene; si no, sin disfraz.
+ */
+export function disfrazDe(mascota?: string, disfraz?: string): string {
+  return mascotaDe(mascota).disfraces.some((d) => d.id === disfraz) && disfraz
+    ? disfraz
+    : SIN_DISFRAZ;
 }

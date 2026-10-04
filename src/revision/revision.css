@@ -77,3 +77,8 @@ body,
 .fondo-oscuro .revision-lienzo {
   background: #1e1e1e;
 }
+
+.revision-paletas a.revision-disfraz {
+  border-color: #eef2f3;
+  background: #eef2f3;
+}

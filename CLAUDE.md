@@ -208,11 +208,18 @@ no está conectada.
   guarda: modo privado, ocultarse por inactividad y sus minutos, volumen,
   las dos casillas de sonido y la apariencia. Nada de uso, horarios ni
   contenido.
+- Disfraces: Lia puede ir de gatito o de panda. Un disfraz cambia el pétalo
+  por orejas y añade detalles (cola y bigotes, manchas en los ojos); el
+  cuerpo, las caras y las reacciones son los mismos. Los declara el
+  manifiesto de la mascota y, en el clásico, los dibuja
+  `src/mascotas/lia/clasico/Disfraz.tsx`; el renderizador mueve las orejas
+  con el mismo "accesorio" de la pose que mueve el pétalo. Sin disfraz, el
+  dibujo es exactamente el de antes.
 - Apariencia: solo se guardan identificadores (`mascota`, `estilo`,
-  `paleta`) y el `matiz` del color libre. Rust comprueba que tengan forma de
+  `disfraz`, `paleta`) y el `matiz` del color libre. Rust comprueba que tengan forma de
   identificador y la interfaz resuelve uno desconocido al valor por defecto
-  (lia, clásico, menta) con `estiloDe` y `paletaDe`, sin errores. El color se
-  elige en Ajustes (`src/ajustes/Apariencia.tsx`) y cambia en caliente.
+  (lia, clásico, sin disfraz, menta) con `estiloDe`, `disfrazDe` y `paletaDe`,
+  sin errores. Se elige en Ajustes (`src/ajustes/Apariencia.tsx`) y cambia en caliente.
 - Se cambian desde la bandeja o desde Ajustes; Rust las normaliza, las guarda
   y avisa a las ventanas con `lia-preferencias`.
 
@@ -298,7 +305,8 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
 - Página de revisión (solo desarrollo): `http://localhost:1420/?revision`
   muestra a Lia congelada en cada estado y reacción y compara la huella de
   cada dibujo con `src/revision/referencia.json`. Con `&paleta=lila` (o
-  `&paleta=libre&matiz=210`) y `&fondo=claro` se revisan los colores. Tras tocar el motor o un
+  `&paleta=libre&matiz=210`), `&disfraz=gatito` y `&fondo=claro` se revisan
+  los colores y los disfraces. Tras tocar el motor o un
   renderizador, las huellas deben seguir idénticas. Si cambias el dibujo a
   propósito, actualiza la referencia con `window.__revision`.
 - Caricias seguidas durante unos segundos la "encantan": dos botes, meneo y

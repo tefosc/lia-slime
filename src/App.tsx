@@ -14,7 +14,7 @@ import type { Sonido } from "./audio/sonidos";
 import { useActividad } from "./estado/useActividad";
 import { useEstadoLia } from "./estado/useEstadoLia";
 import { Mascota } from "./mascot/Mascota";
-import { estiloDe } from "./mascotas/indice";
+import { disfrazDe, estiloDe } from "./mascotas/indice";
 import { paletaDe } from "./mascotas/paletas";
 import { SUENO } from "./mascot/useAnimacionLia";
 import type { FaseSueno } from "./mascot/useAnimacionLia";
@@ -393,6 +393,7 @@ function App() {
         <Mascota
           estilo={estiloDe(preferencias.mascota, preferencias.estilo)}
           paleta={paletaDe(preferencias.paleta, preferencias.matiz)}
+          disfraz={disfrazDe(preferencias.mascota, preferencias.disfraz)}
           estado={estadoMostrado}
           sueno={sueno}
           actividad={actividad}

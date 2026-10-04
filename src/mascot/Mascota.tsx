@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { PointerEvent } from "react";
 import type { Actividad } from "../estado/useActividad";
 import type { Paleta } from "../mascotas/paletas";
@@ -15,6 +15,8 @@ interface MascotaProps {
   estilo: EstiloDeMascota;
   /** Con qué colores se pinta. */
   paleta: Paleta;
+  /** Id del disfraz que lleva puesto. */
+  disfraz: string;
   estado: EstadoLia;
   /** Resultados sin leer: con alguno se ve la burbuja ✓. */
   resultadosSinLeer?: number;
@@ -37,6 +39,7 @@ interface MascotaProps {
 export function Mascota({
   estilo,
   paleta,
+  disfraz,
   estado,
   resultadosSinLeer = 0,
   onClickBurbuja,
@@ -53,6 +56,12 @@ export function Mascota({
     actividad,
     guion,
   );
+
+  // Al cambiar de disfraz cambian piezas del dibujo: el renderizador las
+  // vuelve a buscar. El motor y todo lo pendiente siguen como estaban.
+  useLayoutEffect(() => {
+    renderizador.current?.reencontrar();
+  }, [renderizador, disfraz]);
 
   // El click-through usa las zonas del renderizador activo.
   useEffect(() => {
@@ -116,6 +125,7 @@ export function Mascota({
         resultadosSinLeer={resultadosSinLeer}
         actividad={actividad}
         paleta={paleta}
+        disfraz={disfraz}
       />
     </div>
   );

@@ -23,6 +23,7 @@ export interface Preferencias {
    */
   mascota: string;
   estilo: string;
+  disfraz: string;
   paleta: string;
   /** Matiz del color libre, en grados (0 a 359). */
   matiz: number;
@@ -40,6 +41,7 @@ export const PREFERENCIAS_POR_DEFECTO: Preferencias = {
   islaAlBorde: true,
   mascota: "lia",
   estilo: "clasico",
+  disfraz: "ninguno",
   paleta: "menta",
   matiz: 155,
 };

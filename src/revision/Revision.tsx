@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { configurarSonidos } from "../audio/sonidos";
 import { Mascota } from "../mascot/Mascota";
-import { estiloDe } from "../mascotas/indice";
+import { disfrazDe, estiloDe, mascotaDe } from "../mascotas/indice";
+import { SIN_DISFRAZ } from "../mascotas/tipos";
 import { PALETA_LIBRE, PALETAS, paletaDe } from "../mascotas/paletas";
 import { CASOS } from "./casos";
 import referencia from "./referencia.json";
@@ -51,7 +52,13 @@ export function Revision() {
   const casos = solo ? CASOS.filter((c) => c.nombre.includes(solo)) : CASOS;
   const matiz = Number(parametros.get("matiz") ?? NaN);
   const paleta = paletaDe(parametros.get("paleta") ?? undefined, matiz);
-  const conReferencia = paleta.id === PALETAS[0].id;
+  const disfraz = disfrazDe(undefined, parametros.get("disfraz") ?? undefined);
+  const conReferencia = paleta.id === PALETAS[0].id && disfraz === SIN_DISFRAZ;
+  const enlaceDisfraz = (id: string) => {
+    const otros = new URLSearchParams(parametros);
+    otros.set("disfraz", id);
+    return `?${otros}`;
+  };
   const fondo = parametros.get("fondo");
   /** Enlace a esta misma página con otra paleta. */
   const enlace = (id: string, grados?: number) => {
@@ -92,9 +99,9 @@ export function Revision() {
   return (
     <div className="revision">
       <h1>
-        Revisión: {casos.length} casos · {paleta.nombre} ·{" "}
+        Revisión: {casos.length} casos · {paleta.nombre} · {disfraz} ·{" "}
         {!conReferencia
-          ? "sin referencia para esta paleta"
+          ? "sin referencia para esta combinación"
           : Object.keys(huellas).length === 0
             ? "calculando..."
             : distintos.length === 0
@@ -102,6 +109,11 @@ export function Revision() {
               : `${distintos.length} distintos de la referencia`}
       </h1>
       <nav className="revision-paletas">
+        {[{ id: SIN_DISFRAZ, nombre: "Sin disfraz" }, ...mascotaDe().disfraces].map((d) => (
+          <a key={d.id} href={enlaceDisfraz(d.id)} className="revision-disfraz">
+            {d.nombre}
+          </a>
+        ))}
         {PALETAS.map((p) => (
           <a key={p.id} href={enlace(p.id)} style={{ background: p.cuerpo, borderColor: p.contorno }}>
             {p.nombre}
@@ -138,6 +150,7 @@ export function Revision() {
                   <Mascota
                     estilo={estiloDe()}
                     paleta={paleta}
+                    disfraz={disfraz}
                     estado={c.estado}
                     sueno={SUENO_QUIETO}
                     actividad={c.actividad}

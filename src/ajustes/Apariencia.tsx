@@ -1,12 +1,38 @@
 import { useState } from "react";
 import { matizDeHex, PALETA_LIBRE, PALETAS, paletaDe } from "../mascotas/paletas";
 import type { Paleta } from "../mascotas/paletas";
+import { disfrazDe, mascotaDe } from "../mascotas/indice";
+import { SIN_DISFRAZ } from "../mascotas/tipos";
 import type { Preferencias } from "../preferencias";
 
 /** Muestra de una paleta: el cuerpo con su contorno y su banda. */
-function Muestra({ paleta }: { paleta: Paleta }) {
+function Muestra({ paleta, disfraz }: { paleta: Paleta; disfraz?: string }) {
   return (
     <svg className="muestra" viewBox="-12 -12 24 24" width="30" height="30" aria-hidden="true">
+      {disfraz === "gatito" && (
+        <path
+          d="M-9.5 -3 L-9 -11.5 L-2.5 -8 Z M9.5 -3 L9 -11.5 L2.5 -8 Z"
+          fill={paleta.cuerpo}
+          stroke={paleta.contorno}
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+      )}
+      {disfraz === "panda" && (
+        <g fill="#5E5873" stroke={paleta.contorno} strokeWidth="1">
+          <circle cx="-7.5" cy="-7.5" r="3.6" />
+          <circle cx="7.5" cy="-7.5" r="3.6" />
+        </g>
+      )}
+      {disfraz === SIN_DISFRAZ && (
+        <path
+          d="M4 -8.5 C2.5 -12.5 5.5 -14 7 -12.5 C9 -14 11 -11.5 4 -8.5 Z"
+          fill={paleta.petalo.base}
+          stroke={paleta.petalo.contorno}
+          strokeWidth="0.8"
+          strokeLinejoin="round"
+        />
+      )}
       <circle r="10" fill={paleta.cuerpo} stroke={paleta.contorno} strokeWidth="1.6" />
       <path d="M-9.4 3.5 A10 10 0 0 0 9.4 3.5 Q0 8 -9.4 3.5 Z" fill={paleta.banda} />
       <path
@@ -21,8 +47,8 @@ function Muestra({ paleta }: { paleta: Paleta }) {
 }
 
 /**
- * Color de la mascota: las paletas fijas y el color libre, que sale de un
- * matiz. Solo se guardan el id de la paleta y el matiz.
+ * Disfraz y color de la mascota. El color es una de las paletas fijas o el
+ * color libre, que sale de un matiz. Solo se guardan los ids y el matiz.
  */
 export function Apariencia({
   preferencias,
@@ -36,6 +62,12 @@ export function Apariencia({
   // Un id desconocido se muestra como lo que es en la mascota: el de defecto.
   const elegida = paletaDe(preferencias.paleta, preferencias.matiz).id;
   const libre = elegida === PALETA_LIBRE;
+  const paletaActual = paletaDe(preferencias.paleta, preferencias.matiz);
+  const disfraz = disfrazDe(preferencias.mascota, preferencias.disfraz);
+  const disfraces = [
+    { id: SIN_DISFRAZ, nombre: "Ninguno" },
+    ...mascotaDe(preferencias.mascota).disfraces,
+  ];
   const matizActual = matiz ?? preferencias.matiz;
 
   /** Color escrito a mano; null mientras no se está escribiendo. */
@@ -55,6 +87,23 @@ export function Apariencia({
   return (
     <section>
       <h2>Apariencia</h2>
+      <h3>Disfraz</h3>
+      <div className="paletas" role="radiogroup" aria-label="Disfraz">
+        {disfraces.map((d) => (
+          <button
+            key={d.id}
+            type="button"
+            role="radio"
+            aria-checked={disfraz === d.id}
+            className="paleta"
+            onClick={() => cambiar({ disfraz: d.id })}
+          >
+            <Muestra paleta={paletaActual} disfraz={d.id} />
+            {d.nombre}
+          </button>
+        ))}
+      </div>
+      <h3>Color</h3>
       <div className="paletas" role="radiogroup" aria-label="Color">
         {PALETAS.map((paleta) => (
           <button

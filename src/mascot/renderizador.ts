@@ -46,6 +46,8 @@ export interface PropsDibujo {
   actividad: Actividad;
   /** Colores con los que se pinta. */
   paleta: Paleta;
+  /** Id del disfraz que lleva puesto (`SIN_DISFRAZ` si no lleva). */
+  disfraz: string;
 }
 
 /** Un estilo de una mascota: cómo se dibuja. */

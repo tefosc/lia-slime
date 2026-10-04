@@ -1,8 +1,10 @@
 import type { Actividad } from "../../../estado/useActividad";
 import { POSES } from "../../../mascot/poses";
 import type { PropsDibujo } from "../../../mascot/renderizador";
+import { SIN_DISFRAZ } from "../../tipos";
 import type { EstadoLia } from "../../../mascot/tipos";
 import type { Paleta } from "../../paletas";
+import { DisfrazBajoOjos, DisfrazDetras, DisfrazSobreCara } from "./Disfraz";
 import { tonosDe } from "./tonos";
 import type { Tonos } from "./tonos";
 import { sombraPara } from "./trazos";
@@ -336,10 +338,13 @@ function Extras({
   estado,
   actividad,
   colores,
+  conPetalo,
 }: {
   estado: EstadoLia;
   actividad: Actividad;
   colores: Colores;
+  /** Con disfraz no hay pétalos sueltos. */
+  conPetalo: boolean;
 }) {
   switch (estado) {
     case "trabajando":
@@ -368,15 +373,17 @@ function Extras({
     case "termino":
       return (
         <>
-          <g id="lia-petalo-2" transform="translate(-44,-34) rotate(-50) scale(0.5)">
-            <path
-              d={PETALO_CONTORNO}
-              fill={colores.tonos.petaloSuelto}
-              stroke={colores.paleta.petalo.contorno}
-              strokeWidth="1.4"
-              strokeLinejoin="round"
-            />
-          </g>
+          {conPetalo && (
+            <g id="lia-petalo-2" transform="translate(-44,-34) rotate(-50) scale(0.5)">
+              <path
+                d={PETALO_CONTORNO}
+                fill={colores.tonos.petaloSuelto}
+                stroke={colores.paleta.petalo.contorno}
+                strokeWidth="1.4"
+                strokeLinejoin="round"
+              />
+            </g>
+          )}
           <g
             id="lia-destellos"
             fill={AMARILLO}
@@ -679,7 +686,14 @@ function BurbujaResultado({ sinLeer, colores }: { sinLeer: number; colores: Colo
  * animación; el movimiento lo escribe el renderizador clásico sobre estos
  * mismos elementos, por su id.
  */
-export function DibujoClasico({ estado, resultadosSinLeer, actividad, paleta }: PropsDibujo) {
+export function DibujoClasico({
+  estado,
+  resultadosSinLeer,
+  actividad,
+  paleta,
+  disfraz,
+}: PropsDibujo) {
+  const conPetalo = disfraz === SIN_DISFRAZ;
   const tonos = tonosDe(paleta);
   const colores: Colores = { paleta, tonos };
   // La elevación, la sombra y la pose del pétalo las escribe el motor de
@@ -724,6 +738,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad, paleta }: 
           <ellipse cx="-17" cy="38" rx="6" ry="1.4" fill="#FFFFFF" />
         </g>
         <g id="lia-flotante">
+          <DisfrazDetras disfraz={disfraz} paleta={paleta} />
           <path
             id="lia-cuerpo"
             d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z"
@@ -752,6 +767,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad, paleta }: 
                 React reutilizara el mismo elemento, conservaría la opacidad
                 que el motor le escribió (por ejemplo, una boca oculta por
                 estar dormida) y la cara nueva saldría incompleta. */}
+            <DisfrazBajoOjos disfraz={disfraz} />
             <g id="lia-ojos">
               <Ojos key={estado} estado={estado} actividad={actividad} />
             </g>
@@ -762,6 +778,7 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad, paleta }: 
               <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
               <ellipse cx="27" cy="13" rx="5.5" ry="3" />
             </g>
+            <DisfrazSobreCara disfraz={disfraz} />
             {/* Partes del enojo, ocultas hasta que el motor las muestra. Solo
                 existen en `inactivo`: en los demás estados la cara no cambia. */}
             {estado === "inactivo" && (
@@ -816,13 +833,21 @@ export function DibujoClasico({ estado, resultadosSinLeer, actividad, paleta }: 
             />
             <circle cx="-1" cy="1.8" r="0.8" fill="#fff" opacity="0.8" />
           </g>
-          <g id="lia-petalo" transform={PETALO_BASE}>
-            <Petalo petalo={paleta.petalo} />
-          </g>
+          {conPetalo && (
+            <g id="lia-petalo" transform={PETALO_BASE}>
+              <Petalo petalo={paleta.petalo} />
+            </g>
+          )}
         </g>
         {/* Sube con el cuerpo, pero no se deforma con él. */}
         <g id="lia-extras">
-          <Extras key={estado} estado={estado} actividad={actividad} colores={colores} />
+          <Extras
+            key={estado}
+            estado={estado}
+            actividad={actividad}
+            colores={colores}
+            conPetalo={conPetalo}
+          />
           {/* Corazones de las caricias y estrellas del mareo: el motor los
               mueve; no reciben el mouse. */}
           {estado === "inactivo" && (
