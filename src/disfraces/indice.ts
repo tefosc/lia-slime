@@ -1,6 +1,5 @@
 import { BRUJA } from "./bruja/disfraz";
 import { CALABAZA } from "./calabaza/disfraz";
-import { OPCIONES_DE_CALABAZA } from "./calabaza/opciones";
 import { FANTASMA } from "./fantasma/disfraz";
 import { GATITO } from "./gatito/disfraz";
 import { MURCIELAGO } from "./murcielago/disfraz";
@@ -23,7 +22,7 @@ export const SIN_DISFRAZ = "ninguno";
  */
 const PUBLICADOS: readonly Disfraz[] = [BRUJA, CALABAZA, VAMPIRO, GATITO, GALA];
 export const DISFRACES: readonly Disfraz[] = import.meta.env.DEV
-  ? [...PUBLICADOS, PANDA, FANTASMA, MURCIELAGO, ...OPCIONES_DE_CALABAZA]
+  ? [...PUBLICADOS, PANDA, FANTASMA, MURCIELAGO]
   : PUBLICADOS;
 
 /** El disfraz con ese id, o null (sin disfraz) si no existe. */

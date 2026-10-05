@@ -1,14 +1,13 @@
 import type { Disfraz } from "../tipos";
 
-/** Contorno del cuerpo de Lia, en coordenadas del cuerpo. */
-const CUERPO =
-  "M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z";
+const PIEL = "#FF9A3D";
+const BORDE = "#C5661A";
 
-/**
- * Calabaza: Lia entera es la calabaza. Lleva los gajos marcados en el
- * cuerpo y, arriba, el rabito con su hoja y su zarcillo. Los gajos usan el
- * contorno de la paleta, así que funciona con cualquier color.
- */
+/** Contorno del gorro: lo alto de la cabeza, con el borde ondulado. */
+const GORRO =
+  "M-41 24 C-36 6 -20 -3 0 -3 C20 -3 36 6 41 24 Q30 17 20 22 Q10 15 0 21 Q-10 15 -20 22 Q-30 17 -41 24 Z";
+
+/** Calabaza: un gorro de calabaza con sus gajos, su rabito y su hoja. */
 export const CALABAZA: Disfraz = {
   id: "calabaza",
   nombre: "Calabaza",
@@ -18,97 +17,83 @@ export const CALABAZA: Disfraz = {
   petalo: "oculto",
   piezas: [
     {
-      // Gajos: van sobre el cuerpo y por debajo de la cara.
-      id: "gajos",
+      id: "gorro",
       capa: "sobre-el-cuerpo",
       orden: 0,
-      ancla: "base",
-      coordenadas: "cuerpo",
+      ancla: "cabeza-centro",
       formas: [
+        { tipo: "trazado", d: GORRO, relleno: PIEL, trazo: BORDE, grosor: 1.2, redondo: true },
+        // Gajos y brillo.
         {
           tipo: "trazado",
-          d:
-            "M0 -39 Q-4 0 0 37 M-15 -37 Q-29 0 -15 35 M15 -37 Q29 0 15 35 " +
-            "M-30 -29 Q-45 3 -30 29 M30 -29 Q45 3 30 29",
-          trazo: "contorno",
-          grosor: 1.5,
-          opacidad: 0.45,
+          d: "M0 -2 Q-2.5 8 0 20 M-14 -0.5 Q-21 9 -20 21 M14 -0.5 Q21 9 20 21 M-27 5 Q-34 12 -33 19 M27 5 Q34 12 33 19",
+          trazo: BORDE,
+          grosor: 1.2,
+          opacidad: 0.8,
+          redondo: true,
+        },
+        {
+          tipo: "trazado",
+          d: "M-25 10 C-21 6 -16 3 -10 2",
+          trazo: "#FFFFFF",
+          grosor: 2.4,
+          opacidad: 0.4,
           redondo: true,
         },
       ],
     },
     {
-      // Al terminar una tarea se ilumina por dentro, como un farol.
+      // Al terminar una tarea el gorro se ilumina: esta copia clara aparece
+      // y se va.
       id: "brillo",
       capa: "sobre-el-cuerpo",
       orden: 1,
-      ancla: "base",
-      coordenadas: "cuerpo",
-      opacidad: 0,
-      mueve: [{ resorte: "brilloCalabaza", opacidad: 0.5 }],
-      formas: [{ tipo: "trazado", d: CUERPO, relleno: "#FFE9A8" }],
-    },
-    {
-      // Zarcillo: se enrosca a la izquierda del rabito.
-      id: "zarcillo",
-      capa: "encima-de-todo",
-      orden: 0,
       ancla: "cabeza-centro",
-      x: -4,
-      y: 1,
-      coordenadas: "cuerpo",
-      mueve: [{ resorte: "oscilaHoja", giro: -0.6 }],
-      formas: [
-        {
-          tipo: "trazado",
-          d: "M-4 -40 C-14 -46 -20 -40 -15 -36 C-12 -34 -9 -37 -12 -39",
-          trazo: "#6B8E23",
-          grosor: 1.6,
-          redondo: true,
-        },
-      ],
+      opacidad: 0,
+      mueve: [{ resorte: "brilloCalabaza", opacidad: 0.6 }],
+      formas: [{ tipo: "trazado", d: GORRO, relleno: "#FFD9A0" }],
     },
     {
       // Hoja: se mece alrededor de donde nace.
       id: "hoja",
       capa: "encima-de-todo",
-      orden: 1,
+      orden: 0,
       ancla: "cabeza-centro",
       x: 4,
-      y: -5,
+      y: -6,
       coordenadas: "cuerpo",
       mueve: [{ resorte: "oscilaHoja", giro: 1 }],
       formas: [
         {
           tipo: "trazado",
-          d: "M4 -45 C12 -58 26 -54 28 -42 C19 -40 10 -41 4 -45 Z",
+          d: "M4 -46 C12 -59 26 -55 28 -43 C19 -41 10 -42 4 -46 Z",
           relleno: "#7FBF47",
           trazo: "#4E7A1F",
           grosor: 1.1,
           redondo: true,
         },
-        { tipo: "trazado", d: "M6 -45 Q16 -49 25 -44", trazo: "#4E7A1F", grosor: 0.8, redondo: true },
+        { tipo: "trazado", d: "M6 -46 Q16 -50 25 -45", trazo: "#4E7A1F", grosor: 0.8, redondo: true },
       ],
     },
     {
-      // Rabito: grueso y un poco torcido, como el de una calabaza.
+      // Rabito: grueso y un poco torcido.
       id: "rabito",
       capa: "encima-de-todo",
-      orden: 2,
+      orden: 1,
       ancla: "cabeza-centro",
-      y: 2,
+      y: 1,
       coordenadas: "cuerpo",
       mueve: [{ resorte: "rabito", giro: 1 }],
       formas: [
         {
           tipo: "trazado",
-          d: "M-6 -37 C-5 -46 -3 -51 2 -56 L9 -52 C5 -48 5 -43 6 -37 Q0 -34 -6 -37 Z",
+          d: "M-6 -39 C-5 -47 -3 -52 2 -57 L9 -53 C5 -49 5 -44 6 -39 Q0 -36 -6 -39 Z",
           relleno: "#6B8E23",
           trazo: "#4E6B14",
           grosor: 1.2,
           redondo: true,
         },
-        { tipo: "trazado", d: "M-1 -39 C0 -45 1 -49 4 -53", trazo: "#8FB33A", grosor: 1.2, redondo: true },
+        { tipo: "trazado", d: "M-1 -41 C0 -46 1 -50 4 -54", trazo: "#8FB33A", grosor: 1.2, redondo: true },
       ],
     },
   ],

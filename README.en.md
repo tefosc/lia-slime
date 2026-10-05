@@ -73,8 +73,8 @@ does not change her body, her faces or what she does.
 
 - **Witch** (Halloween): a pointed hat with the petal as its ornament. It
   tilts when she moves and sinks over her brow when she is angry.
-- **Pumpkin** (Halloween): Lia herself is the pumpkin, with ribs, a stem and
-  a leaf; she glows from inside when a task is done.
+- **Pumpkin** (Halloween): a pumpkin hat with its ribs, stem and leaf; it
+  lights up when a task is done.
 - **Vampire** (Halloween): a cape that sways, and fangs.
 - **Kitten** (Animals): ears in Lia's own colour, whiskers and a nose. The
   ears twitch when she needs you.

@@ -73,8 +73,8 @@ propio movimiento: no cambia su cuerpo, sus caras ni lo que hace.
 
 - **Bruja** (Halloween): sombrero puntiagudo con el pétalo de adorno. Se
   ladea al moverla y se le cala cuando se enoja.
-- **Calabaza** (Halloween): Lia entera es la calabaza, con sus gajos, su
-  rabito y su hoja; se ilumina por dentro al terminar una tarea.
+- **Calabaza** (Halloween): un gorro de calabaza con sus gajos, su rabito y
+  su hoja; se ilumina al terminar una tarea.
 - **Vampiro** (Halloween): capa que ondea y colmillos.
 - **Gatito** (Animales): orejas del color de Lia, bigotes y nariz. Mueve las
   orejas cuando te necesita.
