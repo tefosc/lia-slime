@@ -68,16 +68,18 @@ Only which palette and costume you picked is stored, nothing else.
 Lia can dress up. A costume is clothing she puts on, with its own motion: it
 does not change her body, her faces or what she does.
 
-<!-- SCREENSHOT: the four costumes side by side -->
+<!-- SCREENSHOT: the costumes side by side -->
 <!-- ![Lia's costumes](docs/media/disfraces.png) -->
 
 - **Witch** (Halloween): a pointed hat with the petal as its ornament. It
   tilts when she moves and sinks over her brow when she is angry.
-- **Pumpkin** (Halloween): a pumpkin on her head that bounces with her and
-  lights up when a task is done.
+- **Pumpkin** (Halloween): Lia herself is the pumpkin, with ribs, a stem and
+  a leaf; she glows from inside when a task is done.
 - **Vampire** (Halloween): a cape that sways, and fangs.
 - **Kitten** (Animals): ears in Lia's own colour, whiskers and a nose. The
   ears twitch when she needs you.
+- **Black tie** (Party): a top hat with the petal as its ornament, ears, a
+  cape and a collar.
 
 <!-- SCREENSHOT: one costume in the four states -->
 <!-- ![A costume in each state](docs/media/disfraz-estados.png) -->
@@ -227,7 +229,7 @@ To try it without Claude Code, use `scripts/simular-evento.ps1`.
 | `src/ajustes/` | Settings window |
 | `src-tauri/` | Rust: local receiver, cursor, tray, hook installation |
 | `scripts/` | Event simulator, signing and license listing |
-| `docs/` | Hooks, privacy, uninstalling, signing and install test script |
+| `docs/` | Hooks, privacy, uninstalling, signing, the test script and how to make a costume |
 
 Code, comments and commit messages are in Spanish. Built with
 [Tauri 2](https://tauri.app/), React and TypeScript.

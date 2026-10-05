@@ -57,6 +57,25 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
 - [ ] El menú de la bandeja muestra las mismas opciones y coinciden con
       Ajustes.
 
+## 3b. Apariencia
+
+- [ ] En Ajustes, la pestaña "Apariencia" muestra la vista previa y sus
+      cuatro botones de estado cambian a Lia.
+- [ ] Están los disfraces publicados, agrupados por categoría, y ninguno de
+      desarrollo.
+- [ ] Al elegir un disfraz, la Lia del escritorio cambia al instante y toma
+      el color que el disfraz propone; después se puede elegir otro color.
+- [ ] Las seis paletas cambian el color al instante. Con el tono o con un
+      color escrito (#RRGGBB) se aplica el color libre.
+- [ ] El menú de la bandeja tiene "Apariencia" con Disfraz y Color, y marca
+      lo mismo que Ajustes.
+- [ ] Con un disfraz puesto, los clics sobre el sombrero, la capa, las orejas
+      o los bigotes pasan a la ventana de debajo; sobre el cuerpo, la tocan.
+- [ ] Con una tarjeta de permiso abierta, cambiar de disfraz o de color no la
+      cierra ni mueve la ventana.
+- [ ] Tras cerrar y volver a abrir Lia, conserva el disfraz y el color.
+- [ ] Con Ajustes cerrado, el consumo de CPU vuelve a ser el de siempre.
+
 ## 4. Instalar hooks con vista previa
 
 - [ ] "Instalar o actualizar hooks" muestra un diff con **solo** la sección

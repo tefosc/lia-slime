@@ -1,9 +1,10 @@
 import type { Disfraz, Forma } from "../tipos";
 
-// Disfraz de prueba: SOLO para desarrollo (ver `indice.ts`). No es bonito a
-// propósito: usa las cuatro capas, varias anclas, slots de la paleta,
-// resortes, reacciones, el pétalo recolocado y un sombrero tan alto que
-// obliga a actuar a la escala de seguridad.
+// De gala: sombrero de copa con el pétalo de adorno, orejas, capa y collar.
+// Nació como disfraz de prueba y lo sigue siendo: usa las cuatro capas,
+// varias anclas, slots de la paleta, resortes, todas las reacciones, el
+// pétalo pegado a una pieza y un sombrero tan alto que obliga a actuar a la
+// escala de seguridad. Si cambias el formato de los disfraces, pruébalo aquí.
 
 const OREJA: Forma[] = [
   {
@@ -17,10 +18,10 @@ const OREJA: Forma[] = [
   { tipo: "trazado", d: "M-4 2 Q-3 -8 0 -13 Q3 -8 4 2 Z", relleno: "petalo" },
 ];
 
-export const PRUEBA: Disfraz = {
-  id: "prueba",
-  nombre: "De prueba",
-  categoria: "pruebas",
+export const GALA: Disfraz = {
+  id: "gala",
+  nombre: "De gala",
+  categoria: "fiesta",
   // El pétalo pasa a ser el adorno del sombrero.
   petalo: { x: 6, y: -76, giro: -12, escala: 0.6, pegadoA: "sombrero" },
   piezas: [

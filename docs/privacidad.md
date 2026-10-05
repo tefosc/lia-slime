@@ -57,7 +57,7 @@ En `%APPDATA%\io.github.tefosc.lia\`:
 
 | Archivo | Contenido |
 |---|---|
-| `ajustes.json` | Tus preferencias: modo privado, ocultarse por inactividad y sus minutos, volumen y las dos casillas de sonidos. |
+| `ajustes.json` | Tus preferencias: modo privado, ocultarse por inactividad y sus minutos, volumen, las dos casillas de sonidos y la apariencia (qué disfraz y qué color elegiste, y el tono del color libre). |
 | `cabecera-hook.txt` | El token del receptor local. Cambia en cada arranque. |
 | `ajustes-mostrados` | Archivo vacío: marca que Ajustes ya se abrió la primera vez. |
 

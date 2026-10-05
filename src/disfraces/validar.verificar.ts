@@ -5,7 +5,7 @@ import { FANTASMA } from "./fantasma/disfraz.ts";
 import { GATITO } from "./gatito/disfraz.ts";
 import { MURCIELAGO } from "./murcielago/disfraz.ts";
 import { PANDA } from "./panda/disfraz.ts";
-import { PRUEBA } from "./prueba/disfraz.ts";
+import { GALA } from "./gala/disfraz.ts";
 import { VAMPIRO } from "./vampiro/disfraz.ts";
 import type { Disfraz } from "./tipos.ts";
 import { validarDisfraz } from "./validar.ts";
@@ -18,7 +18,7 @@ function comprobar(nombre: string, condicion: boolean, detalle = ""): void {
   if (!condicion) fallos++;
 }
 
-for (const disfraz of [BRUJA, CALABAZA, VAMPIRO, GATITO, PANDA, FANTASMA, MURCIELAGO, PRUEBA]) {
+for (const disfraz of [BRUJA, CALABAZA, VAMPIRO, GATITO, PANDA, FANTASMA, MURCIELAGO, GALA]) {
   const errores = validarDisfraz(disfraz, PALETAS);
   comprobar(`"${disfraz.id}" cumple las reglas del arte`, errores.length === 0, errores.join("; "));
 }
@@ -27,7 +27,7 @@ for (const disfraz of [BRUJA, CALABAZA, VAMPIRO, GATITO, PANDA, FANTASMA, MURCIE
 const base: Disfraz = {
   id: "malo",
   nombre: "Malo",
-  categoria: "pruebas",
+  categoria: "fiesta",
   piezas: [
     {
       id: "pieza",

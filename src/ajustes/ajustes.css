@@ -307,4 +307,8 @@ button.pestana[aria-selected="true"] {
 .miniatura svg {
   width: 64px;
   height: 64px;
+  /* Un poco reducida y sin recortar: así cabe un sombrero alto. */
+  overflow: visible;
+  transform: scale(0.8);
+  transform-origin: 50% 92%;
 }

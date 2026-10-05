@@ -127,7 +127,7 @@ export interface Movimiento {
 /** Figuras pequeñas para los efectos con tema. */
 export type Motivo = "estrella" | "luna" | "murcielago" | "fantasma" | "caramelo" | "huella";
 
-export const CATEGORIAS = { animales: "Animales", halloween: "Halloween", pruebas: "Pruebas" } as const;
+export const CATEGORIAS = { halloween: "Halloween", animales: "Animales", fiesta: "Fiesta" } as const;
 export type Categoria = keyof typeof CATEGORIAS;
 
 export interface Disfraz {

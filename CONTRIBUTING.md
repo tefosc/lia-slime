@@ -32,10 +32,20 @@ real, define `LIA_CONFIG_DIR` con otra carpeta antes de `pnpm tauri dev`.
 
 - TypeScript estricto. Rust solo para lo que el frontend no puede hacer.
 - Comentarios y mensajes de commit en español neutro.
-- Estructura: `src/` (interfaz), `src/mascot/` (motor del personaje), `src/mascotas/` (dibujos), `src-tauri/`
+- Estructura: `src/` (interfaz), `src/mascot/` (motor del personaje),
+  `src/mascotas/` (dibujos), `src/disfraces/` (disfraces) y `src-tauri/`
   (Rust).
 - Si algo depende de Windows o de WebView2, dilo en el código.
 - Sigue el estilo del código que rodea a tu cambio.
+
+## Disfraces
+
+Un disfraz nuevo es un archivo de datos en `src/disfraces/<id>/`, y entra
+por pull request: Lia no carga disfraces desde el disco ni desde la red. La
+guía, con las reglas del arte y la lista de pruebas, está en
+[docs/crear-disfraz.md](docs/crear-disfraz.md). Antes de enviarlo, comprueba
+que `pnpm verificar` pasa y que la página de revisión no lista ningún
+incumplimiento.
 
 ## Dependencias
 
@@ -65,5 +75,6 @@ Este proyecto intenta tener las menos posibles.
 ## Licencia de las contribuciones
 
 Al contribuir aceptas que tu código se publique bajo la licencia
-[MIT](LICENSE). El personaje Lia tiene su propia licencia en
-[src/mascot/LICENSE-ARTE.md](src/mascot/LICENSE-ARTE.md).
+[MIT](LICENSE). El personaje Lia y sus disfraces tienen su propia licencia
+en [src/mascot/LICENSE-ARTE.md](src/mascot/LICENSE-ARTE.md): el arte que
+aportes se distribuye bajo ella.

@@ -22,7 +22,7 @@ import type { Disfraz } from "../tipos";
 export const EJEMPLO: Disfraz = {
   id: "ejemplo",            // minúsculas, cifras y guiones; es lo que se guarda
   nombre: "Ejemplo",
-  categoria: "animales",    // "animales" | "halloween" | "pruebas"
+  categoria: "animales",    // "halloween" | "animales" | "fiesta"
   paletaSugerida: "lila",   // opcional
   petalo: { x: 2, y: -38, giro: 10 },  // opcional
   piezas: [ /* ... */ ],

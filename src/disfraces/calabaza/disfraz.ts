@@ -1,96 +1,129 @@
-import type { Disfraz, Movimiento } from "../tipos";
+import type { Disfraz } from "../tipos";
+
+/** Contorno del cuerpo de Lia, en coordenadas del cuerpo. */
+const CUERPO =
+  "M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z";
 
 /**
- * La calabaza se aplasta y se estira con retraso, anclada en su base, y
- * salta con la sorpresa. Sus piezas comparten esos dos resortes.
+ * Calabaza: Lia entera es la calabaza. Lleva los gajos marcados en el
+ * cuerpo y, arriba, el rabito con su hoja y su zarcillo. Los gajos usan el
+ * contorno de la paleta, así que funciona con cualquier color.
  */
-const PESA: Movimiento[] = [
-  { resorte: "rebotePesa", escalaY: 1 },
-  { resorte: "saltoCalabaza", y: 1 },
-];
-const CALABAZA_EN = { ancla: "cabeza-centro", y: 4, coordenadas: "cuerpo" } as const;
-
-/** Calabaza: una calabaza pequeña sobre la cabeza, con su tallo y su hoja. */
 export const CALABAZA: Disfraz = {
   id: "calabaza",
   nombre: "Calabaza",
   categoria: "halloween",
-  paletaSugerida: "menta",
-  petalo: { x: 24, y: -34, giro: 28, escala: 0.8 },
+  paletaSugerida: "durazno",
+  // El rabito ocupa su sitio.
+  petalo: "oculto",
   piezas: [
     {
-      id: "tallo",
+      // Gajos: van sobre el cuerpo y por debajo de la cara.
+      id: "gajos",
       capa: "sobre-el-cuerpo",
       orden: 0,
-      ...CALABAZA_EN,
-      mueve: PESA,
-      formas: [{ tipo: "trazado", d: "M-2 -57 L-1 -66 L3 -66 L2 -57 Z", relleno: "#6B8E23", redondo: true }],
-    },
-    {
-      // Se mece alrededor de donde nace, y sube y baja con la calabaza.
-      id: "hoja",
-      capa: "sobre-el-cuerpo",
-      orden: 1,
-      ancla: "cabeza-centro",
-      x: 3,
-      y: -22,
+      ancla: "base",
       coordenadas: "cuerpo",
-      mueve: [
-        { resorte: "oscilaHoja", giro: 1 },
-        { resorte: "rebotePesa", y: -26 },
-        { resorte: "saltoCalabaza", y: 1 },
-      ],
-      formas: [{ tipo: "trazado", d: "M3 -62 Q12 -68 14 -60 Q8 -60 3 -62 Z", relleno: "#7FBF47", redondo: true }],
-    },
-    {
-      id: "calabaza",
-      capa: "sobre-el-cuerpo",
-      orden: 2,
-      ...CALABAZA_EN,
-      mueve: PESA,
-      formas: [
-        { tipo: "elipse", cx: 0, cy: -46, rx: 18, ry: 12, relleno: "#FFA24D", trazo: "#C5661A", grosor: 1.2 },
-      ],
-    },
-    {
-      // Al terminar una tarea se ilumina: esta copia clara aparece y se va.
-      id: "brillo",
-      capa: "sobre-el-cuerpo",
-      orden: 3,
-      ...CALABAZA_EN,
-      opacidad: 0,
-      mueve: [...PESA, { resorte: "brilloCalabaza", opacidad: 1 }],
-      formas: [{ tipo: "elipse", cx: 0, cy: -46, rx: 17.4, ry: 11.4, relleno: "#FFC27A" }],
-    },
-    {
-      id: "costillas",
-      capa: "sobre-el-cuerpo",
-      orden: 4,
-      ...CALABAZA_EN,
-      mueve: PESA,
       formas: [
         {
           tipo: "trazado",
-          d: "M-6 -57 Q-11 -46 -6 -35 M6 -57 Q11 -46 6 -35 M0 -58 L0 -34",
-          trazo: "#E07F1F",
+          d:
+            "M0 -39 Q-4 0 0 37 M-15 -37 Q-29 0 -15 35 M15 -37 Q29 0 15 35 " +
+            "M-30 -29 Q-45 3 -30 29 M30 -29 Q45 3 30 29",
+          trazo: "contorno",
+          grosor: 1.5,
+          opacidad: 0.45,
+          redondo: true,
+        },
+      ],
+    },
+    {
+      // Al terminar una tarea se ilumina por dentro, como un farol.
+      id: "brillo",
+      capa: "sobre-el-cuerpo",
+      orden: 1,
+      ancla: "base",
+      coordenadas: "cuerpo",
+      opacidad: 0,
+      mueve: [{ resorte: "brilloCalabaza", opacidad: 0.5 }],
+      formas: [{ tipo: "trazado", d: CUERPO, relleno: "#FFE9A8" }],
+    },
+    {
+      // Zarcillo: se enrosca a la izquierda del rabito.
+      id: "zarcillo",
+      capa: "encima-de-todo",
+      orden: 0,
+      ancla: "cabeza-centro",
+      x: -4,
+      y: 1,
+      coordenadas: "cuerpo",
+      mueve: [{ resorte: "oscilaHoja", giro: -0.6 }],
+      formas: [
+        {
+          tipo: "trazado",
+          d: "M-4 -40 C-14 -46 -20 -40 -15 -36 C-12 -34 -9 -37 -12 -39",
+          trazo: "#6B8E23",
+          grosor: 1.6,
+          redondo: true,
+        },
+      ],
+    },
+    {
+      // Hoja: se mece alrededor de donde nace.
+      id: "hoja",
+      capa: "encima-de-todo",
+      orden: 1,
+      ancla: "cabeza-centro",
+      x: 4,
+      y: -5,
+      coordenadas: "cuerpo",
+      mueve: [{ resorte: "oscilaHoja", giro: 1 }],
+      formas: [
+        {
+          tipo: "trazado",
+          d: "M4 -45 C12 -58 26 -54 28 -42 C19 -40 10 -41 4 -45 Z",
+          relleno: "#7FBF47",
+          trazo: "#4E7A1F",
+          grosor: 1.1,
+          redondo: true,
+        },
+        { tipo: "trazado", d: "M6 -45 Q16 -49 25 -44", trazo: "#4E7A1F", grosor: 0.8, redondo: true },
+      ],
+    },
+    {
+      // Rabito: grueso y un poco torcido, como el de una calabaza.
+      id: "rabito",
+      capa: "encima-de-todo",
+      orden: 2,
+      ancla: "cabeza-centro",
+      y: 2,
+      coordenadas: "cuerpo",
+      mueve: [{ resorte: "rabito", giro: 1 }],
+      formas: [
+        {
+          tipo: "trazado",
+          d: "M-6 -37 C-5 -46 -3 -51 2 -56 L9 -52 C5 -48 5 -43 6 -37 Q0 -34 -6 -37 Z",
+          relleno: "#6B8E23",
+          trazo: "#4E6B14",
           grosor: 1.2,
           redondo: true,
         },
+        { tipo: "trazado", d: "M-1 -39 C0 -45 1 -49 4 -53", trazo: "#8FB33A", grosor: 1.2, redondo: true },
       ],
     },
   ],
   fisica: {
     resortes: {
-      // Sigue al aplastamiento del cuerpo, con retraso y hasta un 8 %.
-      rebotePesa: { rigidez: 50, amortiguacion: 6, aplaste: 1, limite: 0.08 },
-      saltoCalabaza: { rigidez: 180, amortiguacion: 11 },
-      oscilaHoja: { rigidez: 60, amortiguacion: 5, accesorio: 10, velocidadX: 0.6, limite: 10 },
-      brilloCalabaza: { rigidez: 260, amortiguacion: 30 },
+      rabito: { rigidez: 70, amortiguacion: 7, accesorio: 8, velocidadX: 0.4, limite: 8 },
+      oscilaHoja: { rigidez: 55, amortiguacion: 5, accesorio: 12, velocidadX: 0.6, limite: 12 },
+      brilloCalabaza: { rigidez: 220, amortiguacion: 28 },
     },
     reacciones: {
-      clic: { rebotePesa: -0.9, oscilaHoja: 70 },
-      termino: { brilloCalabaza: { mantener: 1, duracion: 0.4 } },
-      sorpresa: { saltoCalabaza: { mantener: -3, duracion: 0.3 } },
+      clic: { rabito: 80, oscilaHoja: 110 },
+      sorpresa: { oscilaHoja: { mantener: -14, duracion: 0.6 } },
+      mareo: { oscilaHoja: { oscilar: { amplitud: 10, frecuencia: 1.4 } } },
+      // Se enciende y se apaga despacio.
+      termino: { brilloCalabaza: { mantener: 1, duracion: 0.9 } },
     },
   },
   efectos: { destellos: ["caramelo", "caramelo", "caramelo"] },

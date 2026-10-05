@@ -96,6 +96,7 @@ export function Apariencia({
   const [hex, setHex] = useState<string | null>(null);
   const hexValido = hex === null || matizDeHex(hex) !== null;
   const aplicarHex = () => {
+    // Solo si se escribió algo: enfocar y salir del campo no cambia el color.
     const nuevo = hex === null ? null : matizDeHex(hex);
     if (nuevo !== null) cambiar({ paleta: PALETA_LIBRE, matiz: nuevo });
     setHex(null);
@@ -206,41 +207,39 @@ export function Apariencia({
             Color libre
           </button>
         </div>
-        {libre && (
-          <label className="campo">
-            Tono
-            <input
-              className="matiz"
-              type="range"
-              min="0"
-              max="359"
-              step="1"
-              value={matizActual}
-              onChange={(e) => setMatiz(Number(e.target.value))}
-              onPointerUp={soltar}
-              onKeyUp={soltar}
-            />
-            <input
-              className={`hex${hexValido ? "" : " hex-invalido"}`}
-              type="text"
-              aria-label="Color en hexadecimal"
-              maxLength={7}
-              spellCheck={false}
-              value={hex ?? paletaDe(PALETA_LIBRE, matizActual).cuerpo}
-              onChange={(e) => setHex(e.target.value)}
-              onBlur={aplicarHex}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") aplicarHex();
-              }}
-            />
-          </label>
-        )}
-        {libre && (
-          <p className="nota">
-            Puedes escribir un color (#RRGGBB): Lia toma su tono y lo suaviza para
-            que la cara y el contorno se sigan viendo bien.
-          </p>
-        )}
+        <label className="campo">
+          Color libre
+          <input
+            className="matiz"
+            type="range"
+            aria-label="Tono del color libre"
+            min="0"
+            max="359"
+            step="1"
+            value={matizActual}
+            onChange={(e) => setMatiz(Number(e.target.value))}
+            onPointerUp={soltar}
+            onKeyUp={soltar}
+          />
+          <input
+            className={`hex${hexValido ? "" : " hex-invalido"}`}
+            type="text"
+            aria-label="Color en hexadecimal"
+            placeholder="#RRGGBB"
+            maxLength={7}
+            spellCheck={false}
+            value={hex ?? paletaDe(PALETA_LIBRE, matizActual).cuerpo}
+            onChange={(e) => setHex(e.target.value)}
+            onBlur={aplicarHex}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") aplicarHex();
+            }}
+          />
+        </label>
+        <p className="nota">
+          Mueve el tono o escribe un color (#RRGGBB) y pulsa Intro: Lia toma su
+          tono y lo suaviza para que la cara y el contorno se sigan viendo bien.
+        </p>
       </section>
     </>
   );

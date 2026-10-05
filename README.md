@@ -68,16 +68,18 @@ Solo se guarda qué paleta y qué disfraz elegiste, nada más.
 Lia puede disfrazarse. Un disfraz son prendas que se pone encima, con su
 propio movimiento: no cambia su cuerpo, sus caras ni lo que hace.
 
-<!-- CAPTURA: los cuatro disfraces, uno al lado del otro -->
+<!-- CAPTURA: los disfraces, uno al lado del otro -->
 <!-- ![Disfraces de Lia](docs/media/disfraces.png) -->
 
 - **Bruja** (Halloween): sombrero puntiagudo con el pétalo de adorno. Se
   ladea al moverla y se le cala cuando se enoja.
-- **Calabaza** (Halloween): una calabaza en la cabeza que rebota con ella y
-  se ilumina al terminar una tarea.
+- **Calabaza** (Halloween): Lia entera es la calabaza, con sus gajos, su
+  rabito y su hoja; se ilumina por dentro al terminar una tarea.
 - **Vampiro** (Halloween): capa que ondea y colmillos.
 - **Gatito** (Animales): orejas del color de Lia, bigotes y nariz. Mueve las
   orejas cuando te necesita.
+- **De gala** (Fiesta): sombrero de copa con el pétalo de adorno, orejas,
+  capa y collar.
 
 <!-- CAPTURA: un disfraz en los cuatro estados -->
 <!-- ![Un disfraz en cada estado](docs/media/disfraz-estados.png) -->
@@ -228,7 +230,7 @@ Para probar sin Claude Code, usa `scripts/simular-evento.ps1`.
 | `src/ajustes/` | Ventana de Ajustes |
 | `src-tauri/` | Rust: receptor local, cursor, bandeja, instalación de hooks |
 | `scripts/` | Simulador de eventos, firma y listado de licencias |
-| `docs/` | Hooks, privacidad, desinstalación, firma y guion de prueba |
+| `docs/` | Hooks, privacidad, desinstalación, firma, guion de prueba y cómo crear un disfraz |
 
 Hecha con [Tauri 2](https://tauri.app/), React y TypeScript.
 

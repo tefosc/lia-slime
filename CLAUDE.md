@@ -217,9 +217,11 @@ no está conectada.
   nombre, con colores fijos o slots de la paleta. Nunca SVG en texto, y
   nunca cargados del disco o de la red: `indice.ts` es el catálogo fijo. No
   lo relajes.
-  - Publicados: bruja, calabaza, vampiro y gatito. El panda, el fantasma,
-    el murciélago y el de prueba solo existen con `import.meta.env.DEV`, y
-    Vite los deja fuera de la compilación de producción.
+  - Publicados: bruja, calabaza, vampiro, gatito y de gala. El panda, el
+    fantasma y el murciélago solo existen con `import.meta.env.DEV`, y Vite
+    los deja fuera de la compilación de producción. "De gala" nació como
+    disfraz de prueba y sigue sirviendo para eso: usa todas las capas,
+    resortes y reacciones, y obliga a actuar a la escala de seguridad.
   - `src/mascotas/lia/clasico/Disfraz.tsx` los dibuja (`CapaDeDisfraz`) y
     define las anclas del estilo clásico (`ANCLAS_CLASICO`). Las piezas no
     reciben el mouse: la zona activa es solo el cuerpo.

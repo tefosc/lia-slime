@@ -41,12 +41,13 @@ const PALETAS: [(&str, &str); 7] = [
 /// Disfraces del submenú "Disfraz": id y nombre. Deben coincidir con los de
 /// `src/disfraces/indice.ts`: los publicados y, solo en desarrollo, los demás.
 #[cfg(not(debug_assertions))]
-const DISFRACES: [(&str, &str); 5] = [
+const DISFRACES: [(&str, &str); 6] = [
     ("ninguno", "Sin disfraz"),
     ("bruja", "Bruja"),
     ("calabaza", "Calabaza"),
     ("vampiro", "Vampiro"),
     ("gatito", "Gatito"),
+    ("gala", "De gala"),
 ];
 #[cfg(debug_assertions)]
 const DISFRACES: [(&str, &str); 9] = [
@@ -55,10 +56,10 @@ const DISFRACES: [(&str, &str); 9] = [
     ("calabaza", "Calabaza"),
     ("vampiro", "Vampiro"),
     ("gatito", "Gatito"),
+    ("gala", "De gala"),
     ("panda", "Panda"),
     ("fantasma", "Fantasma"),
     ("murcielago", "Murciélago"),
-    ("prueba", "De prueba"),
 ];
 
 /// Prefijos de los ids de menú de la apariencia.
