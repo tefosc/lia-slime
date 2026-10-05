@@ -77,6 +77,8 @@ const CARAS_DE_TRABAJO: Record<
   // Agente: contenta, con la boca abierta en sonrisa.
   agente: { cejas: "M-21 -11.5 Q-16 -13 -11 -11.5 M21 -11.5 Q16 -13 11 -11.5", ojos: [6.2, 7.6], boca: "M-5.5 14.5 Q0 21 5.5 14.5 Z" },
   otra: { cejas: "M-22 -9.6 L-10 -9 M22 -9.6 L10 -9", ojos: [6.2, 7.6], boca: "M-4.5 16.5 Q0 18.5 4.5 16.5", lengua: true },
+  // Sin red: cejas de preocupación y boca ondulada.
+  sinred: { cejas: "M-22 -9 L-10 -12.5 M22 -9 L10 -12.5", ojos: [6.2, 7.8], boca: "M-6 17.5 Q-3 15.2 0 17.5 T6 17.5" },
 };
 
 function Ojos({
@@ -660,6 +662,14 @@ function BurbujaActividad({ actividad, colores }: { actividad: Actividad; colore
           <>
             <path d="M0 -6.2 L5.4 -3.1 V3.1 L0 6.2 L-5.4 3.1 V-3.1 Z" {...trazo} />
             <circle cx="0" cy="0" r="1.9" {...trazo} />
+          </>
+        )}
+        {actividad === "sinred" && (
+          // Señal de wifi tachada: sin conexión.
+          <>
+            <path d="M-6.5 -1.5 Q0 -7.5 6.5 -1.5 M-3.6 1.6 Q0 -1.8 3.6 1.6" {...trazo} />
+            <circle cx="0" cy="4.6" r="1.3" fill={colores.tonos.tinta} />
+            <path d="M-6 6 L6 -6.5" fill="none" stroke="#E8745A" strokeWidth="2.2" strokeLinecap="round" />
           </>
         )}
       </g>

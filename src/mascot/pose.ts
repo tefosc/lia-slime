@@ -110,6 +110,7 @@ const BOCA_AL_TRABAJAR: Record<string, ModoDeBoca> = {
   web: "sonrisa",
   agente: "sonrisa",
   otra: "recta",
+  sinred: "ondulada",
 };
 
 /** Modo de boca que corresponde a la pose: las reacciones mandan. */

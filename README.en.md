@@ -10,8 +10,8 @@ you answer without switching windows.
 She is for people who run Claude Code in the terminal and leave long tasks
 running while they do something else.
 
-<!-- Placeholder: record docs/media/demo.gif and remove this comment. -->
-![Lia reacting to a Claude Code session](docs/media/demo.gif)
+
+![Lia in her four states: idle, working, needs you and done](docs/media/estados.png)
 
 > Independent project. **Not affiliated with or endorsed by Anthropic.**
 > Claude and Claude Code are trademarks of their respective owners.
@@ -22,6 +22,8 @@ The app's interface is in Spanish.
 
 - **States.** Lia mirrors what Claude Code is doing: idle, working, "needs
   you" and "done". With several conversations open, the most urgent one wins.
+- **Offline.** If the computer loses its network while Claude is working,
+  Lia shows it in her bubble; if Claude stops on an error, she tells you.
 - **Permissions.** When Claude asks permission for a command, a file or a URL,
   Lia shows a card with what it wants to do and two buttons. Lia never decides
   for you: if you do not answer within 60 s, Claude Code asks in the terminal
@@ -50,16 +52,14 @@ In **Settings → Appearance** (Ajustes → Apariencia), or from the tray menu,
 you can change Lia's colour. The change is instant and never interrupts
 anything pending.
 
-<!-- SCREENSHOT: the six palettes, one Lia per colour -->
-<!-- ![Lia's six palettes](docs/media/paletas.png) -->
+![Lia's six palettes](docs/media/paletas.png)
 
 - **Palettes:** Mint (the original), Sky, Lilac, Peach, Lemon and Cotton.
 - **Free colour:** a hue slider, or a colour typed as hex (`#RRGGBB`). Lia
-  takes the hue and softens it so her face and outline stay readable on
-  light and dark backgrounds.
+  turns that colour; she only lightens it a little if it is so dark that her
+  face would not show.
 
-<!-- SCREENSHOT: the Appearance tab in Settings, with the preview -->
-<!-- ![Appearance tab](docs/media/apariencia.png) -->
+![The Appearance tab in Settings, with the preview](docs/media/apariencia.png)
 
 Only which palette and costume you picked is stored, nothing else.
 
@@ -68,8 +68,7 @@ Only which palette and costume you picked is stored, nothing else.
 Lia can dress up. A costume is clothing she puts on, with its own motion: it
 does not change her body, her faces or what she does.
 
-<!-- SCREENSHOT: the costumes side by side -->
-<!-- ![Lia's costumes](docs/media/disfraces.png) -->
+![Lia's costumes: witch, pumpkin, vampire, kitten and black tie](docs/media/disfraces.png)
 
 - **Witch** (Halloween): a pointed hat with the petal as its ornament. It
   tilts when she moves and sinks over her brow when she is angry.
@@ -81,8 +80,7 @@ does not change her body, her faces or what she does.
 - **Black tie** (Party): a top hat with the petal as its ornament, ears, a
   cape and a collar.
 
-<!-- SCREENSHOT: one costume in the four states -->
-<!-- ![A costume in each state](docs/media/disfraz-estados.png) -->
+![The kitten in the four states](docs/media/disfraz-estados.png)
 
 Pick one in **Settings → Appearance** or from the tray. Each suggests a
 colour you can change; they work with any palette. Clicks on the hat, cape,

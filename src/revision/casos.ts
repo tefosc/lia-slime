@@ -33,7 +33,7 @@ const caricias = (desde: number, hasta: number): Paso[] =>
     accion: "acariciar",
   }));
 
-const ACTIVIDADES: Actividad[] = ["pensar", "leer", "buscar", "editar", "comando", "web", "agente", "otra"];
+const ACTIVIDADES: Actividad[] = ["pensar", "leer", "buscar", "editar", "comando", "web", "agente", "otra", "sinred"];
 
 export const CASOS: Caso[] = [
   // Los cuatro estados, en tres momentos de su animación.

@@ -358,6 +358,14 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   todos los disfraces en los 4 estados con las 6 paletas. Tras tocar el motor o un
   renderizador, las huellas deben seguir idénticas. Si cambias el dibujo a
   propósito, actualiza la referencia con `window.__revision`.
+- Sin conexión (`src/estado/useConexion.ts`): si el equipo se queda sin red
+  mientras Claude trabaja, la actividad pasa a ser `sinred` (wifi tachado en
+  la burbuja, cejas de preocupación, boca ondulada). Sale de
+  `navigator.onLine`, un dato local del sistema: Lia no hace ninguna
+  petición. Depende de WebView2 y tiene un límite: detecta que el equipo
+  perdió la red, no que falle internet con la red local en pie. Los hooks de
+  Claude Code no avisan de los reintentos ("Solicitud fallida ·
+  Reintentando"); solo llega `StopFailure` cuando se rinde.
 - Caricias seguidas durante unos segundos (`CARICIAS.tiempoParaEncanto`) la
   enamoran: dos botes y un meneo, ojos de corazón que laten, una ráfaga de
   corazones más grandes y, después, se queda flotando y meciéndose

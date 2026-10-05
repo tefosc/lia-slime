@@ -10,8 +10,7 @@ sin cambiar de ventana.
 Es para quien usa Claude Code en la terminal y deja tareas largas corriendo
 mientras hace otra cosa.
 
-<!-- Marcador: grabar docs/media/demo.gif y quitar este comentario. -->
-![Lia reaccionando a una sesión de Claude Code](docs/media/demo.gif)
+![Lia en sus cuatro estados: en reposo, trabajando, te necesita y terminó](docs/media/estados.png)
 
 > Proyecto independiente. **No está afiliado a Anthropic ni cuenta con su
 > respaldo.** Claude y Claude Code son marcas de sus respectivos dueños.
@@ -21,6 +20,8 @@ mientras hace otra cosa.
 - **Estados.** Lia refleja lo que hace Claude Code: en reposo, trabajando,
   "te necesita" y "terminó". Con varias conversaciones abiertas, manda la más
   urgente.
+- **Sin conexión.** Si el equipo se queda sin red mientras Claude trabaja,
+  Lia lo muestra en su burbuja; si Claude se detiene por un error, te avisa.
 - **Permisos.** Cuando Claude pide permiso para un comando, un archivo o una
   URL, Lia muestra una tarjeta con lo que quiere hacer y dos botones. Lia
   nunca decide por ti: si no respondes en 60 s, Claude Code pregunta en la
@@ -49,17 +50,15 @@ En **Ajustes → Apariencia**, o desde el menú de la bandeja, puedes cambiar el
 color de Lia. El cambio es inmediato y no interrumpe nada de lo que esté
 pendiente.
 
-<!-- CAPTURA: las seis paletas, una Lia por color -->
-<!-- ![Las seis paletas de Lia](docs/media/paletas.png) -->
+![Las seis paletas de Lia](docs/media/paletas.png)
 
 - **Paletas:** Menta (la de siempre), Celeste, Lila, Durazno, Limón y
   Algodón.
 - **Color libre:** un control de tono, o un color escrito en hexadecimal
-  (`#RRGGBB`). Lia toma el tono y lo suaviza para que su cara y su contorno
-  se sigan viendo bien sobre fondos claros y oscuros.
+  (`#RRGGBB`). Lia se pone de ese color; solo lo aclara un poco si es tan
+  oscuro que no se le vería la cara.
 
-<!-- CAPTURA: la pestaña Apariencia de Ajustes, con la vista previa -->
-<!-- ![Pestaña Apariencia](docs/media/apariencia.png) -->
+![La pestaña Apariencia de Ajustes, con la vista previa](docs/media/apariencia.png)
 
 Solo se guarda qué paleta y qué disfraz elegiste, nada más.
 
@@ -68,8 +67,7 @@ Solo se guarda qué paleta y qué disfraz elegiste, nada más.
 Lia puede disfrazarse. Un disfraz son prendas que se pone encima, con su
 propio movimiento: no cambia su cuerpo, sus caras ni lo que hace.
 
-<!-- CAPTURA: los disfraces, uno al lado del otro -->
-<!-- ![Disfraces de Lia](docs/media/disfraces.png) -->
+![Los disfraces de Lia: bruja, calabaza, vampiro, gatito y de gala](docs/media/disfraces.png)
 
 - **Bruja** (Halloween): sombrero puntiagudo con el pétalo de adorno. Se
   ladea al moverla y se le cala cuando se enoja.
@@ -81,8 +79,7 @@ propio movimiento: no cambia su cuerpo, sus caras ni lo que hace.
 - **De gala** (Fiesta): sombrero de copa con el pétalo de adorno, orejas,
   capa y collar.
 
-<!-- CAPTURA: un disfraz en los cuatro estados -->
-<!-- ![Un disfraz en cada estado](docs/media/disfraz-estados.png) -->
+![El gatito en los cuatro estados](docs/media/disfraz-estados.png)
 
 Se eligen en **Ajustes → Apariencia** o desde la bandeja. Cada uno propone un
 color, que puedes cambiar; se combinan con cualquier paleta. Los clics sobre

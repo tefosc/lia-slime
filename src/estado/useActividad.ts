@@ -11,7 +11,12 @@ export type Actividad =
   | "comando"
   | "web"
   | "agente"
-  | "otra";
+  | "otra"
+  /**
+   * No es una herramienta: el equipo se quedó sin red mientras Claude
+   * trabajaba, y Claude Code está reintentando (ver `useConexion`).
+   */
+  | "sinred";
 
 /** Tiempos de la burbuja de actividad, en ms. */
 export const ACTIVIDAD = {

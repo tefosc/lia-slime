@@ -12,8 +12,10 @@ import {
 } from "./audio/sonidos";
 import type { Sonido } from "./audio/sonidos";
 import { useActividad } from "./estado/useActividad";
+import type { Actividad } from "./estado/useActividad";
 import { despierta } from "./estado/sesiones";
 import type { EventoLia } from "./estado/sesiones";
+import { useConexion } from "./estado/useConexion";
 import { useEstadoLia } from "./estado/useEstadoLia";
 import { Mascota } from "./mascot/Mascota";
 import { disfrazDe } from "./disfraces/indice";
@@ -59,7 +61,11 @@ function App() {
   const { actual, pendientes, resolver, pregunta, responderPregunta, pasarPregunta } =
     usePermisos();
   const resultados = useResultados();
-  const actividad = useActividad();
+  const actividadDeClaude = useActividad();
+  // Sin red mientras Claude trabaja: Lia lo dice en su burbuja. Claude Code
+  // sigue reintentando por su cuenta; si se rinde, llega el aviso de error.
+  const conectada = useConexion();
+  const actividad: Actividad = conectada ? actividadDeClaude : "sinred";
   const registro = useRegistro();
   // Saludo al arrancar con Windows (el número elige la frase).
   const [saludo, setSaludo] = useState<number | null>(null);

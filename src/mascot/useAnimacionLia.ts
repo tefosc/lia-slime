@@ -319,6 +319,8 @@ export const TRABAJO = {
     // Agente: mira su burbuja y agita el pétalo, como llamando a alguien.
     agente: { periodo: 1.2, rebote: 0.01, balanceo: 1.8, petalo: 10, miradaX: -0.75, miradaY: -0.55, barrido: 0, periodoBarrido: 3 },
     otra: { periodo: 1.1, rebote: 0.012, balanceo: 1.4, petalo: 5, miradaX: -0.75, miradaY: -0.55, barrido: 0, periodoBarrido: 3 },
+    // Sin red: se mece despacio, mirando a un lado y a otro, como buscando la señal.
+    sinred: { periodo: 2.2, rebote: 0.006, balanceo: 3, petalo: 12, miradaX: 0, miradaY: -0.5, barrido: 0.9, periodoBarrido: 2.8 },
   } satisfies Record<Actividad, MovimientoDeTrabajo>,
   /** Rapidez con que pasa del movimiento de una actividad al de otra. */
   ritmoDeCambio: 2.5,

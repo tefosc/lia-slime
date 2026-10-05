@@ -20,6 +20,8 @@ Primera versión. Solo para Windows.
   peligrosos.
 - Resultado al terminar una tarea: burbuja ✓ y tarjeta con el último mensaje
   de Claude, la duración y las herramientas usadas. Modo privado.
+- Sin conexión: si el equipo se queda sin red mientras Claude trabaja, Lia
+  lo muestra en su burbuja, con cara de preocupación.
 - Aviso cuando Claude Code se detiene por un límite de uso u otro error. Con
   el límite agotado, Lia se va a descansar: suena un aviso propio, se duerme
   y se oculta hasta el siguiente evento.
