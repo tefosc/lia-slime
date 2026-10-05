@@ -53,7 +53,7 @@ export function Revision() {
   const matiz = Number(parametros.get("matiz") ?? NaN);
   const paleta = paletaDe(parametros.get("paleta") ?? undefined, matiz);
   const estilo = estiloDe(undefined, parametros.get("estilo") ?? undefined);
-  const disfraz = disfrazDe(undefined, parametros.get("disfraz") ?? undefined, estilo.id);
+  const disfraz = disfrazDe(parametros.get("disfraz") ?? undefined);
   const conReferencia =
     paleta.id === PALETAS[0].id && disfraz === SIN_DISFRAZ && estilo.id === estiloDe().id;
   const enlaceDisfraz = (id: string) => {

@@ -391,9 +391,9 @@ function App() {
     <div className={`escena${lado === "izquierda" ? " escena-izquierda" : ""}`}>
       <div className="lia-caja">
         <Mascota
-          estilo={estiloDe(preferencias.mascota, preferencias.estilo)}
+          estilo={estiloDe()}
           paleta={paletaDe(preferencias.paleta, preferencias.matiz)}
-          disfraz={disfrazDe(preferencias.mascota, preferencias.disfraz, preferencias.estilo)}
+          disfraz={disfrazDe(preferencias.disfraz)}
           estado={estadoMostrado}
           sueno={sueno}
           actividad={actividad}

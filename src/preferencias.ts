@@ -19,10 +19,8 @@ export interface Preferencias {
   islaAlBorde: boolean;
   /**
    * Apariencia: solo identificadores. Uno desconocido se resuelve al valor
-   * por defecto con `estiloDe` y `paletaDe`.
+   * por defecto con `disfrazDe` y `paletaDe`.
    */
-  mascota: string;
-  estilo: string;
   disfraz: string;
   paleta: string;
   /** Matiz del color libre, en grados (0 a 359). */
@@ -39,8 +37,6 @@ export const PREFERENCIAS_POR_DEFECTO: Preferencias = {
   sonidosAvisos: true,
   sonidosJuego: true,
   islaAlBorde: true,
-  mascota: "lia",
-  estilo: "clasico",
   disfraz: "ninguno",
   paleta: "menta",
   matiz: 155,

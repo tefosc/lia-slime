@@ -64,6 +64,4 @@ export interface EstiloDeMascota {
   Dibujo: ComponentType<PropsDibujo>;
   /** Crea el renderizador sobre el dibujo ya pintado en `contenedor`. */
   crearRenderizador(contenedor: HTMLElement): Renderizador;
-  /** false si este estilo aún no dibuja los disfraces. */
-  conDisfraces?: boolean;
 }
