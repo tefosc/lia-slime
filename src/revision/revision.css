@@ -82,3 +82,21 @@ body,
   border-color: #eef2f3;
   background: #eef2f3;
 }
+
+.revision-reglas {
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.revision-reglas ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.revision-reglas .bien {
+  color: #9be3c3;
+}
+
+.revision-reglas .mal {
+  color: #ffb59e;
+}

@@ -6,6 +6,8 @@ import { estiloDe, mascotaDe } from "../mascotas/indice";
 import { PALETA_LIBRE, PALETAS, paletaDe } from "../mascotas/paletas";
 import { CASOS } from "./casos";
 import referencia from "./referencia.json";
+import { escalaDe, revisarDibujo } from "./reglas";
+import { validarDisfraz } from "../disfraces/validar";
 
 // Página de revisión (solo desarrollo): http://localhost:1420/?revision
 //
@@ -71,6 +73,8 @@ export function Revision() {
     return `?${otros}`;
   };
   const [huellas, setHuellas] = useState<Record<string, string>>({});
+  /** Reglas del arte incumplidas por el disfraz que se está viendo. */
+  const [reglas, setReglas] = useState<{ errores: string[]; escala: number } | null>(null);
 
   useEffect(() => {
     // Sin sonidos: hay decenas de Lias reaccionando a la vez.
@@ -99,6 +103,15 @@ export function Revision() {
           chispa.style.transform = `translate(${dx}px, ${dy}px)`;
         }
       }
+      // Reglas del arte sobre lo que se ve: se revisan todos los casos, porque
+      // una pieza puede tapar la cara solo en alguna reacción.
+      const errores = new Set<string>();
+      let escala = 1;
+      for (const svg of document.querySelectorAll<SVGSVGElement>("[data-caso] svg.lia")) {
+        for (const e of revisarDibujo(svg)) errores.add(e);
+        escala = Math.min(escala, escalaDe(svg));
+      }
+      setReglas({ errores: [...errores], escala });
       window.__revision = nuevas;
       setHuellas(nuevas);
     }, 200);
@@ -156,6 +169,26 @@ export function Revision() {
           );
         })}
       </nav>
+      <section className="revision-reglas">
+        <strong>Reglas del arte</strong>
+        <ul>
+          {DISFRACES.map((d) => {
+            const errores = validarDisfraz(d, PALETAS.map((p) => p.id));
+            return (
+              <li key={d.id} className={errores.length ? "mal" : "bien"}>
+                {d.nombre}: {errores.length ? errores.join("; ") : "datos correctos"}
+              </li>
+            );
+          })}
+          {disfraz && reglas && (
+            <li className={reglas.errores.length ? "mal" : "bien"}>
+              {disfraz.nombre}, dibujado en los {casos.length} casos:{" "}
+              {reglas.errores.length ? reglas.errores.join("; ") : "no tapa la cara y cabe en la ventana"}
+              {reglas.escala < 1 && ` · escala de seguridad ${reglas.escala.toFixed(2)}`}
+            </li>
+          )}
+        </ul>
+      </section>
       <div className={`revision-casos${fondo ? ` fondo-${fondo}` : ""}`}>
         {casos.map((c) => {
           const igual = !conReferencia || huellas[c.nombre] === esperadas[c.nombre];

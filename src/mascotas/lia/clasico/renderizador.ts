@@ -26,7 +26,14 @@ interface PiezaMovil {
  * 54 en vertical; al cuerpo se le reserva sitio para saltar y flotar. Si un
  * disfraz no cabe, la mascota entera se reduce, anclada en su base.
  */
-const SEGURO = { arriba: -108, lado: 80, salto: 22 };
+const SEGURO = {
+  arriba: -109,
+  lado: 81.5,
+  /** Lo que sube el cuerpo al saltar o flotar, en unidades. */
+  salto: 22,
+  /** `getBBox` no cuenta el grosor de los trazos. */
+  trazo: 4.5,
+};
 
 /** Punto de apoyo del cuerpo: la deformación se ancla en su base. */
 const BASE_Y = 38;
@@ -88,6 +95,12 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
   /** El disfraz puede recolocar el pétalo: desplazamiento, giro y escala. */
   let recolocado: [dx: number, dy: number, giro: number, escala: number] | null = null;
   let escala = 1;
+  /**
+   * Con disfraz: escala fija que deja sitio al salto, y lo que ocupa en
+   * reposo hacia los lados y hacia arriba, para vigilar en cada fotograma
+   * que al ensancharse o inclinarse no se salga por los lados.
+   */
+  let vestida: { fija: number; medio: number; alto: number; personaje: SVGElement } | null = null;
   const gotaEl = buscar(svg, "lia-gota");
   const personajeEl = buscar(svg, "lia-personaje");
   const caraEl = buscar(svg, "lia-cara");
@@ -142,24 +155,31 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
   const medirEscala = () => {
     const personaje = buscar(svg, "lia-personaje");
     const flotante = svg?.querySelector<SVGGraphicsElement>("#lia-flotante");
-    const vestida = svg?.querySelector("[data-pieza]") != null;
-    let nueva = 1;
-    if (vestida && flotante) {
-      const caja = flotante.getBBox();
-      const alto = BASE_Y - caja.y + SEGURO.salto;
-      const medio = Math.max(-caja.x, caja.x + caja.width) + 3;
-      nueva = Math.min(1, (BASE_Y - SEGURO.arriba) / alto, SEGURO.lado / medio);
+    escritos.delete("escala");
+    if (!personaje || !flotante || svg?.querySelector("[data-pieza]") == null) {
+      // Sin disfraz no se escribe nada (y se quita lo que dejó el anterior).
+      if (vestida) personaje?.removeAttribute("transform");
+      vestida = null;
+      escala = 1;
+      return;
     }
-    escala = nueva;
-    if (!personaje) return;
-    if (nueva < 1) {
-      personaje.setAttribute(
-        "transform",
-        `translate(0,${BASE_Y}) scale(${nueva.toFixed(3)}) translate(0,${-BASE_Y})`,
+    const caja = flotante.getBBox();
+    const alto = BASE_Y - caja.y + SEGURO.trazo;
+    let medio = Math.max(-caja.x, caja.x + caja.width) + SEGURO.trazo;
+    // Una pieza con resorte gira: hacia los lados cuenta todo el círculo que
+    // puede barrer.
+    for (const pieza of piezas) {
+      if (!pieza.resorte) continue;
+      const c = (pieza.el as SVGGraphicsElement).getBBox();
+      const radio = Math.hypot(
+        Math.max(Math.abs(c.x), Math.abs(c.x + c.width)),
+        Math.max(Math.abs(c.y), Math.abs(c.y + c.height)),
       );
-    } else if (personaje.hasAttribute("transform")) {
-      personaje.removeAttribute("transform");
+      medio = Math.max(medio, Math.abs(pieza.base.x) + radio + SEGURO.trazo);
     }
+    const fija = Math.min(1, (BASE_Y - SEGURO.arriba) / (alto + SEGURO.salto), SEGURO.lado / medio);
+    vestida = { fija, medio, alto, personaje };
+    escala = fija;
   };
   buscarAccesorio();
 
@@ -359,6 +379,22 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
           ? `translate(${(pose.accesorio.x + recolocado[0]).toFixed(1)},${(pose.accesorio.y + recolocado[1]).toFixed(1)}) rotate(${(pose.accesorio.giro + recolocado[2]).toFixed(1)}) scale(${recolocado[3]})`
           : `translate(${pose.accesorio.x.toFixed(1)},${pose.accesorio.y.toFixed(1)}) rotate(${pose.accesorio.giro.toFixed(1)})`,
       );
+      if (vestida) {
+        // Escala de seguridad: la fija, o menos si en este fotograma el
+        // cuerpo se ensancha, se desplaza o se inclina tanto que una pieza
+        // se saldría por un lado. Nunca se recorta nada.
+        const inclinado = Math.abs(Math.sin((pose.cuerpo.giro * Math.PI) / 180)) * vestida.alto;
+        const alcance = vestida.medio * pose.cuerpo.escalaX + Math.abs(pose.cuerpo.x) + inclinado;
+        escala = Math.min(vestida.fija, SEGURO.lado / alcance);
+        escribir(
+          vestida.personaje,
+          "escala",
+          "transform",
+          escala < 0.999
+            ? `translate(0,${BASE_Y}) scale(${escala.toFixed(3)}) translate(0,${-BASE_Y})`
+            : "",
+        );
+      }
       if (piezas.length > 0) {
         // Piezas del disfraz: cada una gira lo que diga su resorte y sube un
         // poco cuando subiría el pétalo.
