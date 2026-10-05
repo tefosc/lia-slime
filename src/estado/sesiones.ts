@@ -73,6 +73,18 @@ export function efectoDe(evento: EventoLia): Efecto {
   }
 }
 
+/**
+ * ¿Debe este evento despertar a Lia y contar como actividad? Sí cuando hay
+ * algo que enseñar: Claude trabaja, necesita algo, terminó o falló. No al
+ * abrir o cerrar una sesión ni con avisos que no piden nada: sin esto, Lia
+ * reaparecía sin motivo al cerrar Claude Code.
+ */
+export function despierta(evento: EventoLia): boolean {
+  if (evento.evento === "StopFailure") return true;
+  const efecto = efectoDe(evento);
+  return efecto === "trabajando" || efecto === "necesita" || efecto === "termino";
+}
+
 interface Sesion {
   estado: EstadoLia;
   /** Momento del último cambio de estado, en ms. */

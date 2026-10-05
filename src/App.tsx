@@ -12,6 +12,8 @@ import {
 } from "./audio/sonidos";
 import type { Sonido } from "./audio/sonidos";
 import { useActividad } from "./estado/useActividad";
+import { despierta } from "./estado/sesiones";
+import type { EventoLia } from "./estado/sesiones";
 import { useEstadoLia } from "./estado/useEstadoLia";
 import { Mascota } from "./mascot/Mascota";
 import { disfrazDe } from "./disfraces/indice";
@@ -98,9 +100,12 @@ function App() {
 
   useEffect(() => {
     const escuchas = [
-      // Cualquier evento de Claude Code cuenta como actividad y, si Lia se
-      // había ocultado por inactividad, la hace volver.
-      listen("lia-evento", () => {
+      // Un evento de Claude Code cuenta como actividad y, si Lia se había
+      // ocultado por inactividad, la hace volver. Solo los que tienen algo
+      // que enseñar: abrir o cerrar Claude Code (`SessionStart`,
+      // `SessionEnd`) o un aviso que no pide nada no la despiertan.
+      listen<EventoLia>("lia-evento", ({ payload }) => {
+        if (!despierta(payload)) return;
         if (faseActual.current === "oculta") invoke("mostrar").catch(() => {});
         setPulso((n) => n + 1);
       }),

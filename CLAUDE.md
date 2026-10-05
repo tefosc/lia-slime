@@ -172,9 +172,12 @@ no está conectada.
 - Nunca se duerme con una solicitud de permiso o una tarjeta pendiente, un
   resultado sin leer, una sesión que no esté en reposo, una reacción en curso
   o un arrastre: `bloqueada` en `App.tsx` y el temporizador del motor.
-- Vuelve con cualquier evento de Claude Code (solo si se ocultó por
-  inactividad: oculta a mano desde la bandeja, se queda oculta), con un clic
-  en el icono o con "Mostrar Lia". Mientras se vuelve a formar, el dibujo se
+- Vuelve con un evento de Claude Code que tenga algo que enseñar (Claude
+  trabaja, necesita algo, terminó o falló: `despierta` en `sesiones.ts`),
+  con un clic en el icono o con "Mostrar Lia". Abrir o cerrar Claude Code
+  (`SessionStart`, `SessionEnd`) y los avisos que no piden nada no la
+  despiertan ni cuentan como actividad. Solo vuelve sola si se ocultó por
+  inactividad: oculta a mano desde la bandeja, se queda oculta. Mientras se vuelve a formar, el dibujo se
   queda en reposo y el estado pendiente se muestra al terminar.
 - Adormecida, un clic o pasar el cursor por encima la despierta.
 - Con movimiento reducido solo hay ojos cerrados y un fundido.
