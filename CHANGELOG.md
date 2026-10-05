@@ -37,8 +37,15 @@ Primera versión. Solo para Windows.
   vuelve con el siguiente evento.
 - Sonidos sintetizados, en dos categorías que se pueden silenciar, con
   volumen.
+- Apariencia: seis paletas de color (Menta, Celeste, Lila, Durazno, Limón y
+  Algodón) y color libre con un control de tono o un color en hexadecimal.
+  Se elige en la pestaña "Apariencia" de Ajustes, con vista previa, o desde
+  la bandeja, y cambia al instante.
+- Lia queda preparada para llevar disfraces: prendas declaradas como datos,
+  con anclas, capas, movimiento propio y una escala de seguridad que evita
+  que nada se recorte. Esta versión no incluye ningún disfraz.
 - Icono en la bandeja: mostrar u ocultar, modo privado, inactividad, sonidos,
-  iniciar con Windows, Ajustes y salir.
+  apariencia, iniciar con Windows, Ajustes y salir.
 - Ventana de Ajustes con instalación y retirada de los hooks de Claude Code:
   vista previa del cambio, confirmación, respaldo y escritura atómica.
 - Receptor local de eventos en `127.0.0.1:47615` con token por arranque.

@@ -42,6 +42,30 @@ The app's interface is in Spanish.
   They can be muted per category.
 - **Unobtrusive.** No taskbar entry, never steals focus, and clicks outside
   her body go through to the window below. She lives in the system tray.
+- **Appearance.** Pick her colour from six palettes or any hue you like.
+
+## Appearance
+
+In **Settings → Appearance** (Ajustes → Apariencia), or from the tray menu,
+you can change Lia's colour. The change is instant and never interrupts
+anything pending.
+
+<!-- SCREENSHOT: the six palettes, one Lia per colour -->
+<!-- ![Lia's six palettes](docs/media/paletas.png) -->
+
+- **Palettes:** Mint (the original), Sky, Lilac, Peach, Lemon and Cotton.
+- **Free colour:** a hue slider, or a colour typed as hex (`#RRGGBB`). Lia
+  takes the hue and softens it so her face and outline stay readable on
+  light and dark backgrounds.
+
+<!-- SCREENSHOT: the Appearance tab in Settings, with the preview -->
+<!-- ![Appearance tab](docs/media/apariencia.png) -->
+
+Lia is ready to wear **costumes** (clothes she puts on, with their own
+motion); they will arrive in a later version. To draw one, see
+[docs/crear-disfraz.md](docs/crear-disfraz.md) (in Spanish).
+
+Only which palette and costume you picked is stored, nothing else.
 
 ## Installation
 
@@ -175,7 +199,8 @@ To try it without Claude Code, use `scripts/simular-evento.ps1`.
 |---|---|
 | `src/` | Interface (React and TypeScript) |
 | `src/mascot/` | The character engine: animation and reactions |
-| `src/mascotas/` | The drawings: each pet with its styles |
+| `src/mascotas/` | The drawings: each pet with its styles, and the palettes |
+| `src/disfraces/` | The costumes, as data |
 | `src/estado/`, `src/permisos/`, `src/resultados/` | Sessions, permission cards and results |
 | `src/audio/` | Synthesized sounds |
 | `src/ajustes/` | Settings window |

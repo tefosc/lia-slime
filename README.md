@@ -41,6 +41,31 @@ mientras hace otra cosa.
   (sin archivos de audio). Se pueden silenciar por categoría.
 - **Discreta.** No aparece en la barra de tareas, no roba el foco y los clics
   fuera de su cuerpo pasan a la ventana de debajo. Vive en la bandeja.
+- **Apariencia.** Elige su color entre seis paletas o con un tono a tu gusto.
+
+## Apariencia
+
+En **Ajustes → Apariencia**, o desde el menú de la bandeja, puedes cambiar el
+color de Lia. El cambio es inmediato y no interrumpe nada de lo que esté
+pendiente.
+
+<!-- CAPTURA: las seis paletas, una Lia por color -->
+<!-- ![Las seis paletas de Lia](docs/media/paletas.png) -->
+
+- **Paletas:** Menta (la de siempre), Celeste, Lila, Durazno, Limón y
+  Algodón.
+- **Color libre:** un control de tono, o un color escrito en hexadecimal
+  (`#RRGGBB`). Lia toma el tono y lo suaviza para que su cara y su contorno
+  se sigan viendo bien sobre fondos claros y oscuros.
+
+<!-- CAPTURA: la pestaña Apariencia de Ajustes, con la vista previa -->
+<!-- ![Pestaña Apariencia](docs/media/apariencia.png) -->
+
+Lia está preparada para llevar **disfraces** (prendas que se pone encima,
+con sus propios movimientos); llegarán en una próxima versión. Si quieres
+dibujar uno: [docs/crear-disfraz.md](docs/crear-disfraz.md).
+
+Solo se guarda qué paleta y qué disfraz elegiste, nada más.
 
 ## Instalación
 
@@ -174,7 +199,8 @@ Para probar sin Claude Code, usa `scripts/simular-evento.ps1`.
 |---|---|
 | `src/` | Interfaz (React y TypeScript) |
 | `src/mascot/` | El motor del personaje: animación y reacciones |
-| `src/mascotas/` | Los dibujos: cada mascota con sus estilos |
+| `src/mascotas/` | Los dibujos: cada mascota con sus estilos, y las paletas |
+| `src/disfraces/` | Los disfraces, como datos |
 | `src/estado/`, `src/permisos/`, `src/resultados/` | Sesiones, tarjetas de permiso y resultados |
 | `src/audio/` | Sonidos sintetizados |
 | `src/ajustes/` | Ventana de Ajustes |

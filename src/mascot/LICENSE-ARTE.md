@@ -13,8 +13,11 @@ reservados.
 El personaje **Lia**: su nombre, su diseño y sus expresiones, y los archivos
 que lo representan, entre ellos:
 
-- los dibujos del personaje en `src/mascot/` (la geometría SVG de `Lia.tsx`,
-  `icono-app.svg`, `icono-bandeja.svg`),
+- los dibujos del personaje: la geometría SVG de
+  `src/mascotas/lia/clasico/` y los iconos `src/mascot/icono-app.svg` e
+  `icono-bandeja.svg`,
+- los disfraces del personaje en `src/disfraces/` (las formas y los colores
+  de cada prenda) y sus paletas de color en `src/mascotas/paletas.ts`,
 - `docs/lia-referencia.svg`,
 - los iconos generados en `src-tauri/icons/`,
 - las capturas, GIF y videos del personaje en `docs/media/`.

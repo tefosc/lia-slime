@@ -9,7 +9,7 @@ use std::thread;
 use std::time::Duration;
 
 use serde::Serialize;
-use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, State, Wry};
 
@@ -25,8 +25,45 @@ const EVENTO_PRIVADO: &str = "lia-privado";
 const EVENTO_PREFERENCIAS: &str = "lia-preferencias";
 const EVENTO_REGISTRO: &str = "lia-registro";
 
+/// Paletas del submenú "Color": id y nombre. Deben coincidir con las de
+/// `src/mascotas/paletas.ts`; "libre" es el color libre, que conserva el
+/// matiz elegido en Ajustes.
+const PALETAS: [(&str, &str); 7] = [
+    ("menta", "Menta"),
+    ("celeste", "Celeste"),
+    ("lila", "Lila"),
+    ("durazno", "Durazno"),
+    ("limon", "Limón"),
+    ("algodon", "Algodón"),
+    ("libre", "Color libre"),
+];
+
+/// Disfraces del submenú "Disfraz": id y nombre. Deben coincidir con los de
+/// `src/disfraces/indice.ts`. En la versión 0.1.0 solo existe "sin disfraz";
+/// los demás, como en la interfaz, solo están en desarrollo.
+#[cfg(not(debug_assertions))]
+const DISFRACES: [(&str, &str); 1] = [("ninguno", "Sin disfraz")];
+#[cfg(debug_assertions)]
+const DISFRACES: [(&str, &str); 8] = [
+    ("ninguno", "Sin disfraz"),
+    ("gatito", "Gatito"),
+    ("panda", "Panda"),
+    ("bruja", "Bruja"),
+    ("calabaza", "Calabaza"),
+    ("fantasma", "Fantasma"),
+    ("murcielago", "Murciélago"),
+    ("prueba", "De prueba"),
+];
+
+/// Prefijos de los ids de menú de la apariencia.
+const MENU_PALETA: &str = "paleta:";
+const MENU_DISFRAZ: &str = "disfraz:";
+
 /// Elementos del menú que cambian mientras la app está abierta.
 pub struct Bandeja {
+    /// Opciones de "Color" y "Disfraz", con el id que representan.
+    paletas: Vec<(&'static str, CheckMenuItem<Wry>)>,
+    disfraces: Vec<(&'static str, CheckMenuItem<Wry>)>,
     mostrar: MenuItem<Wry>,
     privado: CheckMenuItem<Wry>,
     inactividad: CheckMenuItem<Wry>,
@@ -85,6 +122,28 @@ pub fn crear(
         sin_atajo,
     )?;
     let salir_item = MenuItem::with_id(app, "salir", "Salir", true, sin_atajo)?;
+
+    // Apariencia: un submenú con Disfraz y Color. Solo se guardan ids.
+    let color = Submenu::with_id(app, "color", "Color", true)?;
+    let mut paletas = Vec::new();
+    for (id, nombre) in PALETAS {
+        let elegida = preferencias.paleta == id;
+        let item =
+            CheckMenuItem::with_id(app, format!("{MENU_PALETA}{id}"), nombre, true, elegida, sin_atajo)?;
+        color.append(&item)?;
+        paletas.push((id, item));
+    }
+    let disfraz = Submenu::with_id(app, "disfraz", "Disfraz", true)?;
+    let mut disfraces = Vec::new();
+    for (id, nombre) in DISFRACES {
+        let elegido = preferencias.disfraz == id;
+        let item =
+            CheckMenuItem::with_id(app, format!("{MENU_DISFRAZ}{id}"), nombre, true, elegido, sin_atajo)?;
+        disfraz.append(&item)?;
+        disfraces.push((id, item));
+    }
+    let apariencia = Submenu::with_items(app, "Apariencia", true, &[&disfraz, &color])?;
+
     let menu = Menu::with_items(
         app,
         &[
@@ -96,6 +155,7 @@ pub fn crear(
             &sonidos,
             &inicio,
             &PredefinedMenuItem::separator(app)?,
+            &apariencia,
             &ajustes_item,
             &salir_item,
         ],
@@ -151,7 +211,26 @@ pub fn crear(
                     let _ = ajustes::fijar_inicio_automatico(app, !activo);
                 }
                 "salir" => salir(app),
-                _ => {}
+                // Apariencia: el id elegido va detrás del prefijo.
+                otro => {
+                    if let Some(id) = otro.strip_prefix(MENU_PALETA) {
+                        aplicar_preferencias(
+                            app,
+                            Preferencias {
+                                paleta: id.to_string(),
+                                ..actuales
+                            },
+                        );
+                    } else if let Some(id) = otro.strip_prefix(MENU_DISFRAZ) {
+                        aplicar_preferencias(
+                            app,
+                            Preferencias {
+                                disfraz: id.to_string(),
+                                ..actuales
+                            },
+                        );
+                    }
+                }
             }
         })
         .on_tray_icon_event(|icono, evento| {
@@ -171,6 +250,8 @@ pub fn crear(
         .build(app)?;
 
     Ok(Bandeja {
+        paletas,
+        disfraces,
         mostrar,
         privado,
         inactividad,
@@ -188,6 +269,14 @@ pub fn aplicar_preferencias(app: &AppHandle, nuevas: Preferencias) -> Preferenci
             .inactividad
             .set_checked(vigentes.ocultar_por_inactividad);
         let _ = bandeja.sonidos.set_checked(con_sonido(&vigentes));
+        // Windows marca y desmarca solo el elemento pulsado: se vuelven a
+        // marcar todos para que quede elegido uno, el vigente.
+        for (id, item) in &bandeja.paletas {
+            let _ = item.set_checked(vigentes.paleta == *id);
+        }
+        for (id, item) in &bandeja.disfraces {
+            let _ = item.set_checked(vigentes.disfraz == *id);
+        }
     }
     let _ = app.emit(EVENTO_PRIVADO, vigentes.modo_privado);
     let _ = app.emit(EVENTO_PREFERENCIAS, vigentes.clone());

@@ -21,7 +21,8 @@ no está conectada.
   `src-tauri/target/release/bundle/nsis`.
 - `pnpm licencias` — regenera `docs/licencias-de-terceros.md`.
 - `pnpm build` — comprueba tipos (`tsc`) y compila solo el frontend.
-- `pnpm verificar` — comprueba el detector de mareo con muestras sintéticas.
+- `pnpm verificar` — comprueba el detector de mareo, el formato de mensajes,
+  las paletas y las reglas del arte de los disfraces.
 - `cargo test` (dentro de `src-tauri/`) — pruebas de la instalación de hooks
   y de las preferencias.
 - `pnpm tauri build --no-bundle` — compilación de producción sin instalador,
@@ -40,6 +41,7 @@ no está conectada.
     del click-through, qué hay bajo el cursor, caja y centro del cuerpo).
   - `Mascota.tsx` — contenedor genérico: une motor, renderizador y mouse
     (arrastre, toques y caricias). No sabe si el dibujo es SVG o canvas.
+- `src/disfraces/` — disfraces, como datos (ver "Preferencias").
 - `src/mascotas/` — paquetes de mascotas incluidos en la app. `indice.ts` es
   el catálogo fijo (nunca se cargan mascotas del disco, la red ni carpetas
   del usuario) y `estiloDe` resuelve ids desconocidos al valor por defecto.
@@ -208,25 +210,48 @@ no está conectada.
   guarda: modo privado, ocultarse por inactividad y sus minutos, volumen,
   las dos casillas de sonido y la apariencia. Nada de uso, horarios ni
   contenido.
-- Disfraces: Lia puede ir de gatito, panda, bruja, calabaza, fantasma o
-  murciélago. Para añadir uno: su entrada en el manifiesto, sus piezas en
-  `Disfraz.tsx` (y `PARES` o `TOCADOS` si alguna se mueve) y su miniatura en
-  `src/ajustes/Apariencia.tsx`. Un disfraz son prendas que
-  se pone encima, con sus propios colores: gorrita con orejas, cola y
-  bigotes para el gatito; diadema con orejas y antifaz con lentes claros
-  para el panda (así los ojos se siguen viendo). Va sin pétalo; el cuerpo,
-  las caras y las reacciones son los mismos. Los declara el
-  manifiesto de la mascota y, en el clásico, los dibuja
-  `src/mascotas/lia/clasico/Disfraz.tsx`; el renderizador mueve las orejas
-  con el mismo "accesorio" de la pose que mueve el pétalo. Sin disfraz, el
-  dibujo es exactamente el de antes.
-- Efectos con tema: un disfraz puede cambiar la figura de los efectos que ya
-  existen (`TEMAS` en `Disfraz.tsx`): destellos al terminar (murciélagos,
-  caramelos, fantasmitas, huellas, estrellas y luna), lo que gira al
-  marearse y el color de los corazones. Se mueven igual que siempre; el
-  motor no cambia. La única animación nueva es el "puf" de la bruja al
-  terminar: chispas que saltan del sombrero una vez, animadas con CSS
-  (`lia-chispa` en `lia.css`), que no salen con movimiento reducido.
+- Disfraces (`src/disfraces/`, guía en `docs/crear-disfraz.md`): prendas que
+  Lia se pone encima. Cada uno es un objeto de datos en
+  `src/disfraces/<id>/disfraz.ts`: piezas con formas (trazados, círculos,
+  elipses, rectángulos) en una de cuatro capas, colocadas en anclas con
+  nombre, con colores fijos o slots de la paleta. Nunca SVG en texto, y
+  nunca cargados del disco o de la red: `indice.ts` es el catálogo fijo. No
+  lo relajes.
+  - En la 0.1.0 el catálogo publicado está vacío: los seis disfraces de la
+    Fase 2 (gatito, panda, bruja, calabaza, fantasma, murciélago) y el de
+    prueba solo existen con `import.meta.env.DEV`, y Vite los deja fuera de
+    la compilación de producción.
+  - `src/mascotas/lia/clasico/Disfraz.tsx` los dibuja (`CapaDeDisfraz`) y
+    define las anclas del estilo clásico (`ANCLAS_CLASICO`). Las piezas no
+    reciben el mouse: la zona activa es solo el cuerpo.
+  - Movimiento: `src/mascot/fisicaSecundaria.ts`. El disfraz declara
+    resortes con nombre y reacciones a eventos; el motor los alimenta con el
+    balanceo de la cabeza, el aplastamiento y la velocidad del cuerpo, y los
+    entrega en `pose.fisicaSecundaria`. Sin disfraz no hay resortes y no se
+    calcula nada.
+  - Escala de seguridad (`medirEscala` y `dibujar` en el renderizador
+    clásico): si el disfraz no cabe en la ventana, Lia se reduce anclada en
+    su base; además se vigila en cada fotograma que al ensancharse o
+    inclinarse nada se salga por los lados. Sin disfraz no se escribe nada.
+  - Reglas del arte: `src/disfraces/validar.ts` comprueba los datos (con
+    `pnpm verificar`) y la página de revisión (`src/revision/reglas.ts`), el
+    dibujo: que nada tape la cara sin `cubreLaCara: "aprobado"` y que nada se
+    salga de la ventana.
+  - Un disfraz puede ocultar o recolocar el pétalo, sugerir una paleta,
+    cambiar el color de los trazos de la cara y cambiar la figura de efectos
+    que ya existen (destellos, mareo, corazones, chispas al terminar).
+  - Sin disfraz, el dibujo es exactamente el de antes: las 46 huellas no
+    cambian.
+- Ajustes tiene dos pestañas. "Apariencia" (`src/ajustes/Apariencia.tsx`)
+  lleva una vista previa con su propio motor en modo `vistaPrevia` (no
+  escucha el cursor ni la ventana de Lia, no mueve ni oculta nada, sin
+  sonido), que solo existe con esa pestaña abierta y se quita si Ajustes se
+  minimiza. Las miniaturas son el dibujo en reposo, sin motor. La bandeja
+  tiene el submenú "Apariencia": sus listas (`PALETAS` y `DISFRACES` en
+  `bandeja.rs`) deben coincidir con las de la interfaz.
+- Cambiar de disfraz o de color no reinicia el motor ni toca permisos,
+  tarjetas, burbujas o la ventana: solo cambian el dibujo y, con una
+  transición de 150 ms, su opacidad.
 - Un estilo nuevo es solo otro renderizador: el motor habla siempre con el
   vigente (`renderizadorActual`) y, si cambia, lo sustituye sin reiniciarse.
   El pixel art está empezado en la rama `pixel`; no forma parte de la 0.1.0.
@@ -319,7 +344,8 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   muestra a Lia congelada en cada estado y reacción y compara la huella de
   cada dibujo con `src/revision/referencia.json`. Con `&paleta=lila` (o
   `&paleta=libre&matiz=210`), `&disfraz=gatito` y `&fondo=claro` se revisan
-  los colores y los disfraces. Tras tocar el motor o un
+  los colores y los disfraces, y la sección "Reglas del arte" lista lo que
+  incumple cada disfraz. Tras tocar el motor o un
   renderizador, las huellas deben seguir idénticas. Si cambias el dibujo a
   propósito, actualiza la referencia con `window.__revision`.
 - Caricias seguidas durante unos segundos la "encantan": dos botes, meneo y
