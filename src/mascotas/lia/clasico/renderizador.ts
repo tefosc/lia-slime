@@ -5,7 +5,9 @@ import { TOQUES } from "../../../mascot/useAnimacionLia";
 import { elipseDe } from "../../../zonas";
 import type { Forma } from "../../../zonas";
 import type { Ancla } from "../../../disfraces/tipos";
+import type { Movimiento } from "../../../disfraces/tipos";
 import { ANCLAS_CLASICO, transformPieza } from "./Disfraz";
+import type { BaseDePieza, Empuje } from "./Disfraz";
 import { bocaEsfuerzo, grosorOjosEsfuerzo, ojosEsfuerzo, sombraPara } from "./trazos";
 
 /** Centro del cuerpo dentro del viewBox (-82 -110 164 164), en fracción. */
@@ -15,10 +17,12 @@ const CENTRO_CUERPO = { x: 82 / 164, y: 110 / 164 };
 interface PiezaMovil {
   el: SVGElement;
   clave: string;
-  base: { x: number; y: number; giro: number; espejo: boolean };
-  resorte: string | undefined;
-  factor: number;
+  base: BaseDePieza;
+  mueve: Movimiento[];
   sube: number;
+  /** Opacidad en reposo y modos de boca con los que se ve (null: siempre). */
+  opacidad: number;
+  visibleCon: string[] | null;
 }
 
 /**
@@ -171,16 +175,26 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
     piezas = [];
     for (const el of svg?.querySelectorAll<SVGElement>("[data-pieza]") ?? []) {
       const [x, y, giro, espejo] = (el.dataset.base ?? "0,0,0,0").split(",").map(Number);
-      const resorte = el.dataset.resorte;
       const sube = Number(el.dataset.sube) || 0;
-      if (!resorte && !sube) continue;
+      let mueve: Movimiento[] = [];
+      try {
+        mueve = el.dataset.mueve ? (JSON.parse(el.dataset.mueve) as Movimiento[]) : [];
+      } catch {
+        mueve = [];
+      }
+      const visibleCon = el.dataset.visible?.split(",") ?? null;
+      if (mueve.length === 0 && !sube && !visibleCon) continue;
+      const clave = `pieza-${el.dataset.pieza}`;
+      escritos.delete(clave);
+      escritos.delete(`${clave}-op`);
       piezas.push({
         el,
-        clave: `pieza-${el.dataset.pieza}`,
+        clave,
         base: { x, y, giro, espejo: espejo === 1 },
-        resorte,
-        factor: Number(el.dataset.factor) || 0,
+        mueve,
         sube,
+        opacidad: el.dataset.opacidad === undefined ? 1 : Number(el.dataset.opacidad),
+        visibleCon,
       });
     }
     medirEscala();
@@ -207,7 +221,7 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
     // Una pieza con resorte gira: hacia los lados cuenta todo el círculo que
     // puede barrer.
     for (const pieza of piezas) {
-      if (!pieza.resorte) continue;
+      if (!pieza.mueve.some((m) => m.giro)) continue;
       const c = (pieza.el as SVGGraphicsElement).getBBox();
       const radio = Math.hypot(
         Math.max(Math.abs(c.x), Math.abs(c.x + c.width)),
@@ -270,7 +284,6 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
     reencontrar(): void {
       buscarAccesorio();
       escritos.delete("petalo");
-      for (const pieza of piezas) escritos.delete(pieza.clave);
       ojosEsfuerzoEl = buscar(svg, "lia-ojos-esfuerzo");
       bocaOnduladaEl = buscar(svg, "lia-boca-ondulada");
       // Son elementos nuevos: lo escrito en los anteriores ya no vale.
@@ -443,12 +456,33 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
         );
       }
       if (piezas.length > 0) {
-        // Piezas del disfraz: cada una gira lo que diga su resorte y sube un
-        // poco cuando subiría el pétalo.
+        // Piezas del disfraz: cada una se mueve lo que digan sus resortes,
+        // sube un poco cuando subiría el pétalo y, si depende de la boca, se
+        // ve solo con sus modos.
         const subida = Math.max(0, POSES.inactivo.petalo.y - pose.accesorio.y);
+        const boca = pose.boca.modo === "ondulada" && pose.boca.tension <= 0.5 ? "" : pose.boca.modo;
         for (const pieza of piezas) {
-          const giro = pieza.resorte ? (pose.fisicaSecundaria[pieza.resorte] ?? 0) * pieza.factor : 0;
-          escribir(pieza.el, pieza.clave, "transform", transformPieza(pieza.base, giro, subida * pieza.sube));
+          const e: Empuje = { giro: 0, x: 0, y: pose.boca.y * (pieza.visibleCon ? 1 : 0) - subida * pieza.sube, escalaX: 0, escalaY: 0 };
+          let opaca = pieza.opacidad;
+          for (const m of pieza.mueve) {
+            const valor = pose.fisicaSecundaria[m.resorte] ?? 0;
+            e.giro += valor * (m.giro ?? 0);
+            e.x += valor * (m.x ?? 0);
+            e.y += valor * (m.y ?? 0);
+            e.escalaX += valor * (m.escalaX ?? 0);
+            e.escalaY += valor * (m.escalaY ?? 0);
+            opaca += valor * (m.opacidad ?? 0);
+          }
+          escribir(pieza.el, pieza.clave, "transform", transformPieza(pieza.base, e));
+          if (pieza.visibleCon || pieza.mueve.some((m) => m.opacidad)) {
+            const visible = !pieza.visibleCon || pieza.visibleCon.includes(boca);
+            escribir(
+              pieza.el,
+              `${pieza.clave}-op`,
+              "opacity",
+              (visible ? Math.min(1, Math.max(0, opaca)) : 0).toFixed(2),
+            );
+          }
         }
       }
 

@@ -11,6 +11,7 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 /** Un trazado solo puede llevar órdenes y números: ni `url(`, ni etiquetas. */
 const TRAZADO = /^[MmLlHhVvCcSsQqTtAaZz0-9\s.,+\-eE]+$/;
 const EVENTOS = ["clic", "sorpresa", "enojo", "mareo", "necesita", "termino", "despertar"];
+const BOCAS = ["sonrisa", "ondulada", "o", "abierta", "disgusto", "dormida", "recta", "lado", "lengua"];
 const MOTIVOS = ["estrella", "luna", "murcielago", "fantasma", "caramelo", "huella"];
 
 const esNumero = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -56,8 +57,22 @@ export function validarDisfraz(disfraz: Disfraz, paletas: readonly string[]): st
     for (const v of [pieza.x ?? 0, pieza.y ?? 0, pieza.giro ?? 0, pieza.orden ?? 0, pieza.sube ?? 0]) {
       if (!esNumero(v)) error(`${donde}: posición no numérica`);
     }
-    if (pieza.resorte && !resortes.includes(pieza.resorte.nombre)) {
-      error(`${donde}: usa el resorte "${pieza.resorte.nombre}", que el disfraz no declara`);
+    for (const m of pieza.mueve ?? []) {
+      if (!resortes.includes(m.resorte)) {
+        error(`${donde}: usa el resorte "${m.resorte}", que el disfraz no declara`);
+      }
+      const factores = [m.giro, m.x, m.y, m.escalaX, m.escalaY, m.opacidad].filter((v) => v !== undefined);
+      if (factores.length === 0) error(`${donde}: el resorte "${m.resorte}" no mueve nada`);
+      if (!factores.every(esNumero)) error(`${donde}: factor no numérico`);
+    }
+    if (pieza.opacidad !== undefined && !(esNumero(pieza.opacidad) && pieza.opacidad >= 0 && pieza.opacidad <= 1)) {
+      error(`${donde}: la opacidad va de 0 a 1`);
+    }
+    if (pieza.coordenadas !== undefined && !["pieza", "cuerpo"].includes(pieza.coordenadas)) {
+      error(`${donde}: coordenadas desconocidas`);
+    }
+    for (const modo of pieza.visibleCon ?? []) {
+      if (!BOCAS.includes(modo)) error(`${donde}: modo de boca desconocido (${modo})`);
     }
     if (pieza.formas.length === 0) error(`${donde}: no tiene formas`);
     pieza.formas.forEach((forma, i) => {
@@ -84,9 +99,23 @@ export function validarDisfraz(disfraz: Disfraz, paletas: readonly string[]): st
   }
   for (const [evento, empujes] of Object.entries(disfraz.fisica?.reacciones ?? {})) {
     if (!EVENTOS.includes(evento)) error(`reacción a un evento desconocido: ${evento}`);
-    for (const [nombre, v] of Object.entries(empujes ?? {})) {
+    for (const [nombre, r] of Object.entries(empujes ?? {})) {
       if (!resortes.includes(nombre)) error(`reacción "${evento}": el resorte "${nombre}" no existe`);
-      if (!esNumero(v)) error(`reacción "${evento}": empujón no numérico`);
+      const numeros =
+        typeof r === "number"
+          ? [r]
+          : [
+              r.impulso ?? 0,
+              r.mantener ?? 0,
+              r.duracion ?? 0,
+              r.oscilar?.amplitud ?? 0,
+              r.oscilar?.frecuencia ?? 0,
+              r.oscilar?.fase ?? 0,
+            ];
+      if (!numeros.every(esNumero)) error(`reacción "${evento}": valor no numérico`);
+      if (typeof r === "object" && r.duracion !== undefined && r.duracion <= 0) {
+        error(`reacción "${evento}": la duración debe ser positiva`);
+      }
     }
   }
 
@@ -98,8 +127,11 @@ export function validarDisfraz(disfraz: Disfraz, paletas: readonly string[]): st
   }
   if (typeof disfraz.petalo === "object") {
     const p = disfraz.petalo;
-    if (![p.x ?? 0, p.y ?? 0, p.giro ?? 0, p.escala ?? 1].every(esNumero)) {
+    if (![p.x, p.y, p.giro, p.escala ?? 1].every(esNumero)) {
       error("pétalo: posición no numérica");
+    }
+    if (p.pegadoA !== undefined && !disfraz.piezas.some((pieza) => pieza.id === p.pegadoA)) {
+      error(`pétalo: va pegado a la pieza "${p.pegadoA}", que no existe`);
     }
   }
   const efectos = disfraz.efectos;

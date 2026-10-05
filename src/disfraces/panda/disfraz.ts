@@ -24,7 +24,7 @@ export const PANDA: Disfraz = {
       giro: 32,
       espejo: true,
       formas: OREJA,
-      resorte: { nombre: "orejaIzquierda", giro: 1 },
+      mueve: [{ resorte: "orejaIzquierda", giro: 1 }],
       sube: 0.12,
     },
     {
@@ -34,7 +34,7 @@ export const PANDA: Disfraz = {
       x: 3,
       giro: 32,
       formas: OREJA,
-      resorte: { nombre: "orejaDerecha", giro: 1 },
+      mueve: [{ resorte: "orejaDerecha", giro: 1 }],
       sube: 0.12,
     },
     {

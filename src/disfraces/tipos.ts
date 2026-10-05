@@ -1,4 +1,5 @@
 import type { ConfigFisica } from "../mascot/fisicaSecundaria";
+import type { ModoDeBoca } from "../mascot/pose";
 
 // Un disfraz son prendas que Lia se pone encima: piezas montadas sobre su
 // dibujo, con capas y anclas. Es solo un objeto de datos: no contiene SVG en
@@ -83,12 +84,27 @@ export interface Pieza {
   giro?: number;
   /** Se dibuja reflejada en horizontal (la pareja de otra pieza). */
   espejo?: boolean;
-  formas: Forma[];
   /**
-   * Resorte que la mueve: su valor, por `giro`, son los grados que se suman
-   * al giro en reposo.
+   * En qué coordenadas van sus formas: relativas a la propia pieza (por
+   * defecto) o las del cuerpo (origen en su centro, x de -44 a 44 e y de
+   * -40 a 38). En los dos casos la pieza gira y se escala alrededor de su
+   * ancla más su desplazamiento.
    */
-  resorte?: { nombre: string; giro: number };
+  coordenadas?: "pieza" | "cuerpo";
+  formas: Forma[];
+  /** Opacidad en reposo, de 0 a 1 (por defecto 1). */
+  opacidad?: number;
+  /**
+   * Qué hacen con ella los resortes del disfraz. El valor de cada resorte
+   * se multiplica por el factor de lo que mueve y se suma: grados de giro,
+   * unidades de desplazamiento, escala (0.08 es un 8 %) u opacidad.
+   */
+  mueve?: Movimiento[];
+  /**
+   * Solo se ve con estos modos de boca (la ondulada cuenta solo si está
+   * tensa). Sin esto, se ve siempre.
+   */
+  visibleCon?: ModoDeBoca[];
   /** Cuánto sube cuando subiría el pétalo (al terminar una tarea). */
   sube?: number;
   /**
@@ -96,6 +112,16 @@ export interface Pieza {
    * sábana). Sin esto, la página de revisión la marca como error.
    */
   cubreLaCara?: "aprobado";
+}
+
+export interface Movimiento {
+  resorte: string;
+  giro?: number;
+  x?: number;
+  y?: number;
+  escalaX?: number;
+  escalaY?: number;
+  opacidad?: number;
 }
 
 /** Figuras pequeñas para los efectos con tema. */
@@ -111,10 +137,14 @@ export interface Disfraz {
   categoria: Categoria;
   piezas: Pieza[];
   /**
-   * Qué pasa con el pétalo: se oculta, o se recoloca con un desplazamiento,
-   * un giro y una escala respecto a su sitio de siempre. Sin esto, se queda.
+   * Qué pasa con el pétalo. Sin esto, se queda donde siempre. Puede
+   * ocultarse, o recolocarse: `x`, `y` y `giro` son su nueva posición de
+   * reposo en coordenadas del cuerpo (la de siempre es 18, -36 y 18°), con
+   * una escala. Recolocado se sigue moviendo como siempre, salvo que vaya
+   * `pegadoA` una pieza (el adorno de un sombrero): entonces se mueve con
+   * ella y nada más.
    */
-  petalo?: "oculto" | { x?: number; y?: number; giro?: number; escala?: number };
+  petalo?: "oculto" | { x: number; y: number; giro: number; escala?: number; pegadoA?: string };
   /** Color de ojos, cejas y boca, para disfraces con manchas oscuras. */
   trazosDeLaCara?: `#${string}`;
   /** Paleta que se aplica al elegir el disfraz; el usuario puede cambiarla. */

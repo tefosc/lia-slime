@@ -13,7 +13,7 @@ import {
 import { crearFisica } from "./fisicaSecundaria";
 import type { ConfigFisica } from "./fisicaSecundaria";
 import { acercar, limitarPaso, Resorte } from "./movimiento";
-import { crearPose } from "./pose";
+import { bocaDe, crearPose } from "./pose";
 import type { Pose } from "./pose";
 import type { Renderizador } from "./renderizador";
 import { POSES } from "./poses";
@@ -1392,6 +1392,9 @@ export function useAnimacionLia(
       pose.ojos.x = ojosX;
       pose.ojos.y = ojosDY;
       pose.ojos.apertura = ojosY;
+
+      pose.boca.modo = bocaDe(pose, actividadActual.current);
+      pose.boca.tension = pose.boca.modo === "ondulada" ? Math.max(poseCara.tension, poseCara.mareo) : 0;
 
       // Movimiento secundario del disfraz. Sin disfraz no se calcula nada.
       secundaria.configurar(fisicaActual.current, pose);

@@ -16,7 +16,9 @@ import { validarDisfraz } from "../disfraces/validar";
 // dibujo es idéntico al de cuando se guardó la referencia. Con `&zoom=3` se
 // amplía, y `&solo=texto` filtra los casos por nombre. `&paleta=lila` (o
 // `&paleta=libre&matiz=210`) cambia los colores y `&fondo=claro` el fondo;
-// la referencia solo vale para la paleta por defecto.
+// la referencia solo vale para la paleta por defecto. `&matriz` muestra
+// todos los disfraces en los 4 estados con las 6 paletas (`&matriz=gatito`,
+// solo uno), y valida las reglas del arte en todas las combinaciones.
 //
 // Para guardar una referencia nueva: copia `window.__revision` a
 // `src/revision/referencia.json`.
@@ -123,6 +125,10 @@ export function Revision() {
     (c) => huellas[c.nombre] !== undefined && huellas[c.nombre] !== esperadas[c.nombre],
   );
   const lado = 200 * zoom;
+  // Matriz: disfraces x paletas x estados.
+  const matriz = parametros.get("matriz");
+  const enMatriz = matriz === null ? [] : DISFRACES.filter((d) => matriz === "" || d.id === matriz);
+  const estados = CASOS.filter((c) => /^(inactivo|trabajando|necesita|termino) · 1\.5 s$/.test(c.nombre));
 
   return (
     <div className="revision">
@@ -180,17 +186,47 @@ export function Revision() {
               </li>
             );
           })}
-          {disfraz && reglas && (
+          {(disfraz || matriz !== null) && reglas && (
             <li className={reglas.errores.length ? "mal" : "bien"}>
-              {disfraz.nombre}, dibujado en los {casos.length} casos:{" "}
+              {matriz !== null
+                ? `${enMatriz.length} disfraces × ${PALETAS.length} paletas × ${estados.length} estados`
+                : `${disfraz?.nombre}, dibujado en los ${casos.length} casos`}
+              :{" "}
               {reglas.errores.length ? reglas.errores.join("; ") : "no tapa la cara y cabe en la ventana"}
               {reglas.escala < 1 && ` · escala de seguridad ${reglas.escala.toFixed(2)}`}
             </li>
           )}
         </ul>
       </section>
+      {enMatriz.map((d) => (
+        <section key={d.id} className={`revision-matriz${fondo ? ` fondo-${fondo}` : ""}`}>
+          <h2>{d.nombre}</h2>
+          {PALETAS.map((p) => (
+            <div key={p.id} className="revision-fila">
+              <span>{p.nombre}</span>
+              {estados.map((c) => (
+                <div key={c.nombre} className="revision-lienzo" style={{ width: lado, height: lado }}>
+                  <div
+                    data-caso={`${d.id} · ${p.id} · ${c.estado}`}
+                    style={{ transform: `scale(${zoom})`, transformOrigin: "0 0" }}
+                  >
+                    <Mascota
+                      estilo={estilo}
+                      paleta={p}
+                      disfraz={d}
+                      estado={c.estado}
+                      sueno={SUENO_QUIETO}
+                      guion={c.guion}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </section>
+      ))}
       <div className={`revision-casos${fondo ? ` fondo-${fondo}` : ""}`}>
-        {casos.map((c) => {
+        {(matriz === null ? casos : []).map((c) => {
           const igual = !conReferencia || huellas[c.nombre] === esperadas[c.nombre];
           return (
             <figure

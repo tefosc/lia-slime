@@ -41,9 +41,12 @@ Primera versión. Solo para Windows.
   Algodón) y color libre con un control de tono o un color en hexadecimal.
   Se elige en la pestaña "Apariencia" de Ajustes, con vista previa, o desde
   la bandeja, y cambia al instante.
-- Lia queda preparada para llevar disfraces: prendas declaradas como datos,
-  con anclas, capas, movimiento propio y una escala de seguridad que evita
-  que nada se recorte. Esta versión no incluye ningún disfraz.
+- Disfraces: bruja, calabaza, vampiro y gatito. Son prendas que Lia se pone
+  encima, con movimiento propio (el sombrero se ladea, la calabaza rebota, la
+  capa ondea, las orejas reaccionan) y una escala de seguridad que evita que
+  nada se recorte. Los clics sobre las prendas pasan a la ventana de debajo.
+- Al acariciarla un rato, Lia se enamora: ojos de corazón, una ráfaga de
+  corazones y se queda flotando.
 - Icono en la bandeja: mostrar u ocultar, modo privado, inactividad, sonidos,
   apariencia, iniciar con Windows, Ajustes y salir.
 - Ventana de Ajustes con instalación y retirada de los hooks de Claude Code:

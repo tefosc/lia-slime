@@ -721,6 +721,13 @@ export function DibujoClasico({
   const petalo = disfraz?.petalo;
   const conPetalo = petalo !== "oculto";
   const recolocado = typeof petalo === "object" ? petalo : null;
+  // Pegado a una pieza (el adorno de un sombrero), se dibuja dentro de ella
+  // y se mueve con ella.
+  const pegado = recolocado?.pegadoA ? recolocado : null;
+  const adorno = pegado
+    ? { pieza: pegado.pegadoA ?? "", x: pegado.x, y: pegado.y, giro: pegado.giro, escala: pegado.escala ?? 1 }
+    : undefined;
+  const dibujoDelPetalo = <Petalo petalo={paleta.petalo} />;
   const tinta = disfraz?.trazosDeLaCara ?? TINTA;
   const mareo = disfraz?.efectos?.mareo;
   const corazones = disfraz?.efectos?.corazones;
@@ -768,7 +775,7 @@ export function DibujoClasico({
           <ellipse cx="-17" cy="38" rx="6" ry="1.4" fill="#FFFFFF" />
         </g>
         <g id="lia-flotante">
-          <CapaDeDisfraz disfraz={disfraz} capa="detras-del-cuerpo" paleta={paleta} />
+          <CapaDeDisfraz disfraz={disfraz} adorno={adorno} dibujoDelAdorno={dibujoDelPetalo} capa="detras-del-cuerpo" paleta={paleta} />
           <path
             id="lia-cuerpo"
             d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z"
@@ -791,14 +798,14 @@ export function DibujoClasico({
             />
             <circle cx="-33" cy="0" r="2.5" fill="#fff" />
           </g>
-          <CapaDeDisfraz disfraz={disfraz} capa="sobre-el-cuerpo" paleta={paleta} />
+          <CapaDeDisfraz disfraz={disfraz} adorno={adorno} dibujoDelAdorno={dibujoDelPetalo} capa="sobre-el-cuerpo" paleta={paleta} />
           {/* La cara entera se desvanece al derretirse. */}
           <g id="lia-cara">
             {/* `key`: al cambiar de estado las piezas se crean de nuevo. Si
                 React reutilizara el mismo elemento, conservaría la opacidad
                 que el motor le escribió (por ejemplo, una boca oculta por
                 estar dormida) y la cara nueva saldría incompleta. */}
-            <CapaDeDisfraz disfraz={disfraz} capa="sobre-la-cara" paleta={paleta} parte="debajo" />
+            <CapaDeDisfraz disfraz={disfraz} adorno={adorno} dibujoDelAdorno={dibujoDelPetalo} capa="sobre-la-cara" paleta={paleta} parte="debajo" />
             <g id="lia-ojos">
               <Ojos key={estado} estado={estado} actividad={actividad} tinta={tinta} />
             </g>
@@ -809,7 +816,7 @@ export function DibujoClasico({
               <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
               <ellipse cx="27" cy="13" rx="5.5" ry="3" />
             </g>
-            <CapaDeDisfraz disfraz={disfraz} capa="sobre-la-cara" paleta={paleta} parte="encima" />
+            <CapaDeDisfraz disfraz={disfraz} adorno={adorno} dibujoDelAdorno={dibujoDelPetalo} capa="sobre-la-cara" paleta={paleta} parte="encima" />
             {/* Partes del enojo, ocultas hasta que el motor las muestra. Solo
                 existen en `inactivo`: en los demás estados la cara no cambia. */}
             {estado === "inactivo" && (
@@ -865,18 +872,23 @@ export function DibujoClasico({
             <circle cx="-1" cy="1.8" r="0.8" fill="#fff" opacity="0.8" />
           </g>
           {/* El pétalo va después: así puede ser el adorno de un sombrero. */}
-          <CapaDeDisfraz disfraz={disfraz} capa="encima-de-todo" paleta={paleta} />
-          {conPetalo && (
+          <CapaDeDisfraz disfraz={disfraz} adorno={adorno} dibujoDelAdorno={dibujoDelPetalo} capa="encima-de-todo" paleta={paleta} />
+          {conPetalo && !pegado && (
             <g
               id="lia-petalo"
               transform={PETALO_BASE}
               data-recolocado={
                 recolocado
-                  ? `${recolocado.x ?? 0},${recolocado.y ?? 0},${recolocado.giro ?? 0},${recolocado.escala ?? 1}`
+                  ? [
+                      recolocado.x - POSES.inactivo.petalo.x,
+                      recolocado.y - POSES.inactivo.petalo.y,
+                      recolocado.giro - POSES.inactivo.petalo.giro,
+                      recolocado.escala ?? 1,
+                    ].join(",")
                   : undefined
               }
             >
-              <Petalo petalo={paleta.petalo} />
+              {dibujoDelPetalo}
             </g>
           )}
         </g>

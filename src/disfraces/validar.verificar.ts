@@ -6,6 +6,7 @@ import { GATITO } from "./gatito/disfraz.ts";
 import { MURCIELAGO } from "./murcielago/disfraz.ts";
 import { PANDA } from "./panda/disfraz.ts";
 import { PRUEBA } from "./prueba/disfraz.ts";
+import { VAMPIRO } from "./vampiro/disfraz.ts";
 import type { Disfraz } from "./tipos.ts";
 import { validarDisfraz } from "./validar.ts";
 
@@ -17,7 +18,7 @@ function comprobar(nombre: string, condicion: boolean, detalle = ""): void {
   if (!condicion) fallos++;
 }
 
-for (const disfraz of [GATITO, PANDA, BRUJA, CALABAZA, FANTASMA, MURCIELAGO, PRUEBA]) {
+for (const disfraz of [BRUJA, CALABAZA, VAMPIRO, GATITO, PANDA, FANTASMA, MURCIELAGO, PRUEBA]) {
   const errores = validarDisfraz(disfraz, PALETAS);
   comprobar(`"${disfraz.id}" cumple las reglas del arte`, errores.length === 0, errores.join("; "));
 }
@@ -58,7 +59,24 @@ rechaza("un ancla que no existe", { ...base, piezas: [{ ...base.piezas[0], ancla
 rechaza("una capa que no existe", { ...base, piezas: [{ ...base.piezas[0], capa: "delante" as never }] });
 rechaza("un resorte sin declarar", {
   ...base,
-  piezas: [{ ...base.piezas[0], resorte: { nombre: "cola", giro: 1 } }],
+  piezas: [{ ...base.piezas[0], mueve: [{ resorte: "cola", giro: 1 }] }],
+});
+rechaza("un resorte que no mueve nada", {
+  ...base,
+  fisica: { resortes: { cola: {} } },
+  piezas: [{ ...base.piezas[0], mueve: [{ resorte: "cola" }] }],
+});
+rechaza("un modo de boca que no existe", {
+  ...base,
+  piezas: [{ ...base.piezas[0], visibleCon: ["mueca" as never] }],
+});
+rechaza("un pétalo pegado a una pieza que no existe", {
+  ...base,
+  petalo: { x: 0, y: -40, giro: 0, pegadoA: "gorra" },
+});
+rechaza("una reacción con duración negativa", {
+  ...base,
+  fisica: { resortes: { cola: {} }, reacciones: { clic: { cola: { mantener: 3, duracion: -1 } } } },
 });
 rechaza("una reacción a un resorte que no existe", {
   ...base,

@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import type { ReactNode, SVGProps } from "react";
 import type { Ancla, Capa, Color, Disfraz, Forma, Motivo, Pieza } from "../../../disfraces/tipos";
 import type { Paleta } from "../../paletas";
 
@@ -26,24 +26,40 @@ export const ANCLAS_CLASICO: Record<Ancla, { x: number; y: number }> = {
   base: { x: 0, y: 38 },
 };
 
+/** Dónde queda una pieza en reposo. */
+export interface BaseDePieza {
+  x: number;
+  y: number;
+  giro: number;
+  espejo: boolean;
+}
+
+/** Lo que los resortes suman a una pieza en un fotograma. */
+export interface Empuje {
+  giro: number;
+  x: number;
+  y: number;
+  escalaX: number;
+  escalaY: number;
+}
+export const SIN_EMPUJE: Empuje = { giro: 0, x: 0, y: 0, escalaX: 0, escalaY: 0 };
+
 /**
- * `transform` de una pieza: su ancla, su desplazamiento y su giro, más lo que
- * le sume su resorte (`giro`, en grados) y lo que suba (`subida`).
+ * `transform` de una pieza: su ancla, su desplazamiento y su giro, más lo
+ * que le sumen sus resortes. Gira y se escala alrededor de su base.
  */
-export function transformPieza(
-  base: { x: number; y: number; giro: number; espejo: boolean },
-  giro = 0,
-  subida = 0,
-): string {
+export function transformPieza(base: BaseDePieza, e: Empuje = SIN_EMPUJE): string {
+  const escalada = e.escalaX !== 0 || e.escalaY !== 0;
   return (
-    `translate(${base.x.toFixed(1)},${(base.y - subida).toFixed(1)})` +
+    `translate(${(base.x + e.x).toFixed(1)},${(base.y + e.y).toFixed(1)})` +
     (base.espejo ? " scale(-1,1)" : "") +
-    ` rotate(${(base.giro + giro).toFixed(1)})`
+    ` rotate(${(base.giro + e.giro).toFixed(1)})` +
+    (escalada ? ` scale(${(1 + e.escalaX).toFixed(3)},${(1 + e.escalaY).toFixed(3)})` : "")
   );
 }
 
 /** Dónde queda una pieza en reposo. */
-function baseDe(pieza: Pieza) {
+export function baseDe(pieza: Pieza): BaseDePieza {
   const ancla = ANCLAS_CLASICO[pieza.ancla];
   return {
     x: ancla.x + (pieza.x ?? 0),
@@ -132,11 +148,16 @@ export function CapaDeDisfraz({
   capa,
   paleta,
   parte,
+  adorno,
+  dibujoDelAdorno,
 }: {
   disfraz: Disfraz | null;
   capa: Capa;
   paleta: Paleta;
   parte?: "debajo" | "encima";
+  /** El pétalo, si va pegado a una pieza: dónde, en coordenadas del cuerpo. */
+  adorno?: { pieza: string; x: number; y: number; giro: number; escala: number };
+  dibujoDelAdorno?: ReactNode;
 }) {
   const piezas = (disfraz?.piezas ?? [])
     .filter((p) => p.capa === capa)
@@ -149,21 +170,38 @@ export function CapaDeDisfraz({
     <g data-capa={capa} pointerEvents="none">
       {piezas.map((pieza) => {
         const base = baseDe(pieza);
+        const formas = pieza.formas.map((forma, i) => (
+          <FormaSvg key={i} forma={forma} paleta={paleta} />
+        ));
         return (
           <g
             key={pieza.id}
             id={`lia-pieza-${pieza.id}`}
             data-pieza={pieza.id}
             data-base={`${base.x},${base.y},${base.giro},${base.espejo ? 1 : 0}`}
-            data-resorte={pieza.resorte?.nombre}
-            data-factor={pieza.resorte?.giro}
+            data-mueve={pieza.mueve ? JSON.stringify(pieza.mueve) : undefined}
             data-sube={pieza.sube}
             data-cubre={pieza.cubreLaCara}
+            data-visible={pieza.visibleCon?.join(",")}
+            data-opacidad={pieza.opacidad}
+            opacity={pieza.opacidad}
             transform={transformPieza(base)}
           >
-            {pieza.formas.map((forma, i) => (
-              <FormaSvg key={i} forma={forma} paleta={paleta} />
-            ))}
+            {pieza.coordenadas === "cuerpo" ? (
+              // Formas en coordenadas del cuerpo: se llevan a las de la
+              // pieza (reflejada, las del lado contrario).
+              <g transform={`translate(${base.espejo ? base.x : -base.x},${-base.y})`}>{formas}</g>
+            ) : (
+              formas
+            )}
+            {adorno?.pieza === pieza.id && (
+              <g
+                id="lia-petalo-adorno"
+                transform={`translate(${adorno.x - base.x},${adorno.y - base.y}) rotate(${adorno.giro}) scale(${adorno.escala})`}
+              >
+                {dibujoDelAdorno}
+              </g>
+            )}
           </g>
         );
       })}

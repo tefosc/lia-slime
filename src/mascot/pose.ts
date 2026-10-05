@@ -39,6 +39,11 @@ export interface Pose {
     /** Parpadeo: 1 abiertos, cerca de 0 cerrados. */
     apertura: number;
   };
+  /**
+   * Boca que se ve ahora, como modo discreto. La tensión (de 0 a 1) solo
+   * cuenta en la ondulada. `y` es lo que se desplaza en vertical.
+   */
+  boca: { modo: ModoDeBoca; tension: number; y: number };
   /** Cuánto se ve cada cara de reacción; la normal es lo que queda. */
   cara: {
     /** La cara entera se desvanece al derretirse. */
@@ -80,6 +85,53 @@ export interface Pose {
   };
 }
 
+/**
+ * Modos de boca. Los seis primeros son los de los estados y las reacciones;
+ * los tres últimos, bocas de concentración mientras trabaja.
+ */
+export type ModoDeBoca =
+  | "sonrisa"
+  | "ondulada"
+  | "o"
+  | "abierta"
+  | "disgusto"
+  | "dormida"
+  | "recta"
+  | "lado"
+  | "lengua";
+
+/** Boca de cada actividad mientras trabaja (ver `CARAS_DE_TRABAJO`). */
+const BOCA_AL_TRABAJAR: Record<string, ModoDeBoca> = {
+  pensar: "lado",
+  leer: "recta",
+  buscar: "o",
+  editar: "lengua",
+  comando: "recta",
+  web: "sonrisa",
+  agente: "sonrisa",
+  otra: "recta",
+};
+
+/** Modo de boca que corresponde a la pose: las reacciones mandan. */
+export function bocaDe(pose: Pose, actividad: string): ModoDeBoca {
+  const c = pose.cara;
+  if (c.dormida > 0.5) return "dormida";
+  if (c.mareo > 0.5) return "ondulada";
+  if (c.enojo > 0.5) return "disgusto";
+  if (c.sorpresa > 0.5) return "o";
+  if (c.feliz > 0.5) return "sonrisa";
+  switch (pose.estado) {
+    case "necesita":
+      return "o";
+    case "termino":
+      return "abierta";
+    case "trabajando":
+      return BOCA_AL_TRABAJAR[actividad] ?? "recta";
+    default:
+      return "sonrisa";
+  }
+}
+
 export interface Particula {
   opacidad: number;
   x: number;
@@ -97,6 +149,7 @@ export function crearPose(estado: EstadoLia): Pose {
     sombra: { escala: 1 },
     accesorio: { x: 0, y: 0, giro: 0 },
     ojos: { x: 0, y: 0, apertura: 1 },
+    boca: { modo: "sonrisa", tension: 0, y: 0 },
     cara: {
       visible: 1,
       sorpresa: 0,

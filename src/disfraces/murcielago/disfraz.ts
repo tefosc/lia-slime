@@ -50,7 +50,7 @@ export const MURCIELAGO: Disfraz = {
       giro: -8,
       espejo: true,
       formas: ALA,
-      resorte: { nombre: "alaIzquierda", giro: 1 },
+      mueve: [{ resorte: "alaIzquierda", giro: 1 }],
     },
     {
       id: "ala-derecha",
@@ -60,7 +60,7 @@ export const MURCIELAGO: Disfraz = {
       y: -4,
       giro: -8,
       formas: ALA,
-      resorte: { nombre: "alaDerecha", giro: 1 },
+      mueve: [{ resorte: "alaDerecha", giro: 1 }],
     },
   ],
   fisica: {

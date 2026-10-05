@@ -2,7 +2,8 @@
 // las piezas de un disfraz sean solo formas, que no tapen la cara y que nada
 // se salga de la ventana.
 
-const FORMAS = new Set(["path", "circle", "ellipse", "rect"]);
+// Los grupos solo ordenan: lo que cuenta es que dentro haya solo formas.
+const FORMAS = new Set(["path", "circle", "ellipse", "rect", "g"]);
 /** Partes de la cara que un disfraz no puede tapar sin permiso. */
 const CARA: [nombre: string, selector: string][] = [
   ["los ojos", "#lia-ojos ellipse, #lia-ojos path"],

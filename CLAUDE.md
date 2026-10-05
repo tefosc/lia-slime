@@ -217,18 +217,21 @@ no está conectada.
   nombre, con colores fijos o slots de la paleta. Nunca SVG en texto, y
   nunca cargados del disco o de la red: `indice.ts` es el catálogo fijo. No
   lo relajes.
-  - En la 0.1.0 el catálogo publicado está vacío: los seis disfraces de la
-    Fase 2 (gatito, panda, bruja, calabaza, fantasma, murciélago) y el de
-    prueba solo existen con `import.meta.env.DEV`, y Vite los deja fuera de
-    la compilación de producción.
+  - Publicados: bruja, calabaza, vampiro y gatito. El panda, el fantasma,
+    el murciélago y el de prueba solo existen con `import.meta.env.DEV`, y
+    Vite los deja fuera de la compilación de producción.
   - `src/mascotas/lia/clasico/Disfraz.tsx` los dibuja (`CapaDeDisfraz`) y
     define las anclas del estilo clásico (`ANCLAS_CLASICO`). Las piezas no
     reciben el mouse: la zona activa es solo el cuerpo.
   - Movimiento: `src/mascot/fisicaSecundaria.ts`. El disfraz declara
-    resortes con nombre y reacciones a eventos; el motor los alimenta con el
-    balanceo de la cabeza, el aplastamiento y la velocidad del cuerpo, y los
-    entrega en `pose.fisicaSecundaria`. Sin disfraz no hay resortes y no se
-    calcula nada.
+    resortes con nombre y reacciones a eventos (empujón, mantener u
+    oscilar); el motor los alimenta con el balanceo de la cabeza, el
+    aplastamiento y la velocidad del cuerpo, y los entrega en
+    `pose.fisicaSecundaria`. Cada pieza dice qué mueve con ellos (`mueve`):
+    giro, desplazamiento, escala u opacidad, alrededor de su pivote. Sin
+    disfraz no hay resortes y no se calcula nada.
+  - `pose.boca` lleva el modo de boca (`bocaDe` en `pose.ts`); una pieza con
+    `visibleCon` solo se ve con sus modos (los colmillos del vampiro).
   - Escala de seguridad (`medirEscala` y `dibujar` en el renderizador
     clásico): si el disfraz no cabe en la ventana, Lia se reduce anclada en
     su base; además se vigila en cada fotograma que al ensancharse o
@@ -237,7 +240,8 @@ no está conectada.
     `pnpm verificar`) y la página de revisión (`src/revision/reglas.ts`), el
     dibujo: que nada tape la cara sin `cubreLaCara: "aprobado"` y que nada se
     salga de la ventana.
-  - Un disfraz puede ocultar o recolocar el pétalo, sugerir una paleta,
+  - Un disfraz puede ocultar el pétalo, recolocarlo o pegarlo a una pieza
+    (el adorno de un sombrero: se dibuja dentro de ella), sugerir una paleta,
     cambiar el color de los trazos de la cara y cambiar la figura de efectos
     que ya existen (destellos, mareo, corazones, chispas al terminar).
   - Sin disfraz, el dibujo es exactamente el de antes: las 46 huellas no
@@ -345,7 +349,8 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   cada dibujo con `src/revision/referencia.json`. Con `&paleta=lila` (o
   `&paleta=libre&matiz=210`), `&disfraz=gatito` y `&fondo=claro` se revisan
   los colores y los disfraces, y la sección "Reglas del arte" lista lo que
-  incumple cada disfraz. Tras tocar el motor o un
+  incumple cada disfraz. `&matriz` (o `&matriz=gatito`) muestra y valida
+  todos los disfraces en los 4 estados con las 6 paletas. Tras tocar el motor o un
   renderizador, las huellas deben seguir idénticas. Si cambias el dibujo a
   propósito, actualiza la referencia con `window.__revision`.
 - Caricias seguidas durante unos segundos (`CARICIAS.tiempoParaEncanto`) la

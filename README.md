@@ -61,11 +61,33 @@ pendiente.
 <!-- CAPTURA: la pestaña Apariencia de Ajustes, con la vista previa -->
 <!-- ![Pestaña Apariencia](docs/media/apariencia.png) -->
 
-Lia está preparada para llevar **disfraces** (prendas que se pone encima,
-con sus propios movimientos); llegarán en una próxima versión. Si quieres
-dibujar uno: [docs/crear-disfraz.md](docs/crear-disfraz.md).
-
 Solo se guarda qué paleta y qué disfraz elegiste, nada más.
+
+## Disfraces
+
+Lia puede disfrazarse. Un disfraz son prendas que se pone encima, con su
+propio movimiento: no cambia su cuerpo, sus caras ni lo que hace.
+
+<!-- CAPTURA: los cuatro disfraces, uno al lado del otro -->
+<!-- ![Disfraces de Lia](docs/media/disfraces.png) -->
+
+- **Bruja** (Halloween): sombrero puntiagudo con el pétalo de adorno. Se
+  ladea al moverla y se le cala cuando se enoja.
+- **Calabaza** (Halloween): una calabaza en la cabeza que rebota con ella y
+  se ilumina al terminar una tarea.
+- **Vampiro** (Halloween): capa que ondea y colmillos.
+- **Gatito** (Animales): orejas del color de Lia, bigotes y nariz. Mueve las
+  orejas cuando te necesita.
+
+<!-- CAPTURA: un disfraz en los cuatro estados -->
+<!-- ![Un disfraz en cada estado](docs/media/disfraz-estados.png) -->
+
+Se eligen en **Ajustes → Apariencia** o desde la bandeja. Cada uno propone un
+color, que puedes cambiar; se combinan con cualquier paleta. Los clics sobre
+el sombrero, la capa, las orejas o los bigotes pasan a la ventana de debajo:
+solo el cuerpo de Lia los captura.
+
+Si quieres dibujar uno: [docs/crear-disfraz.md](docs/crear-disfraz.md).
 
 ## Instalación
 

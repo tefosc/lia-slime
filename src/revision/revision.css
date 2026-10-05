@@ -100,3 +100,24 @@ body,
 .revision-reglas .mal {
   color: #ffb59e;
 }
+
+.revision-matriz h2 {
+  margin: 12px 0 4px;
+  font-size: 14px;
+}
+
+.revision-fila {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.revision-fila > span {
+  width: 70px;
+}
+
+.revision-fila .revision-lienzo {
+  border-radius: 6px;
+  background: #3b3d48;
+}

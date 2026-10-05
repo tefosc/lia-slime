@@ -3,60 +3,106 @@ import type { Pose } from "./pose";
 import { POSES } from "./poses";
 
 // Física secundaria: resortes con nombre que un disfraz declara para sus
-// piezas (orejas, sombrero, cola, alas). El motor los alimenta con lo que
-// hace el cuerpo y entrega su valor en `pose.fisicaSecundaria`; el
-// renderizador decide qué mueve con cada uno. Sin disfraz no hay resortes y
-// nada de esto se calcula.
+// piezas (orejas, sombrero, capa, cola). El motor los alimenta con lo que
+// hace el cuerpo y entrega su valor en `pose.fisicaSecundaria`; cada pieza
+// decide qué mueve con él (girar, desplazarse, escalarse, aparecer). Sin
+// disfraz no hay resortes y nada de esto se calcula.
 
-/** Qué empuja a un resorte. Todos los factores son opcionales. */
+/** Qué empuja a un resorte de forma continua. Todo es opcional. */
 export interface ResorteSecundario {
   /** Cuánto tarda en seguir y cuánto rebota (por defecto 90 y 9). */
   rigidez?: number;
   amortiguacion?: number;
   /**
-   * Grados por el balanceo del accesorio de la cabeza (el mismo que mueve el
-   * pétalo): recoge la sacudida de los toques, la alerta y el mareo.
+   * Cuánto sigue al balanceo del accesorio de la cabeza (el mismo que mueve
+   * el pétalo): recoge la sacudida de los toques, la alerta y el mareo.
    */
   accesorio?: number;
-  /** Grados que se suman al dormirse (caída). */
+  /** Cuánto se suma al dormirse (caída). */
   dormida?: number;
-  /** Grados por unidad de aplastamiento del cuerpo (escalaY - 1). */
+  /** Por unidad de aplastamiento del cuerpo (escalaY - 1). */
   aplaste?: number;
-  /** Empuje por la velocidad del cuerpo, en grados por (unidad/s). */
+  /** Por la velocidad del cuerpo (unidades/s): la pieza se queda atrás. */
   velocidadX?: number;
   velocidadY?: number;
+  /** Tope, en valor absoluto, de lo anterior. Las reacciones no lo tienen. */
+  limite?: number;
 }
 
-/** Eventos ante los que un disfraz puede reaccionar con un empujón breve. */
-export type EventoFisica =
-  | "clic"
-  | "sorpresa"
-  | "enojo"
-  | "mareo"
-  | "necesita"
-  | "termino"
-  | "despertar";
+/** Eventos ante los que un disfraz puede reaccionar. */
+export const EVENTOS_DE_FISICA = [
+  "clic",
+  "sorpresa",
+  "enojo",
+  "mareo",
+  "necesita",
+  "termino",
+  "despertar",
+] as const;
+export type EventoFisica = (typeof EVENTOS_DE_FISICA)[number];
+
+/**
+ * Reacción de un resorte a un evento. Un número es un empujón (velocidad).
+ * `mantener` y `oscilar` duran mientras dura lo que las provoca (el enojo,
+ * el mareo, el estado) o, si se indica, `duracion` segundos.
+ */
+export type Reaccion =
+  | number
+  | {
+      impulso?: number;
+      mantener?: number;
+      oscilar?: { amplitud: number; frecuencia: number; fase?: number };
+      duracion?: number;
+    };
 
 export interface ConfigFisica {
   resortes: Record<string, ResorteSecundario>;
-  /** Empujón (velocidad, en grados/s) a cada resorte al ocurrir un evento. */
-  reacciones?: Partial<Record<EventoFisica, Record<string, number>>>;
+  reacciones?: Partial<Record<EventoFisica, Record<string, Reaccion>>>;
 }
 
 const POR_DEFECTO = { rigidez: 90, amortiguacion: 9 };
+const TAU = Math.PI * 2;
+const limitar = (v: number, tope: number | undefined) =>
+  tope === undefined ? v : Math.min(tope, Math.max(-tope, v));
 
 export function crearFisica() {
   let config: ConfigFisica | undefined;
   let resortes: Record<string, Resorte> = {};
   let ultimo = -1;
-  let antes = { x: 0, altura: 0, sorpresa: 0, enojo: 0, mareo: 0, dormida: 0, estado: "" };
+  let ahora = 0;
+  let antes = { x: 0, altura: 0, estado: "" };
+  /** Cuándo empezó cada evento y si sigue en curso. */
+  const inicio: Partial<Record<EventoFisica, number>> = {};
+  const enCurso: Partial<Record<EventoFisica, boolean>> = {};
 
-  const evento = (nombre: EventoFisica) => {
-    const empujes = config?.reacciones?.[nombre];
-    if (!empujes) return;
-    for (const [resorte, velocidad] of Object.entries(empujes)) {
-      resortes[resorte]?.impulso(velocidad);
+  const empezar = (nombre: EventoFisica) => {
+    inicio[nombre] = ahora;
+    for (const [resorte, reaccion] of Object.entries(config?.reacciones?.[nombre] ?? {})) {
+      const impulso = typeof reaccion === "number" ? reaccion : reaccion.impulso;
+      if (impulso) resortes[resorte]?.impulso(impulso);
     }
+  };
+  /** El evento empieza cuando su condición pasa a cumplirse. */
+  const seguir = (nombre: EventoFisica, activo: boolean) => {
+    if (activo && !enCurso[nombre]) empezar(nombre);
+    enCurso[nombre] = activo;
+  };
+
+  /** Lo que las reacciones sostenidas suman al objetivo de un resorte. */
+  const sostenido = (resorte: string): number => {
+    let suma = 0;
+    for (const nombre of EVENTOS_DE_FISICA) {
+      const reaccion = config?.reacciones?.[nombre]?.[resorte];
+      const desde = inicio[nombre];
+      if (typeof reaccion !== "object" || desde === undefined) continue;
+      const t = ahora - desde;
+      const vigente = reaccion.duracion !== undefined ? t < reaccion.duracion : enCurso[nombre] === true;
+      if (!vigente) continue;
+      suma += reaccion.mantener ?? 0;
+      const o = reaccion.oscilar;
+      if (o) suma += o.amplitud * Math.sin(TAU * o.frecuencia * t + (o.fase ?? 0));
+    }
+    return suma;
   };
 
   return {
@@ -66,6 +112,10 @@ export function crearFisica() {
       config = nueva;
       resortes = {};
       for (const clave of Object.keys(pose.fisicaSecundaria)) delete pose.fisicaSecundaria[clave];
+      for (const clave of EVENTOS_DE_FISICA) {
+        delete inicio[clave];
+        delete enCurso[clave];
+      }
       for (const [nombre, r] of Object.entries(nueva?.resortes ?? {})) {
         resortes[nombre] = new Resorte(
           0,
@@ -75,9 +125,13 @@ export function crearFisica() {
         pose.fisicaSecundaria[nombre] = 0;
       }
       ultimo = -1;
+      antes = { x: pose.cuerpo.x, altura: pose.cuerpo.altura, estado: "" };
     },
 
-    evento,
+    /** Un evento instantáneo que la pose no deja ver: el clic. */
+    evento(nombre: EventoFisica): void {
+      if (config) empezar(nombre);
+    },
 
     /**
      * Avanza los resortes hasta `tiempo` (segundos del motor) con la pose ya
@@ -87,28 +141,30 @@ export function crearFisica() {
       if (!config) return;
       const dt = ultimo < 0 ? 0 : Math.min(0.033, Math.max(0, tiempo - ultimo));
       ultimo = tiempo;
+      ahora = tiempo;
       const { cuerpo, cara } = pose;
       const vx = dt > 0 ? (cuerpo.x - antes.x) / dt : 0;
       const vy = dt > 0 ? (cuerpo.altura - antes.altura) / dt : 0;
 
-      // Reacciones: los eventos se reconocen por los cambios de la pose.
-      if (cara.sorpresa > 0.5 && antes.sorpresa <= 0.5) evento("sorpresa");
-      if (cara.enojo > 0.5 && antes.enojo <= 0.5) evento("enojo");
-      if (cara.mareo > 0.5 && antes.mareo <= 0.5) evento("mareo");
-      if (cara.dormida <= 0.5 && antes.dormida > 0.5) evento("despertar");
-      if (pose.estado !== antes.estado && antes.estado !== "") {
-        if (pose.estado === "necesita") evento("necesita");
-        if (pose.estado === "termino") evento("termino");
+      // Los eventos se reconocen por la pose: duran mientras dura lo que los
+      // provoca.
+      seguir("sorpresa", cara.sorpresa > 0.5);
+      seguir("enojo", cara.enojo > 0.5);
+      seguir("mareo", cara.mareo > 0.5);
+      // Recién vestida no cuenta como evento: solo los cambios de estado.
+      const primera = antes.estado === "";
+      if (primera) {
+        enCurso.necesita = pose.estado === "necesita";
+        enCurso.termino = pose.estado === "termino";
+      } else {
+        seguir("necesita", pose.estado === "necesita");
+        seguir("termino", pose.estado === "termino");
       }
-      antes = {
-        x: cuerpo.x,
-        altura: cuerpo.altura,
-        sorpresa: cara.sorpresa,
-        enojo: cara.enojo,
-        mareo: cara.mareo,
-        dormida: cara.dormida,
-        estado: pose.estado,
-      };
+      const dormida = cara.dormida > 0.5;
+      if (!dormida && enCurso.despertar === false) empezar("despertar");
+      // `despertar` es un instante: se anota si estaba dormida.
+      enCurso.despertar = dormida ? false : undefined;
+      antes = { x: cuerpo.x, altura: cuerpo.altura, estado: pose.estado };
 
       // Con seno, una vuelta entera del accesorio es un vaivén.
       const delta = pose.accesorio.giro - POSES.inactivo.petalo.giro;
@@ -116,16 +172,17 @@ export function crearFisica() {
       for (const [nombre, r] of Object.entries(config.resortes)) {
         const resorte = resortes[nombre];
         if (!resorte) continue;
-        resorte.objetivo =
+        const continuo =
           (r.accesorio ?? 0) * balanceo +
           (r.dormida ?? 0) * cara.dormida +
-          (r.aplaste ?? 0) * (cuerpo.escalaY - 1);
+          (r.aplaste ?? 0) * (cuerpo.escalaY - 1) -
+          (r.velocidadX ?? 0) * vx -
+          (r.velocidadY ?? 0) * vy;
+        resorte.objetivo = limitar(continuo, r.limite) + sostenido(nombre);
         if (quieto) {
           resorte.valor = resorte.objetivo;
           resorte.velocidad = 0;
         } else if (dt > 0) {
-          // La velocidad del cuerpo empuja en contra: la pieza se queda atrás.
-          resorte.impulso(-((r.velocidadX ?? 0) * vx + (r.velocidadY ?? 0) * vy) * dt);
           resorte.paso(dt);
         }
         pose.fisicaSecundaria[nombre] = resorte.valor;

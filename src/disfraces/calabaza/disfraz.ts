@@ -1,72 +1,97 @@
-import type { Disfraz } from "../tipos";
+import type { Disfraz, Movimiento } from "../tipos";
 
-const PIEL = "#F58A2E";
-const BORDE = "#C7601A";
+/**
+ * La calabaza se aplasta y se estira con retraso, anclada en su base, y
+ * salta con la sorpresa. Sus piezas comparten esos dos resortes.
+ */
+const PESA: Movimiento[] = [
+  { resorte: "rebotePesa", escalaY: 1 },
+  { resorte: "saltoCalabaza", y: 1 },
+];
+const CALABAZA_EN = { ancla: "cabeza-centro", y: 4, coordenadas: "cuerpo" } as const;
 
-/** Calabaza: gorrito con gajos y un rabito verde. */
+/** Calabaza: una calabaza pequeña sobre la cabeza, con su tallo y su hoja. */
 export const CALABAZA: Disfraz = {
   id: "calabaza",
   nombre: "Calabaza",
   categoria: "halloween",
-  petalo: "oculto",
-  paletaSugerida: "durazno",
+  paletaSugerida: "menta",
+  petalo: { x: 24, y: -34, giro: 28, escala: 0.8 },
   piezas: [
     {
-      id: "gorro",
+      id: "tallo",
       capa: "sobre-el-cuerpo",
+      orden: 0,
+      ...CALABAZA_EN,
+      mueve: PESA,
+      formas: [{ tipo: "trazado", d: "M-2 -57 L-1 -66 L3 -66 L2 -57 Z", relleno: "#6B8E23", redondo: true }],
+    },
+    {
+      // Se mece alrededor de donde nace, y sube y baja con la calabaza.
+      id: "hoja",
+      capa: "sobre-el-cuerpo",
+      orden: 1,
       ancla: "cabeza-centro",
+      x: 3,
+      y: -22,
+      coordenadas: "cuerpo",
+      mueve: [
+        { resorte: "oscilaHoja", giro: 1 },
+        { resorte: "rebotePesa", y: -26 },
+        { resorte: "saltoCalabaza", y: 1 },
+      ],
+      formas: [{ tipo: "trazado", d: "M3 -62 Q12 -68 14 -60 Q8 -60 3 -62 Z", relleno: "#7FBF47", redondo: true }],
+    },
+    {
+      id: "calabaza",
+      capa: "sobre-el-cuerpo",
+      orden: 2,
+      ...CALABAZA_EN,
+      mueve: PESA,
       formas: [
-        {
-          tipo: "trazado",
-          d: "M-39.5 22 C-34 6 -19 -2.5 0 -2.5 C19 -2.5 34 6 39.5 22 Q0 12.5 -39.5 22 Z",
-          relleno: PIEL,
-          trazo: BORDE,
-          grosor: 1.2,
-          redondo: true,
-        },
-        // Gajos.
-        {
-          tipo: "trazado",
-          d: "M0 -2 Q-2.5 6 0 14 M-14 -0.5 Q-20 8 -19 16 M14 -0.5 Q20 8 19 16 M-27 4.5 Q-33 12 -32.5 19 M27 4.5 Q33 12 32.5 19",
-          trazo: BORDE,
-          grosor: 1.2,
-          opacidad: 0.8,
-          redondo: true,
-        },
-        {
-          tipo: "trazado",
-          d: "M-25 10 C-21 6 -16 3 -10 2",
-          trazo: "#FFFFFF",
-          grosor: 2.4,
-          opacidad: 0.4,
-          redondo: true,
-        },
+        { tipo: "elipse", cx: 0, cy: -46, rx: 18, ry: 12, relleno: "#FFA24D", trazo: "#C5661A", grosor: 1.2 },
       ],
     },
     {
-      id: "rabito",
-      capa: "encima-de-todo",
-      ancla: "cabeza-centro",
-      x: 1,
-      y: -1.5,
-      giro: 10,
-      resorte: { nombre: "rabito", giro: 1 },
+      // Al terminar una tarea se ilumina: esta copia clara aparece y se va.
+      id: "brillo",
+      capa: "sobre-el-cuerpo",
+      orden: 3,
+      ...CALABAZA_EN,
+      opacidad: 0,
+      mueve: [...PESA, { resorte: "brilloCalabaza", opacidad: 1 }],
+      formas: [{ tipo: "elipse", cx: 0, cy: -46, rx: 17.4, ry: 11.4, relleno: "#FFC27A" }],
+    },
+    {
+      id: "costillas",
+      capa: "sobre-el-cuerpo",
+      orden: 4,
+      ...CALABAZA_EN,
+      mueve: PESA,
       formas: [
-        { tipo: "trazado", d: "M2.5 -3.5 C9 -8 13 0 7.5 1.5", trazo: "#6BAF5E", grosor: 1.5, redondo: true },
         {
           tipo: "trazado",
-          d: "M-4 1.5 L-3 -8 Q0.5 -11 4.5 -9.5 L3.8 1.5 Z",
-          relleno: "#6BAF5E",
-          trazo: "#3F7F3A",
-          grosor: 1.1,
+          d: "M-6 -57 Q-11 -46 -6 -35 M6 -57 Q11 -46 6 -35 M0 -58 L0 -34",
+          trazo: "#E07F1F",
+          grosor: 1.2,
           redondo: true,
         },
       ],
     },
   ],
   fisica: {
-    resortes: { rabito: { accesorio: 16, dormida: 12, velocidadX: 0.3 } },
-    reacciones: { clic: { rabito: 80 } },
+    resortes: {
+      // Sigue al aplastamiento del cuerpo, con retraso y hasta un 8 %.
+      rebotePesa: { rigidez: 50, amortiguacion: 6, aplaste: 1, limite: 0.08 },
+      saltoCalabaza: { rigidez: 180, amortiguacion: 11 },
+      oscilaHoja: { rigidez: 60, amortiguacion: 5, accesorio: 10, velocidadX: 0.6, limite: 10 },
+      brilloCalabaza: { rigidez: 260, amortiguacion: 30 },
+    },
+    reacciones: {
+      clic: { rebotePesa: -0.9, oscilaHoja: 70 },
+      termino: { brilloCalabaza: { mantener: 1, duracion: 0.4 } },
+      sorpresa: { saltoCalabaza: { mantener: -3, duracion: 0.3 } },
+    },
   },
   efectos: { destellos: ["caramelo", "caramelo", "caramelo"] },
 };

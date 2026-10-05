@@ -22,7 +22,7 @@ export const PRUEBA: Disfraz = {
   nombre: "De prueba",
   categoria: "pruebas",
   // El pétalo pasa a ser el adorno del sombrero.
-  petalo: { x: -12, y: -40, giro: -30, escala: 0.6 },
+  petalo: { x: 6, y: -76, giro: -12, escala: 0.6, pegadoA: "sombrero" },
   piezas: [
     {
       id: "capa",
@@ -38,7 +38,7 @@ export const PRUEBA: Disfraz = {
           redondo: true,
         },
       ],
-      resorte: { nombre: "capa", giro: 1 },
+      mueve: [{ resorte: "capa", giro: 1 }],
     },
     {
       id: "oreja-izquierda",
@@ -48,7 +48,7 @@ export const PRUEBA: Disfraz = {
       giro: 24,
       espejo: true,
       formas: OREJA,
-      resorte: { nombre: "orejaIzquierda", giro: 1 },
+      mueve: [{ resorte: "orejaIzquierda", giro: 1 }],
       sube: 0.12,
     },
     {
@@ -58,7 +58,7 @@ export const PRUEBA: Disfraz = {
       ancla: "oreja-derecha",
       giro: 24,
       formas: OREJA,
-      resorte: { nombre: "orejaDerecha", giro: 1 },
+      mueve: [{ resorte: "orejaDerecha", giro: 1 }],
       sube: 0.12,
     },
     {
@@ -83,7 +83,7 @@ export const PRUEBA: Disfraz = {
       ancla: "cabeza-centro",
       y: 4,
       giro: 6,
-      resorte: { nombre: "inclinacionSombrero", giro: 1 },
+      mueve: [{ resorte: "inclinacionSombrero", giro: 1 }],
       formas: [
         { tipo: "elipse", cx: 0, cy: 0, rx: 24, ry: 5, relleno: "#3A3F4B", trazo: "#2B2B2B", grosor: 1 },
         {

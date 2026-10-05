@@ -1,111 +1,105 @@
 import type { Disfraz, Forma } from "../tipos";
 
-const TELA = "#574B80";
-const BORDE = "#372E57";
-
-/** Oreja derecha, con el origen donde nace; la izquierda es su espejo. */
+/**
+ * Oreja izquierda, en coordenadas del cuerpo; la derecha es su espejo. Es
+ * del color del cuerpo, así que cambia con la paleta.
+ */
 const OREJA: Forma[] = [
   {
     tipo: "trazado",
-    d: "M-11 5 Q-9.5 -11 -2.5 -19 Q0 -21.5 2.5 -19 Q9.5 -11 11 5 Z",
-    relleno: TELA,
-    trazo: BORDE,
-    grosor: 1.2,
+    d: "M-41 -20 L-36 -47 L-17 -36 Z",
+    relleno: "cuerpo",
+    trazo: "contorno",
+    grosor: 1.4,
     redondo: true,
   },
-  { tipo: "trazado", d: "M-5.5 3 Q-4.5 -8 0 -14 Q4.5 -8 5.5 3 Z", relleno: "#FFC1D6" },
+  { tipo: "trazado", d: "M-37 -26 L-34 -41 L-23 -35 Z", relleno: "#FFB3C6", redondo: true },
 ];
 
-const COLA = "M0 0 C14 7 28 3 28 -10 C28 -18 33 -23 38 -20";
-
-/** Gatito: gorrita con orejas, cola y bigotes, de gato negro. */
+/** Gatito: orejas, bigotes y nariz. */
 export const GATITO: Disfraz = {
   id: "gatito",
   nombre: "Gatito",
   categoria: "animales",
-  petalo: "oculto",
+  paletaSugerida: "durazno",
+  petalo: { x: 2, y: -38, giro: 10, escala: 1 },
   piezas: [
-    {
-      id: "cola",
-      capa: "detras-del-cuerpo",
-      ancla: "espalda",
-      formas: [
-        { tipo: "trazado", d: COLA, trazo: BORDE, grosor: 8.6, redondo: true },
-        { tipo: "trazado", d: COLA, trazo: TELA, grosor: 6.2, redondo: true },
-      ],
-    },
     {
       id: "oreja-izquierda",
       capa: "detras-del-cuerpo",
-      orden: 1,
       ancla: "oreja-izquierda",
-      giro: 22,
-      espejo: true,
+      x: -6,
+      y: 1,
+      coordenadas: "cuerpo",
       formas: OREJA,
-      resorte: { nombre: "orejaIzquierda", giro: 1 },
-      sube: 0.12,
+      mueve: [{ resorte: "orejaIzquierda", giro: 1 }],
     },
     {
       id: "oreja-derecha",
       capa: "detras-del-cuerpo",
-      orden: 1,
       ancla: "oreja-derecha",
-      giro: 22,
+      x: 6,
+      y: 1,
+      espejo: true,
+      coordenadas: "cuerpo",
       formas: OREJA,
-      resorte: { nombre: "orejaDerecha", giro: 1 },
-      sube: 0.12,
-    },
-    {
-      id: "gorro",
-      capa: "sobre-el-cuerpo",
-      ancla: "cabeza-centro",
-      formas: [
-        {
-          tipo: "trazado",
-          d: "M-39.5 22 C-34 6 -19 -2.5 0 -2.5 C19 -2.5 34 6 39.5 22 Q0 12.5 -39.5 22 Z",
-          relleno: TELA,
-          trazo: BORDE,
-          grosor: 1.2,
-          redondo: true,
-        },
-        // Vuelta del gorro y su brillo.
-        { tipo: "trazado", d: "M-38 20.5 Q0 11 38 20.5", trazo: "#43396A", grosor: 3.4, redondo: true },
-        {
-          tipo: "trazado",
-          d: "M-24 11 C-20 6 -14 3 -8 2",
-          trazo: "#FFFFFF",
-          grosor: 2.6,
-          opacidad: 0.35,
-          redondo: true,
-        },
-      ],
+      mueve: [{ resorte: "orejaDerecha", giro: 1 }],
     },
     {
       id: "bigotes",
       capa: "sobre-la-cara",
       orden: 1,
       ancla: "mejillas",
+      coordenadas: "cuerpo",
       formas: [
         {
           tipo: "trazado",
-          d: "M-37 -6 L-51 -9 M-37 -1.5 L-51 0.5 M37 -6 L51 -9 M37 -1.5 L51 0.5",
+          d: "M-38 8 L-56 4 M-38 13 L-57 15 M38 8 L56 4 M38 13 L57 15",
           trazo: "#2B2B2B",
-          grosor: 1.1,
-          opacidad: 0.75,
+          grosor: 1.2,
+          opacidad: 0.6,
           redondo: true,
         },
       ],
     },
+    {
+      id: "nariz",
+      capa: "sobre-la-cara",
+      orden: 1,
+      ancla: "boca",
+      coordenadas: "cuerpo",
+      formas: [{ tipo: "trazado", d: "M-2.6 8.5 L2.6 8.5 L0 12 Z", relleno: "#E07A8A", redondo: true }],
+    },
   ],
   fisica: {
     resortes: {
-      // Las dos se inclinan hacia el mismo lado y se caen al dormirse.
-      orejaDerecha: { accesorio: 22, dormida: 20 },
-      orejaIzquierda: { accesorio: -22, dormida: 20 },
+      // Un valor positivo las levanta; negativo, las echa hacia atrás. Al
+      // moverse el cuerpo se inclinan las dos hacia el mismo lado (por eso
+      // los signos opuestos), cada una a su ritmo.
+      orejaIzquierda: { rigidez: 80, amortiguacion: 8, velocidadX: 0.4, accesorio: 8, limite: 8 },
+      orejaDerecha: { rigidez: 100, amortiguacion: 9, velocidadX: -0.4, accesorio: -8, limite: 8 },
     },
     reacciones: {
-      clic: { orejaDerecha: 90, orejaIzquierda: 90 },
-      sorpresa: { orejaDerecha: -120, orejaIzquierda: -120 },
+      // Un golpe rápido de -12° y vuelven.
+      clic: { orejaIzquierda: -110, orejaDerecha: -120 },
+      sorpresa: {
+        orejaIzquierda: { mantener: 10, duracion: 1 },
+        orejaDerecha: { mantener: 10, duracion: 1 },
+      },
+      enojo: { orejaIzquierda: { mantener: -15 }, orejaDerecha: { mantener: -15 } },
+      // Alternadas, un rato: llama la atención sin cansar.
+      necesita: {
+        orejaIzquierda: { oscilar: { amplitud: 7, frecuencia: 2 }, duracion: 3 },
+        orejaDerecha: { oscilar: { amplitud: 7, frecuencia: 2, fase: Math.PI }, duracion: 3 },
+      },
+      termino: {
+        orejaIzquierda: { impulso: 90, mantener: 10, duracion: 0.6 },
+        orejaDerecha: { impulso: 100, mantener: 10, duracion: 0.6 },
+      },
+      mareo: {
+        orejaIzquierda: { oscilar: { amplitud: 4, frecuencia: 1.5 } },
+        orejaDerecha: { oscilar: { amplitud: 4, frecuencia: 1.5, fase: 1 } },
+      },
     },
   },
   efectos: { destellos: ["huella", "huella", "huella"] },

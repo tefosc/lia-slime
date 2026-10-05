@@ -5,6 +5,7 @@ import { GATITO } from "./gatito/disfraz";
 import { MURCIELAGO } from "./murcielago/disfraz";
 import { PANDA } from "./panda/disfraz";
 import { PRUEBA } from "./prueba/disfraz";
+import { VAMPIRO } from "./vampiro/disfraz";
 import type { Disfraz } from "./tipos";
 
 /** Id de "sin disfraz": el valor por defecto. */
@@ -15,13 +16,14 @@ export const SIN_DISFRAZ = "ninguno";
  * la app al compilarla. No se cargan disfraces desde el disco, la red ni
  * carpetas del usuario; no añadas ninguna forma de hacerlo.
  *
- * En la versión 0.1.0 la lista publicada está vacía: los disfraces de la
- * Fase 2 y el de prueba solo existen en desarrollo, y Vite los deja fuera
- * de la compilación de producción.
+ * Publicados: bruja, calabaza, vampiro y gatito. El panda, el fantasma, el
+ * murciélago y el de prueba solo existen en desarrollo, y Vite los deja
+ * fuera de la compilación de producción.
  */
+const PUBLICADOS: readonly Disfraz[] = [BRUJA, CALABAZA, VAMPIRO, GATITO];
 export const DISFRACES: readonly Disfraz[] = import.meta.env.DEV
-  ? [GATITO, PANDA, BRUJA, CALABAZA, FANTASMA, MURCIELAGO, PRUEBA]
-  : [];
+  ? [...PUBLICADOS, PANDA, FANTASMA, MURCIELAGO, PRUEBA]
+  : PUBLICADOS;
 
 /** El disfraz con ese id, o null (sin disfraz) si no existe. */
 export function disfrazDe(id?: string): Disfraz | null {

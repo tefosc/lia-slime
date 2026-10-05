@@ -61,11 +61,32 @@ anything pending.
 <!-- SCREENSHOT: the Appearance tab in Settings, with the preview -->
 <!-- ![Appearance tab](docs/media/apariencia.png) -->
 
-Lia is ready to wear **costumes** (clothes she puts on, with their own
-motion); they will arrive in a later version. To draw one, see
-[docs/crear-disfraz.md](docs/crear-disfraz.md) (in Spanish).
-
 Only which palette and costume you picked is stored, nothing else.
+
+## Costumes
+
+Lia can dress up. A costume is clothing she puts on, with its own motion: it
+does not change her body, her faces or what she does.
+
+<!-- SCREENSHOT: the four costumes side by side -->
+<!-- ![Lia's costumes](docs/media/disfraces.png) -->
+
+- **Witch** (Halloween): a pointed hat with the petal as its ornament. It
+  tilts when she moves and sinks over her brow when she is angry.
+- **Pumpkin** (Halloween): a pumpkin on her head that bounces with her and
+  lights up when a task is done.
+- **Vampire** (Halloween): a cape that sways, and fangs.
+- **Kitten** (Animals): ears in Lia's own colour, whiskers and a nose. The
+  ears twitch when she needs you.
+
+<!-- SCREENSHOT: one costume in the four states -->
+<!-- ![A costume in each state](docs/media/disfraz-estados.png) -->
+
+Pick one in **Settings → Appearance** or from the tray. Each suggests a
+colour you can change; they work with any palette. Clicks on the hat, cape,
+ears or whiskers go through to the window below: only Lia's body takes them.
+
+To draw one, see [docs/crear-disfraz.md](docs/crear-disfraz.md) (in Spanish).
 
 ## Installation
 
