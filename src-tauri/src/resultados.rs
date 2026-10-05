@@ -423,7 +423,7 @@ mod pruebas {
     #[test]
     fn la_apariencia_invalida_vuelve_a_los_valores_por_defecto() {
         let leidas: Preferencias = serde_json::from_str(
-            r#"{"disfraz":"<svg>","paleta":"Lila Ñ","matiz":999,"colorLibre":"url(#x)"}"#,
+            r##"{"disfraz":"<svg>","paleta":"Lila Ñ","matiz":999,"colorLibre":"url(#x)"}"##,
         )
         .unwrap();
         let normales = leidas.normalizar();
@@ -434,7 +434,7 @@ mod pruebas {
         // Un id con buena forma se conserva aunque Rust no lo conozca: la
         // interfaz decide si existe.
         let validas: Preferencias =
-            serde_json::from_str(r#"{"paleta":"libre","matiz":210,"colorLibre":"#BE1963"}"#)
+            serde_json::from_str(r##"{"paleta":"libre","matiz":210,"colorLibre":"#BE1963"}"##)
                 .unwrap();
         let validas = validas.normalizar();
         assert_eq!(validas.paleta, "libre");
