@@ -46,6 +46,10 @@ export interface Pose {
     sorpresa: number;
     enojo: number;
     feliz: number;
+    /** Enamorada por las caricias: ojos de corazón, de 0 a 1. */
+    enamorada: number;
+    /** Latido de los ojos de corazón: su escala, alrededor de 1. */
+    latido: number;
     mareo: number;
     dormida: number;
     /** Tensión del esfuerzo (cara "> <"), de 0 a 1. */
@@ -98,6 +102,8 @@ export function crearPose(estado: EstadoLia): Pose {
       sorpresa: 0,
       enojo: 0,
       feliz: 0,
+      enamorada: 0,
+      latido: 1,
       mareo: 0,
       dormida: 0,
       tension: 0,

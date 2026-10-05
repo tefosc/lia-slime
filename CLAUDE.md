@@ -348,8 +348,13 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   incumple cada disfraz. Tras tocar el motor o un
   renderizador, las huellas deben seguir idénticas. Si cambias el dibujo a
   propósito, actualiza la referencia con `window.__revision`.
-- Caricias seguidas durante unos segundos la "encantan": dos botes, meneo y
-  corazones más seguidos (`CARICIAS.tiempoParaEncanto`).
+- Caricias seguidas durante unos segundos (`CARICIAS.tiempoParaEncanto`) la
+  enamoran: dos botes y un meneo, ojos de corazón que laten, una ráfaga de
+  corazones más grandes y, después, se queda flotando y meciéndose
+  (`duracionEncanto`). Los ojos de corazón no están en el dibujo: el
+  renderizador los crea la primera vez que hacen falta, para que el dibujo
+  en reposo siga siendo el de siempre. Con movimiento reducido solo cambian
+  los ojos.
 - Las reacciones (toque, sorpresa y enojo por clics; alegría al frotar la
   cabeza; mareo al girar el cursor a su alrededor) solo cambian la cara en
   `inactivo`; los estados de Claude Code mandan siempre. Sus parámetros están

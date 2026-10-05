@@ -53,6 +53,7 @@ export const CASOS: Caso[] = [
   // Caricias.
   caso("caricias", "inactivo", 1.6, caricias(0.3, 1.6)),
   caso("encanto", "inactivo", 5.4, caricias(0.3, 5.4)),
+  caso("encanto · flotando", "inactivo", 6.8, caricias(0.3, 6.8)),
   caso("caricias en trabajando", "trabajando", 1.2, caricias(0.3, 1.2)),
   // Mareo.
   caso("mareo · empieza", "inactivo", 0.9, [{ t: 0.3, accion: "vueltas", valor: 3 }]),

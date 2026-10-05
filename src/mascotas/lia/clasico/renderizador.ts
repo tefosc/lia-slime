@@ -125,6 +125,44 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
   const opacidad = (id: string, valor: number) =>
     escribir(caras[id], id, "opacity", valor.toFixed(2));
 
+  /**
+   * Ojos de corazón del encanto. No están en el dibujo: se crean la primera
+   * vez que Lia se enamora, para que el dibujo en reposo siga siendo
+   * exactamente el de siempre. Son solo formas, creadas con la API del DOM.
+   */
+  let ojosAmor: { grupo: SVGElement; izquierdo: SVGElement; derecho: SVGElement } | null = null;
+  const asegurarOjosDeAmor = () => {
+    if (ojosAmor?.grupo.isConnected) return ojosAmor;
+    const ojos = buscar(svg, "lia-ojos");
+    if (!ojos) return null;
+    const NS = "http://www.w3.org/2000/svg";
+    const grupo = document.createElementNS(NS, "g") as SVGElement;
+    grupo.setAttribute("id", "lia-ojos-amor");
+    grupo.setAttribute("opacity", "0");
+    const corazon = () => {
+      const ojo = document.createElementNS(NS, "g") as SVGElement;
+      const forma = document.createElementNS(NS, "path");
+      forma.setAttribute("d", "M0 6.5 C-10.5 -1 -7.5 -9.5 0 -4.5 C7.5 -9.5 10.5 -1 0 6.5 Z");
+      forma.setAttribute("fill", "#FF5C8A");
+      forma.setAttribute("stroke", "#E0356B");
+      forma.setAttribute("stroke-width", "0.9");
+      forma.setAttribute("stroke-linejoin", "round");
+      const brillo = document.createElementNS(NS, "circle");
+      brillo.setAttribute("cx", "-3");
+      brillo.setAttribute("cy", "-3");
+      brillo.setAttribute("r", "1.5");
+      brillo.setAttribute("fill", "#FFFFFF");
+      ojo.append(forma, brillo);
+      grupo.append(ojo);
+      return ojo;
+    };
+    const izquierdo = corazon();
+    const derecho = corazon();
+    ojos.append(grupo);
+    for (const clave of ["amor-op", "amor-i", "amor-d"]) escritos.delete(clave);
+    return { grupo, izquierdo, derecho };
+  };
+
   const buscarAccesorio = () => {
     petaloEl = buscar(svg, "lia-petalo");
     const datos = petaloEl?.dataset.recolocado?.split(",").map(Number);
@@ -287,7 +325,16 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
       escribir(personajeEl, "personaje-op", "opacity", (1 - efectos.fundido).toFixed(2));
       escribir(flotanteEl, "flotante-op", "opacity", cuerpo.opacidad.toFixed(2));
       opacidad("lia-ojos-sorpresa", cara.sorpresa);
-      opacidad("lia-ojos-feliz", cara.feliz);
+      opacidad("lia-ojos-feliz", cara.feliz * (1 - cara.enamorada));
+      if (cara.enamorada > 0.01 || ojosAmor) {
+        if (cara.enamorada > 0.01) ojosAmor = asegurarOjosDeAmor();
+        if (ojosAmor) {
+          escribir(ojosAmor.grupo, "amor-op", "opacity", cara.enamorada.toFixed(2));
+          const latido = cara.latido.toFixed(3);
+          escribir(ojosAmor.izquierdo, "amor-i", "transform", `translate(-15,2) scale(${latido})`);
+          escribir(ojosAmor.derecho, "amor-d", "transform", `translate(15,2) scale(${latido})`);
+        }
+      }
       opacidad("lia-mejillas-feliz", cara.feliz);
       opacidad("lia-ojos-mareo", cara.mareo);
       opacidad("lia-boca-mareo", cara.mareo);

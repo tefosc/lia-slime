@@ -156,8 +156,18 @@ export const CARICIAS = {
   subidaCorazon: 24,
   /** Segundos de caricias seguidas para que Lia se encante. */
   tiempoParaEncanto: 4.5,
-  /** Cuánto dura el encanto (botes, meneo y corazones más seguidos). */
-  duracionEncanto: 1.8,
+  /**
+   * Cuánto dura el encanto: se enamora. Dos botes y un meneo, ojos de
+   * corazón que laten, una ráfaga de corazones y, después, se queda
+   * flotando y meciéndose, embobada.
+   */
+  duracionEncanto: 3.4,
+  /** Cuánto se eleva y cuánto se mece mientras flota enamorada. */
+  flotarEnamorada: 6,
+  mecerEnamorada: 5,
+  /** Latidos por segundo de los ojos de corazón, y cuánto crecen. */
+  latidosPorSegundo: 2.2,
+  latido: 0.14,
   /** Descanso mínimo entre dos encantos. */
   esperaEntreEncantos: 10,
 };
@@ -960,7 +970,7 @@ export function useAnimacionLia(
         proximoCorazon =
           tiempo +
           (tiempo - inicioEncanto < CARICIAS.duracionEncanto
-            ? CARICIAS.intervaloCorazones * 0.6
+            ? CARICIAS.intervaloCorazones * 0.5
             : CARICIAS.intervaloCorazones);
       }
       if (reaccion !== "feliz") inicioFeliz = -1;
@@ -977,6 +987,12 @@ export function useAnimacionLia(
         if (!quieto) {
           elevacion.impulso(60);
           aplaste.impulso(0.8);
+          // Ráfaga: los tres corazones salen casi a la vez, en abanico.
+          corazones.forEach((corazon, i) => {
+            corazon.inicio = tiempo + 0.12 * i;
+            corazon.x = -20 + 20 * i + azar(-4, 4);
+          });
+          proximoCorazon = tiempo + 0.7;
         }
       }
       if (!segundoBote && tiempo - inicioEncanto >= 0.5 && tiempo - inicioEncanto < 1) {
@@ -1113,12 +1129,23 @@ export function useAnimacionLia(
       // El rebote del toque se suma a la inclinación hacia el cursor.
       // Encanto: meneo rápido que se apaga solo.
       const desdeEncanto = tiempo - inicioEncanto;
+      const encantada = desdeEncanto >= 0 && desdeEncanto < CARICIAS.duracionEncanto;
+      // Enamorada: los ojos de corazón aparecen tras el primer bote y se van
+      // al final. Con movimiento reducido solo cambian los ojos.
+      const enamorada = encantada
+        ? Math.min(
+            1,
+            Math.max(0, (desdeEncanto - 0.1) / 0.25),
+            (CARICIAS.duracionEncanto - desdeEncanto) / 0.5,
+          )
+        : 0;
+      // Tras los botes se queda flotando y meciéndose despacio.
+      const flotaAmor = quieto ? 0 : enamorada * suave((desdeEncanto - 0.9) / 0.6);
       const meneoEncanto =
-        quieto || desdeEncanto < 0 || desdeEncanto > CARICIAS.duracionEncanto
+        quieto || !encantada
           ? 0
-          : 8 *
-            Math.sin(TAU * 3.2 * desdeEncanto) *
-            (1 - desdeEncanto / CARICIAS.duracionEncanto);
+          : 8 * Math.sin(TAU * 3.2 * desdeEncanto) * (1 - Math.min(1, desdeEncanto / 1.2)) +
+            CARICIAS.mecerEnamorada * Math.sin(TAU * 0.8 * desdeEncanto) * flotaAmor;
       const giroCuerpo =
         MIRADA.maxInclinacion *
           inclinacion.valor *
@@ -1177,6 +1204,10 @@ export function useAnimacionLia(
       poseCara.sorpresa = sorprendida;
       poseCara.enojo = enojada;
       poseCara.feliz = contenta;
+      poseCara.enamorada = enamorada;
+      poseCara.latido = quieto
+        ? 1
+        : 1 + CARICIAS.latido * Math.max(0, Math.sin(TAU * CARICIAS.latidosPorSegundo * desdeEncanto));
       poseCara.mareo = caraMareada;
       poseCara.dormida = sueno;
       // Al derretirse, la cara se desvanece antes que el cuerpo.
@@ -1219,7 +1250,8 @@ export function useAnimacionLia(
         destino.opacidad = Math.sin(Math.PI * avance);
         destino.x = corazon.x + 3 * Math.sin(avance * 7 + i);
         destino.y = -44 - CARICIAS.subidaCorazon * avance;
-        destino.escala = 0.7 + 0.5 * avance;
+        // Enamorada, los corazones son más grandes.
+        destino.escala = (0.7 + 0.5 * avance) * (1 + 0.45 * enamorada);
       });
 
       // Estrellas en órbita sobre la cabeza: elipse de centro (0,-44), 30x8.
@@ -1251,7 +1283,8 @@ export function useAnimacionLia(
         FLOTAR.cuerpo *
         Math.sin((TAU * tiempo) / FLOTAR.periodoCuerpo) *
         pesos.flota;
-      const altura = elevacion.valor + salto + flote;
+      const altura =
+        elevacion.valor + salto + flote + CARICIAS.flotarEnamorada * flotaAmor;
 
       const deformacion =
         aplaste.valor +
