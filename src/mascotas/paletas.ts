@@ -140,23 +140,62 @@ export function paletaLibre(matiz: number): Paleta {
   };
 }
 
-/**
- * Matiz de un color escrito a mano ("#RRGGBB" o "RRGGBB"). Devuelve null si
- * no es un color válido o si es un gris, que no tiene matiz. Del color solo
- * se toma el matiz: la paleta sigue siendo la del color libre.
- */
-export function matizDeHex(texto: string): number | null {
+/** "#RRGGBB" en mayúsculas si el texto es un color hexadecimal; si no, null. */
+export function colorDeHex(texto: unknown): string | null {
+  if (typeof texto !== "string") return null;
   const hex = /^#?([0-9a-f]{6})$/i.exec(texto.trim())?.[1];
-  if (!hex) return null;
-  const { h, s } = hexAHsl(`#${hex}`);
-  return s < 5 ? null : normalizarMatiz(h);
+  return hex ? `#${hex.toUpperCase()}` : null;
+}
+
+/** El color del cuerpo del color libre para un matiz (el pastel de siempre). */
+export function colorDeMatiz(matiz: number): string {
+  return hslAHex({ h: normalizarMatiz(matiz), s: 60, l: 79 });
+}
+
+const TINTA = "#2B2B2B";
+/** Contraste mínimo de los ojos y la boca sobre el cuerpo. */
+export const CONTRASTE_DE_LA_CARA = 4.5;
+
+/**
+ * Color libre a partir de un color exacto: el cuerpo es ese color. Solo se
+ * aclara, lo justo, si es tan oscuro que los ojos y la boca no se leerían.
+ * La banda y el contorno salen de él, más oscuros, y el contorno se corrige
+ * para que se distinga sobre fondos claros y oscuros.
+ */
+export function paletaDeColor(hex: string): Paleta {
+  const base = hexAHsl(hex);
+  let l = base.l;
+  const cuerpo = () => hslAHex({ h: base.h, s: base.s, l });
+  while (l < 96 && contraste(TINTA, cuerpo()) < CONTRASTE_DE_LA_CARA) l++;
+
+  let lc = Math.max(20, l - 29);
+  const sc = Math.min(base.s, 70) * 0.75;
+  const contorno = () => hslAHex({ h: base.h, s: sc, l: lc });
+  while (lc < 64 && contraste(contorno(), FONDO_OSCURO) < CONTRASTE_MINIMO.oscuro) lc++;
+  while (lc > 30 && contraste(contorno(), FONDO_CLARO) < CONTRASTE_MINIMO.claro) lc--;
+
+  // Sobre un cuerpo rosado o rojizo, el pétalo estándar se confunde.
+  const rojizo = base.s > 25 && (base.h < 25 || base.h > 315);
+  return {
+    id: PALETA_LIBRE,
+    nombre: "Color libre",
+    contorno: contorno(),
+    cuerpo: cuerpo(),
+    banda: hslAHex({ h: base.h, s: base.s * 0.9, l: Math.max(0, l - 10) }),
+    mejillas: rojizo ? "#FF7F9E" : "#FF9EB5",
+    petalo: rojizo ? PETALO_CLARO : PETALO_ESTANDAR,
+  };
 }
 
 /**
  * La paleta con ese id. Un id desconocido nunca falla: devuelve la paleta
- * por defecto. El matiz solo cuenta para el color libre.
+ * por defecto. El color y el matiz solo cuentan para el color libre: manda
+ * el color exacto si es válido y, si no, el matiz.
  */
-export function paletaDe(id?: string, matiz?: number): Paleta {
-  if (id === PALETA_LIBRE) return paletaLibre(normalizarMatiz(matiz));
+export function paletaDe(id?: string, matiz?: number, color?: string): Paleta {
+  if (id === PALETA_LIBRE) {
+    const exacto = colorDeHex(color);
+    return exacto ? paletaDeColor(exacto) : paletaLibre(normalizarMatiz(matiz));
+  }
   return PALETAS.find((p) => p.id === id) ?? PALETAS[0];
 }

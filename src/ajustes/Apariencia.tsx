@@ -7,7 +7,15 @@ import { Mascota } from "../mascot/Mascota";
 import { ESTADOS } from "../mascot/tipos";
 import type { EstadoLia } from "../mascot/tipos";
 import { estiloDe } from "../mascotas/indice";
-import { matizDeHex, PALETA_LIBRE, PALETAS, paletaDe } from "../mascotas/paletas";
+import { hexAHsl } from "../mascotas/color";
+import {
+  colorDeHex,
+  colorDeMatiz,
+  PALETA_LIBRE,
+  PALETAS,
+  paletaDe,
+  paletaDeColor,
+} from "../mascotas/paletas";
 import type { Paleta } from "../mascotas/paletas";
 import type { Preferencias } from "../preferencias";
 
@@ -74,8 +82,15 @@ export function Apariencia({
   const [estado, setEstado] = useState<EstadoLia>("inactivo");
   const matizActual = matiz ?? preferencias.matiz;
   // Un id desconocido se muestra como lo que se ve en Lia: el de defecto.
-  const paleta = paletaDe(preferencias.paleta, matizActual);
+  // Color del color libre: el del control mientras se arrastra; si no, el
+  // exacto que se guardó o, si no hay, el pastel del matiz.
+  const colorLibre =
+    matiz !== null
+      ? colorDeMatiz(matiz)
+      : (colorDeHex(preferencias.colorLibre) ?? colorDeMatiz(preferencias.matiz));
+  const paleta = paletaDe(preferencias.paleta, matizActual, colorLibre);
   const libre = paleta.id === PALETA_LIBRE;
+  const paletaLibre = paletaDeColor(colorLibre);
   const disfraz = disfrazDe(preferencias.disfraz);
 
   // La vista previa tiene su propio bucle, que solo existe con Ajustes
@@ -94,24 +109,34 @@ export function Apariencia({
 
   /** Color escrito a mano; null mientras no se está escribiendo. */
   const [hex, setHex] = useState<string | null>(null);
-  const hexValido = hex === null || matizDeHex(hex) !== null;
+  const hexValido = hex === null || colorDeHex(hex) !== null;
   const aplicarHex = () => {
     // Solo si se escribió algo: enfocar y salir del campo no cambia el color.
-    const nuevo = hex === null ? null : matizDeHex(hex);
-    if (nuevo !== null) cambiar({ paleta: PALETA_LIBRE, matiz: nuevo });
+    const nuevo = hex === null ? null : colorDeHex(hex);
+    if (nuevo !== null) {
+      // Se guarda el color tal cual; el matiz, para el control de tono.
+      cambiar({ paleta: PALETA_LIBRE, colorLibre: nuevo, matiz: Math.round(hexAHsl(nuevo).h) % 360 });
+    }
     setHex(null);
   };
   const soltar = () => {
-    if (matiz !== null) cambiar({ paleta: PALETA_LIBRE, matiz });
+    if (matiz !== null) cambiar({ paleta: PALETA_LIBRE, matiz, colorLibre: colorDeMatiz(matiz) });
     setMatiz(null);
   };
 
-  /** Al elegir un disfraz se aplica su paleta sugerida; luego se puede cambiar. */
-  const elegirDisfraz = (elegido: Disfraz | null) =>
+  /**
+   * Al elegir un disfraz se aplica el color que propone, pero solo si el
+   * usuario no ha elegido uno: es decir, si Lia sigue con el color de
+   * siempre o con el que le propuso el disfraz anterior. Un color elegido a
+   * mano (una paleta o el color libre) se respeta.
+   */
+  const elegirDisfraz = (elegido: Disfraz | null) => {
+    const sinElegir = paleta.id === PALETAS[0].id || paleta.id === disfraz?.paletaSugerida;
     cambiar({
       disfraz: elegido?.id ?? SIN_DISFRAZ,
-      ...(elegido?.paletaSugerida ? { paleta: elegido.paletaSugerida } : {}),
+      ...(elegido?.paletaSugerida && sinElegir ? { paleta: elegido.paletaSugerida } : {}),
     });
+  };
 
   const categorias = (Object.keys(CATEGORIAS) as Categoria[])
     .map((id) => ({ id, disfraces: DISFRACES.filter((d) => d.categoria === id) }))
@@ -203,7 +228,7 @@ export function Apariencia({
             className="paleta"
             onClick={() => cambiar({ paleta: PALETA_LIBRE })}
           >
-            <Muestra paleta={paletaDe(PALETA_LIBRE, matizActual)} />
+            <Muestra paleta={paletaLibre} />
             Color libre
           </button>
         </div>
@@ -228,7 +253,7 @@ export function Apariencia({
             placeholder="#RRGGBB"
             maxLength={7}
             spellCheck={false}
-            value={hex ?? paletaDe(PALETA_LIBRE, matizActual).cuerpo}
+            value={hex ?? colorLibre}
             onChange={(e) => setHex(e.target.value)}
             onBlur={aplicarHex}
             onKeyDown={(e) => {
@@ -237,8 +262,10 @@ export function Apariencia({
           />
         </label>
         <p className="nota">
-          Mueve el tono o escribe un color (#RRGGBB) y pulsa Intro: Lia toma su
-          tono y lo suaviza para que la cara y el contorno se sigan viendo bien.
+          Mueve el tono o escribe un color (#RRGGBB) y pulsa Intro: Lia se pone de
+          ese color.
+          {libre && paletaLibre.cuerpo !== colorLibre &&
+            ` Este es muy oscuro para que se le vea la cara, así que lo aclaré un poco (${paletaLibre.cuerpo}).`}
         </p>
       </section>
     </>

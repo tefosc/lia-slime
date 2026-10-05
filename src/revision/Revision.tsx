@@ -55,7 +55,12 @@ export function Revision() {
   const solo = parametros.get("solo");
   const casos = solo ? CASOS.filter((c) => c.nombre.includes(solo)) : CASOS;
   const matiz = Number(parametros.get("matiz") ?? NaN);
-  const paleta = paletaDe(parametros.get("paleta") ?? undefined, matiz);
+  // `&paleta=libre&color=be1963` prueba un color exacto.
+  const paleta = paletaDe(
+    parametros.get("paleta") ?? undefined,
+    matiz,
+    parametros.get("color") ?? undefined,
+  );
   const estilo = estiloDe(undefined, parametros.get("estilo") ?? undefined);
   const disfraz = disfrazDe(parametros.get("disfraz") ?? undefined);
   const conReferencia =

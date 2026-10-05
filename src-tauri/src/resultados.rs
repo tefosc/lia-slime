@@ -58,6 +58,9 @@ pub struct Preferencias {
     pub paleta: String,
     /// Matiz del color libre, en grados (0 a 359).
     pub matiz: u32,
+    /// Color exacto del color libre, como "#RRGGBB", o vacío si se usa el
+    /// matiz. Es una elección del usuario, no contenido.
+    pub color_libre: String,
 }
 
 const DISFRAZ_POR_DEFECTO: &str = "ninguno";
@@ -91,6 +94,7 @@ impl Default for Preferencias {
             disfraz: DISFRAZ_POR_DEFECTO.to_string(),
             paleta: PALETA_POR_DEFECTO.to_string(),
             matiz: MATIZ_POR_DEFECTO,
+            color_libre: String::new(),
         }
     }
 }
@@ -110,6 +114,12 @@ impl Preferencias {
         self.paleta = identificador(self.paleta, PALETA_POR_DEFECTO);
         if self.matiz >= 360 {
             self.matiz = MATIZ_POR_DEFECTO;
+        }
+        // Solo "#RRGGBB"; cualquier otra cosa se descarta.
+        let hex = self.color_libre.as_bytes();
+        let valido = hex.len() == 7 && hex[0] == b'#' && hex[1..].iter().all(u8::is_ascii_hexdigit);
+        if !valido {
+            self.color_libre = String::new();
         }
         self
     }
@@ -404,7 +414,8 @@ mod pruebas {
                 "islaAlBorde",
                 "disfraz",
                 "paleta",
-                "matiz"
+                "matiz",
+                "colorLibre"
             ]
         );
     }
@@ -412,20 +423,23 @@ mod pruebas {
     #[test]
     fn la_apariencia_invalida_vuelve_a_los_valores_por_defecto() {
         let leidas: Preferencias = serde_json::from_str(
-            r#"{"disfraz":"<svg>","paleta":"Lila Ñ","matiz":999}"#,
+            r#"{"disfraz":"<svg>","paleta":"Lila Ñ","matiz":999,"colorLibre":"url(#x)"}"#,
         )
         .unwrap();
         let normales = leidas.normalizar();
         assert_eq!(normales.disfraz, "ninguno");
         assert_eq!(normales.paleta, "menta");
         assert_eq!(normales.matiz, 155);
+        assert_eq!(normales.color_libre, "");
         // Un id con buena forma se conserva aunque Rust no lo conozca: la
         // interfaz decide si existe.
         let validas: Preferencias =
-            serde_json::from_str(r#"{"paleta":"libre","matiz":210}"#).unwrap();
+            serde_json::from_str(r#"{"paleta":"libre","matiz":210,"colorLibre":"#BE1963"}"#)
+                .unwrap();
         let validas = validas.normalizar();
         assert_eq!(validas.paleta, "libre");
         assert_eq!(validas.matiz, 210);
+        assert_eq!(validas.color_libre, "#BE1963");
         // Un tipo inesperado invalida el archivo entero, sin error.
         assert!(serde_json::from_str::<Preferencias>(r#"{"paleta":7}"#).is_err());
     }

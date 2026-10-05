@@ -25,6 +25,8 @@ export interface Preferencias {
   paleta: string;
   /** Matiz del color libre, en grados (0 a 359). */
   matiz: number;
+  /** Color exacto del color libre ("#RRGGBB"), o vacío para usar el matiz. */
+  colorLibre: string;
 }
 
 export const MINUTOS_INACTIVIDAD = [2, 3, 5, 10];
@@ -40,6 +42,7 @@ export const PREFERENCIAS_POR_DEFECTO: Preferencias = {
   disfraz: "ninguno",
   paleta: "menta",
   matiz: 155,
+  colorLibre: "",
 };
 
 export function guardarPreferencias(nuevas: Preferencias): Promise<Preferencias> {

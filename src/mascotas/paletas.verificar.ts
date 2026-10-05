@@ -7,7 +7,9 @@ import {
   PALETA_LIBRE,
   PALETAS,
   paletaDe,
-  matizDeHex,
+  colorDeHex,
+  CONTRASTE_DE_LA_CARA,
+  paletaDeColor,
   paletaLibre,
 } from "./paletas.ts";
 
@@ -28,12 +30,28 @@ for (const matiz of [NaN, Infinity, -30, 725, 12.6]) {
   comprobar(`color libre con matiz ${matiz}`, /^#[0-9A-F]{6}$/.test(p.cuerpo), p.cuerpo);
 }
 
-// Color escrito a mano: solo se acepta un hexadecimal completo con matiz.
-comprobar("hex con almohadilla", matizDeHex("#8FD8F5") === 197, String(matizDeHex("#8FD8F5")));
-comprobar("hex sin almohadilla y en minúsculas", matizDeHex(" ff0000 ") === 0);
-for (const texto of ["", "#fff", "#12345", "rojo", "#GGGGGG", "#808080", "url(x)", "#FF0000;"]) {
-  comprobar(`"${texto}" no es un color con matiz`, matizDeHex(texto) === null);
+// Color escrito a mano: solo se acepta un hexadecimal completo.
+comprobar("hex con almohadilla", colorDeHex("#8fd8f5") === "#8FD8F5");
+comprobar("hex sin almohadilla", colorDeHex(" be1963 ") === "#BE1963");
+for (const texto of ["", "#fff", "#12345", "rojo", "#GGGGGG", "url(x)", "#FF0000;", 7, null]) {
+  comprobar(`"${texto}" no es un color`, colorDeHex(texto) === null);
 }
+// El color exacto se respeta si la cara se lee; si no, se aclara lo justo.
+comprobar("un color claro se usa tal cual", paletaDeColor("#8FD8F5").cuerpo === "#8FD8F5");
+comprobar("el color libre exacto manda sobre el matiz", paletaDe(PALETA_LIBRE, 10, "#8FD8F5").cuerpo === "#8FD8F5");
+comprobar("un color no válido deja el matiz", paletaDe(PALETA_LIBRE, 155, "nada").cuerpo === paletaLibre(155).cuerpo);
+let minCara = Infinity;
+let minClaroExacto = Infinity;
+let minOscuroExacto = Infinity;
+for (const hex of ["#BE1963", "#000000", "#FFFFFF", "#102040", "#FF0000", "#00FF00", "#0000FF", "#808080", "#3A0CA3", "#FFE600"]) {
+  const p = paletaDeColor(hex);
+  minCara = Math.min(minCara, contraste("#2B2B2B", p.cuerpo));
+  minClaroExacto = Math.min(minClaroExacto, contraste(p.contorno, FONDO_CLARO));
+  minOscuroExacto = Math.min(minOscuroExacto, contraste(p.contorno, FONDO_OSCURO));
+}
+comprobar("color exacto: la cara se lee siempre", minCara >= CONTRASTE_DE_LA_CARA - 0.05, `mínimo ${minCara.toFixed(2)}`);
+comprobar("color exacto: contorno sobre claro", minClaroExacto >= 1.9, `mínimo ${minClaroExacto.toFixed(2)}`);
+comprobar("color exacto: contorno sobre oscuro", minOscuroExacto >= 2.4, `mínimo ${minOscuroExacto.toFixed(2)}`);
 
 // Contraste del contorno de las paletas fijas (solo informativo: son las
 // del diseño) y del color libre en todo el círculo cromático.

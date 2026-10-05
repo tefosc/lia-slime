@@ -393,7 +393,7 @@ function App() {
       <div className="lia-caja">
         <Mascota
           estilo={estiloDe()}
-          paleta={paletaDe(preferencias.paleta, preferencias.matiz)}
+          paleta={paletaDe(preferencias.paleta, preferencias.matiz, preferencias.colorLibre)}
           disfraz={disfrazDe(preferencias.disfraz)}
           estado={estadoMostrado}
           sueno={sueno}
