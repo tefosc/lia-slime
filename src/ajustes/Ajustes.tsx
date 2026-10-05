@@ -53,7 +53,10 @@ export function Ajustes() {
   const [privado, setPrivado] = useState(false);
   const [inicio, setInicio] = useState(false);
   const preferencias = usePreferencias();
-  const [pestana, setPestana] = useState<"general" | "apariencia">("general");
+  // `ajustes.html#apariencia` abre directamente esa pestaña.
+  const [pestana, setPestana] = useState<"general" | "apariencia">(
+    location.hash === "#apariencia" ? "apariencia" : "general",
+  );
   /** Volumen mientras se arrastra el control; se guarda al soltarlo. */
   const [volumen, setVolumen] = useState<number | null>(null);
 
