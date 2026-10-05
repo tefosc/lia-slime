@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { Actividad } from "../estado/useActividad";
+import type { Ancla, Disfraz } from "../disfraces/tipos";
 import type { Paleta } from "../mascotas/paletas";
 import type { Forma } from "../zonas";
 import type { Pose } from "./pose";
@@ -35,6 +36,13 @@ export interface Renderizador {
   cajaDelCuerpo(): DOMRect | null;
   /** Centro del cuerpo en reposo, en px CSS de la ventana. */
   centro(): { x: number; y: number } | null;
+  /** Punto de anclaje con nombre, en unidades del lienzo lógico. */
+  ancla(nombre: Ancla): { x: number; y: number };
+  /**
+   * Escala de seguridad en uso: menor que 1 si el disfraz no cabía en la
+   * ventana y hubo que reducir a la mascota. Nunca se recorta nada.
+   */
+  escalaDeSeguridad(): number;
   /** Suelta lo que tenga pendiente al cambiar de estilo o cerrar. */
   desmontar?(): void;
 }
@@ -48,8 +56,8 @@ export interface PropsDibujo {
   actividad: Actividad;
   /** Colores con los que se pinta. */
   paleta: Paleta;
-  /** Id del disfraz que lleva puesto (`SIN_DISFRAZ` si no lleva). */
-  disfraz: string;
+  /** Disfraz que lleva puesto, o null si no lleva. */
+  disfraz: Disfraz | null;
 }
 
 /** Un estilo de una mascota: cómo se dibuja. */

@@ -10,6 +10,8 @@ import {
   estadoInicial,
   muestrasDeVueltas,
 } from "./detectorMareo";
+import { crearFisica } from "./fisicaSecundaria";
+import type { ConfigFisica } from "./fisicaSecundaria";
 import { acercar, limitarPaso, Resorte } from "./movimiento";
 import { crearPose } from "./pose";
 import type { Pose } from "./pose";
@@ -472,7 +474,17 @@ export function useAnimacionLia(
   opcionesSueno: OpcionesSueno,
   actividad: Actividad = "pensar",
   guion?: Guion,
+  /** Resortes y reacciones del disfraz puesto, si los tiene. */
+  fisica?: ConfigFisica,
+  /**
+   * Vista previa (en Ajustes): el motor anima igual, pero no escucha el
+   * cursor ni la visibilidad de la ventana de Lia, ni le da órdenes.
+   */
+  aislado = false,
 ): AccionesLia {
+  // El disfraz puede cambiar en caliente: el motor mira siempre el vigente.
+  const fisicaActual = useRef(fisica);
+  fisicaActual.current = fisica;
   // El guion solo se mira al montar, y solo existe en desarrollo.
   const guionInicial = useRef(import.meta.env.DEV ? guion : undefined).current;
   const actividadActual = useRef(actividad);
@@ -663,6 +675,10 @@ export function useAnimacionLia(
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let tiempo = 0;
+    const secundaria = crearFisica();
+    const sinVentana = () => Promise.reject(new Error("vista previa"));
+    const escuchar = (aislado ? sinVentana : listen) as typeof listen;
+    const invocar = (aislado ? sinVentana : invoke) as typeof invoke;
     let anterior: number | null = null;
     let cuadro = 0;
     let espera = 0;
@@ -759,7 +775,7 @@ export function useAnimacionLia(
     /** Termina la secuencia: la ventana se oculta como desde la bandeja. */
     const ocultarse = () => {
       cambiarFase("oculta");
-      invoke("ocultar").catch(() => {
+      invocar("ocultar").catch(() => {
         // Fuera de Tauri no hay ventana que ocultar.
         reiniciarSueno();
       });
@@ -1344,6 +1360,10 @@ export function useAnimacionLia(
       pose.ojos.y = ojosDY;
       pose.ojos.apertura = ojosY;
 
+      // Movimiento secundario del disfraz. Sin disfraz no se calcula nada.
+      secundaria.configurar(fisicaActual.current, pose);
+      secundaria.paso(pose, tiempo, quieto);
+
       renderizador.dibujar(pose);
     };
 
@@ -1452,6 +1472,7 @@ export function useAnimacionLia(
     // Toque sobre el cuerpo. En cualquier estado hay rebote y sacudida del
     // pétalo; las caras de sorpresa y enojo solo en `inactivo`.
     alTocar.current = (lado: number) => {
+      secundaria.evento("clic");
       const quieto = reducido.matches;
       // Un toque es actividad: la despierta en cualquier fase del sueño.
       ultimaActividad = performance.now();
@@ -1685,7 +1706,7 @@ export function useAnimacionLia(
     // document.hidden, y vuelve al mostrarse.
     let anulado = false;
     let dejarVisible: (() => void) | undefined;
-    listen<{ visible: boolean }>("lia-visible", ({ payload }) => {
+    escuchar<{ visible: boolean }>("lia-visible", ({ payload }) => {
       oculta = !payload.visible;
       if (oculta) {
         // Ocultada desde la bandeja a medio dormirse: vuelve entera.
@@ -1710,7 +1731,7 @@ export function useAnimacionLia(
     // la tarjeta se abre a la izquierda. Solo vive en memoria.
     let cancelado = false;
     let dejarCursor: (() => void) | undefined;
-    listen<{ x: number; y: number }>("lia-cursor", ({ payload }) => {
+    escuchar<{ x: number; y: number }>("lia-cursor", ({ payload }) => {
       const centro = renderizador.centro();
       if (!centro) return;
       cursor = { x: payload.x - centro.x, y: payload.y - centro.y };
@@ -1725,7 +1746,7 @@ export function useAnimacionLia(
       .catch(() => {
         // Fuera de Tauri no hay cursor: Lia mira al frente.
       });
-    invoke("configurar_cursor", {
+    invocar("configurar_cursor", {
       frecuenciaActiva: MIRADA.frecuenciaActiva,
       frecuenciaReposo: MIRADA.frecuenciaReposo,
       tiempoParaReposo: MIRADA.tiempoParaReposo,

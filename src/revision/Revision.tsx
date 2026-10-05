@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { configurarSonidos } from "../audio/sonidos";
 import { Mascota } from "../mascot/Mascota";
-import { disfrazDe, estiloDe, mascotaDe } from "../mascotas/indice";
-import { SIN_DISFRAZ } from "../mascotas/tipos";
+import { DISFRACES, disfrazDe } from "../disfraces/indice";
+import { estiloDe, mascotaDe } from "../mascotas/indice";
 import { PALETA_LIBRE, PALETAS, paletaDe } from "../mascotas/paletas";
 import { CASOS } from "./casos";
 import referencia from "./referencia.json";
@@ -55,7 +55,7 @@ export function Revision() {
   const estilo = estiloDe(undefined, parametros.get("estilo") ?? undefined);
   const disfraz = disfrazDe(parametros.get("disfraz") ?? undefined);
   const conReferencia =
-    paleta.id === PALETAS[0].id && disfraz === SIN_DISFRAZ && estilo.id === estiloDe().id;
+    paleta.id === PALETAS[0].id && disfraz === null && estilo.id === estiloDe().id;
   const enlaceDisfraz = (id: string) => {
     const otros = new URLSearchParams(parametros);
     otros.set("disfraz", id);
@@ -114,7 +114,7 @@ export function Revision() {
   return (
     <div className="revision">
       <h1>
-        Revisión: {casos.length} casos · {paleta.nombre} · {disfraz} ·{" "}
+        Revisión: {casos.length} casos · {paleta.nombre} · {disfraz?.nombre ?? "sin disfraz"} ·{" "}
         {!conReferencia
           ? "sin referencia para esta combinación"
           : Object.keys(huellas).length === 0
@@ -133,7 +133,7 @@ export function Revision() {
             </a>
           );
         })}
-        {[{ id: SIN_DISFRAZ, nombre: "Sin disfraz" }, ...mascotaDe().disfraces].map((d) => (
+        {[{ id: "ninguno", nombre: "Sin disfraz" }, ...DISFRACES].map((d) => (
           <a key={d.id} href={enlaceDisfraz(d.id)} className="revision-disfraz">
             {d.nombre}
           </a>

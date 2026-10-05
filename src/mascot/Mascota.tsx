@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import type { PointerEvent } from "react";
 import type { Actividad } from "../estado/useActividad";
+import type { Disfraz } from "../disfraces/tipos";
 import type { Paleta } from "../mascotas/paletas";
 import { useWindowDrag } from "../useWindowDrag";
 import { registrarZonasDeMascota } from "../zonas";
@@ -10,13 +11,16 @@ import type { EstadoLia } from "./tipos";
 import { useAnimacionLia } from "./useAnimacionLia";
 import type { Guion, OpcionesSueno } from "./useAnimacionLia";
 
+/** Duración de la transición al cambiar de disfraz o de color. */
+const TRANSICION_MS = 150;
+
 interface MascotaProps {
   /** Cómo se dibuja: el estilo elegido de la mascota elegida. */
   estilo: EstiloDeMascota;
   /** Con qué colores se pinta. */
   paleta: Paleta;
-  /** Id del disfraz que lleva puesto. */
-  disfraz: string;
+  /** Disfraz que lleva puesto, o null si no lleva. */
+  disfraz: Disfraz | null;
   estado: EstadoLia;
   /** Resultados sin leer: con alguno se ve la burbuja ✓. */
   resultadosSinLeer?: number;
@@ -28,6 +32,11 @@ interface MascotaProps {
   actividad?: Actividad;
   /** Solo en la página de revisión (desarrollo): fotograma congelado. */
   guion?: Guion;
+  /**
+   * Vista previa (en Ajustes): se anima y responde a los toques, pero no
+   * mueve la ventana, no define zonas de click-through ni escucha el cursor.
+   */
+  vistaPrevia?: boolean;
 }
 
 /**
@@ -46,6 +55,7 @@ export function Mascota({
   sueno,
   actividad = "pensar",
   guion,
+  vistaPrevia = false,
 }: MascotaProps) {
   const contenedorRef = useRef<HTMLDivElement>(null);
   const { tocar, acariciar, rozar, renderizador } = useAnimacionLia(
@@ -55,6 +65,8 @@ export function Mascota({
     sueno,
     actividad,
     guion,
+    disfraz?.fisica,
+    vistaPrevia,
   );
 
   // Al cambiar de disfraz cambian piezas del dibujo, y en un canvas el
@@ -66,9 +78,24 @@ export function Mascota({
 
   // El click-through usa las zonas del renderizador activo.
   useEffect(() => {
+    if (vistaPrevia) return;
     registrarZonasDeMascota(() => renderizador.current?.zonaActiva() ?? []);
     return () => registrarZonasDeMascota(null);
-  }, [renderizador]);
+  }, [renderizador, vistaPrevia]);
+
+  // Cambio de apariencia en caliente: una transición breve. Nada más cambia:
+  // el motor, las tarjetas y la ventana siguen como estaban.
+  const apariencia = `${disfraz?.id ?? ""}|${paleta.id}|${paleta.cuerpo}`;
+  const aparienciaAnterior = useRef(apariencia);
+  useEffect(() => {
+    if (aparienciaAnterior.current === apariencia) return;
+    aparienciaAnterior.current = apariencia;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    contenedorRef.current?.animate([{ opacity: 0.35 }, { opacity: 1 }], {
+      duration: TRANSICION_MS,
+      easing: "ease-out",
+    });
+  }, [apariencia]);
 
   // Un clic sin arrastre sobre la burbuja abre el resultado y no cuenta como
   // toque; sobre el cuerpo es un toque a la mascota.
@@ -93,7 +120,18 @@ export function Mascota({
 
   // Solo se puede agarrar lo que está pintado.
   const alPulsar = (evento: PointerEvent<HTMLDivElement>) => {
-    if (sobreLaMascota(evento)) arrastre.onPointerDown(evento);
+    if (!sobreLaMascota(evento)) return;
+    if (vistaPrevia) {
+      // Sin arrastre: un clic sobre el cuerpo es un toque.
+      const parte = renderizador.current?.queHay(evento.target, evento.clientX, evento.clientY);
+      const cuerpo = renderizador.current?.cajaDelCuerpo();
+      if (parte === "cuerpo" && cuerpo) {
+        const centro = cuerpo.left + cuerpo.width / 2;
+        tocar(Math.max(-1, Math.min(1, (evento.clientX - centro) / (cuerpo.width / 2))));
+      }
+      return;
+    }
+    arrastre.onPointerDown(evento);
   };
 
   // Caricias: frotar el cursor sobre la cabeza sin pulsar ningún botón.

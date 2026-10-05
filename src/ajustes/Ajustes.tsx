@@ -53,6 +53,7 @@ export function Ajustes() {
   const [privado, setPrivado] = useState(false);
   const [inicio, setInicio] = useState(false);
   const preferencias = usePreferencias();
+  const [pestana, setPestana] = useState<"general" | "apariencia">("general");
   /** Volumen mientras se arrastra el control; se guarda al soltarlo. */
   const [volumen, setVolumen] = useState<number | null>(null);
 
@@ -149,6 +150,23 @@ export function Ajustes() {
   return (
     <main className="ajustes">
       <h1>Ajustes de Lia</h1>
+      <div className="pestanas" role="tablist">
+        {(["general", "apariencia"] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={pestana === id}
+            className="pestana"
+            onClick={() => setPestana(id)}
+          >
+            {id === "general" ? "General" : "Apariencia"}
+          </button>
+        ))}
+      </div>
+
+      {pestana === "apariencia" && <Apariencia preferencias={preferencias} cambiar={cambiar} />}
+      <div hidden={pestana !== "general"}>
 
       <section>
         <h2>Hooks de Claude Code</h2>
@@ -229,8 +247,6 @@ export function Ajustes() {
 
         {aviso && <p className={`nota nota-${aviso.tipo}`}>{aviso.texto}</p>}
       </section>
-
-      <Apariencia preferencias={preferencias} cambiar={cambiar} />
 
       <section>
         <h2>Opciones</h2>
@@ -351,6 +367,7 @@ export function Ajustes() {
           </button>
         </div>
       </section>
+      </div>
     </main>
   );
 }

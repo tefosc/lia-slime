@@ -1,20 +1,10 @@
 import type { Actividad } from "../../../estado/useActividad";
 import { POSES } from "../../../mascot/poses";
 import type { PropsDibujo } from "../../../mascot/renderizador";
-import { SIN_DISFRAZ } from "../../tipos";
 import type { EstadoLia } from "../../../mascot/tipos";
 import type { Paleta } from "../../paletas";
-import {
-  corazonDe,
-  DestellosDeDisfraz,
-  DisfrazBajoOjos,
-  DisfrazDetras,
-  DisfrazEnCabeza,
-  DisfrazSobreCara,
-  FiguraDeMareo,
-  tieneDestellos,
-  tieneMareo,
-} from "./Disfraz";
+import type { Disfraz } from "../../../disfraces/tipos";
+import { CapaDeDisfraz, DestellosDeDisfraz, FiguraDeMareo } from "./Disfraz";
 import { tonosDe } from "./tonos";
 import type { Tonos } from "./tonos";
 import { sombraPara } from "./trazos";
@@ -89,7 +79,16 @@ const CARAS_DE_TRABAJO: Record<
   otra: { cejas: "M-22 -9.6 L-10 -9 M22 -9.6 L10 -9", ojos: [6.2, 7.6], boca: "M-4.5 16.5 Q0 18.5 4.5 16.5", lengua: true },
 };
 
-function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }) {
+function Ojos({
+  estado,
+  actividad,
+  tinta,
+}: {
+  estado: EstadoLia;
+  actividad: Actividad;
+  /** Color de los trazos de la cara. */
+  tinta: string;
+}) {
   switch (estado) {
     case "inactivo":
       return (
@@ -97,16 +96,16 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
         // animación cruza su opacidad al reaccionar a los toques.
         <>
           <g id="lia-ojos-normal">
-            <ellipse cx="-15" cy="2" rx="6.5" ry="8.5" fill={TINTA} />
-            <ellipse cx="15" cy="2" rx="6.5" ry="8.5" fill={TINTA} />
+            <ellipse cx="-15" cy="2" rx="6.5" ry="8.5" fill={tinta} />
+            <ellipse cx="15" cy="2" rx="6.5" ry="8.5" fill={tinta} />
             <circle cx="-13" cy="-1" r="2.6" fill="#fff" />
             <circle cx="17" cy="-1" r="2.6" fill="#fff" />
             <circle cx="-17" cy="5" r="1.3" fill="#fff" />
             <circle cx="13" cy="5" r="1.3" fill="#fff" />
           </g>
           <g id="lia-ojos-sorpresa" opacity="0">
-            <ellipse cx="-15" cy="1" rx="7.5" ry="10" fill={TINTA} />
-            <ellipse cx="15" cy="1" rx="7.5" ry="10" fill={TINTA} />
+            <ellipse cx="-15" cy="1" rx="7.5" ry="10" fill={tinta} />
+            <ellipse cx="15" cy="1" rx="7.5" ry="10" fill={tinta} />
             <circle cx="-12.5" cy="-3" r="3.4" fill="#fff" />
             <circle cx="17.5" cy="-3" r="3.4" fill="#fff" />
             <circle cx="-18" cy="5" r="1.6" fill="#fff" />
@@ -116,7 +115,7 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
           <path
             id="lia-ojos-feliz"
             d="M-22 5 Q-15 -6 -8 5 M8 5 Q15 -6 22 5"
-            stroke={TINTA}
+            stroke={tinta}
             strokeWidth="2.6"
             fill="none"
             strokeLinecap="round"
@@ -126,7 +125,7 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
           <path
             id="lia-ojos-dormida"
             d="M-21 4 Q-15 9 -9 4 M9 4 Q15 9 21 4"
-            stroke={TINTA}
+            stroke={tinta}
             strokeWidth="2.4"
             fill="none"
             strokeLinecap="round"
@@ -141,14 +140,14 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
                   rx="7"
                   ry="8.5"
                   fill="#FFFFFF"
-                  stroke={TINTA}
+                  stroke={tinta}
                   strokeWidth="1.2"
                 />
                 <path
                   id={x < 0 ? "lia-espiral-izq" : "lia-espiral-der"}
                   d={ESPIRAL}
                   fill="none"
-                  stroke={TINTA}
+                  stroke={tinta}
                   strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -168,14 +167,14 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
             cy="2.5"
             rx={CARAS_DE_TRABAJO[actividad].ojos[0]}
             ry={CARAS_DE_TRABAJO[actividad].ojos[1]}
-            fill={TINTA}
+            fill={tinta}
           />
           <ellipse
             cx="15"
             cy="2.5"
             rx={CARAS_DE_TRABAJO[actividad].ojos[0]}
             ry={CARAS_DE_TRABAJO[actividad].ojos[1]}
-            fill={TINTA}
+            fill={tinta}
           />
           <circle cx="-13.2" cy="0" r="2.4" fill="#fff" />
           <circle cx="16.8" cy="0" r="2.4" fill="#fff" />
@@ -184,7 +183,7 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
           {CARAS_DE_TRABAJO[actividad].cejas && (
             <path
               d={CARAS_DE_TRABAJO[actividad].cejas}
-              stroke={TINTA}
+              stroke={tinta}
               strokeWidth="2"
               fill="none"
               strokeLinecap="round"
@@ -195,8 +194,8 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
     case "necesita":
       return (
         <>
-          <ellipse cx="-15" cy="1" rx="7.5" ry="10" fill={TINTA} />
-          <ellipse cx="15" cy="1" rx="7.5" ry="10" fill={TINTA} />
+          <ellipse cx="-15" cy="1" rx="7.5" ry="10" fill={tinta} />
+          <ellipse cx="15" cy="1" rx="7.5" ry="10" fill={tinta} />
           <circle cx="-12.5" cy="-3" r="3.4" fill="#fff" />
           <circle cx="17.5" cy="-3" r="3.4" fill="#fff" />
           <circle cx="-18" cy="5" r="1.6" fill="#fff" />
@@ -207,7 +206,7 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
       return (
         <path
           d="M-22 5 Q-15 -6 -8 5 M8 5 Q15 -6 22 5"
-          stroke={TINTA}
+          stroke={tinta}
           strokeWidth="2.6"
           fill="none"
           strokeLinecap="round"
@@ -216,7 +215,15 @@ function Ojos({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
   }
 }
 
-function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }) {
+function Boca({
+  estado,
+  actividad,
+  tinta,
+}: {
+  estado: EstadoLia;
+  actividad: Actividad;
+  tinta: string;
+}) {
   switch (estado) {
     case "inactivo":
       return (
@@ -224,7 +231,7 @@ function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
           <path
             id="lia-boca-normal"
             d="M-6 15 Q0 21 6 15"
-            stroke={TINTA}
+            stroke={tinta}
             strokeWidth="1.8"
             fill="none"
             strokeLinecap="round"
@@ -236,13 +243,13 @@ function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
             cy="18"
             rx="3"
             ry="3.5"
-            fill={TINTA}
+            fill={tinta}
             opacity="0"
           />
           <path
             id="lia-boca-enojo"
             d="M-7 20 Q0 14 7 20"
-            stroke={TINTA}
+            stroke={tinta}
             strokeWidth="1.9"
             fill="none"
             strokeLinecap="round"
@@ -251,7 +258,7 @@ function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
           <path
             id="lia-boca-dormida"
             d="M-3 17 Q0 19 3 17"
-            stroke={TINTA}
+            stroke={tinta}
             strokeWidth="1.8"
             fill="none"
             strokeLinecap="round"
@@ -260,7 +267,7 @@ function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
           <path
             id="lia-boca-mareo"
             d="M-9 17 Q-6 11 -3 17 T3 17 T9 17"
-            stroke={TINTA}
+            stroke={tinta}
             strokeWidth="1.8"
             fill="none"
             strokeLinecap="round"
@@ -272,12 +279,12 @@ function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
       return (
         // La boca cambia con lo que hace Claude (ver CARAS_DE_TRABAJO).
         CARAS_DE_TRABAJO[actividad].redonda ? (
-          <ellipse cx="0" cy="17.5" rx="2.6" ry="3" fill={TINTA} />
+          <ellipse cx="0" cy="17.5" rx="2.6" ry="3" fill={tinta} />
         ) : (
           <>
             <path
               d={CARAS_DE_TRABAJO[actividad].boca}
-              stroke={TINTA}
+              stroke={tinta}
               strokeWidth="1.8"
               fill={CARAS_DE_TRABAJO[actividad].boca.endsWith("Z") ? TINTA : "none"}
               strokeLinecap="round"
@@ -292,7 +299,7 @@ function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
     case "necesita":
       return (
         <>
-          <ellipse cx="0" cy="17" rx="3.5" ry="4.5" fill={TINTA} />
+          <ellipse cx="0" cy="17" rx="3.5" ry="4.5" fill={tinta} />
           <ellipse cx="0" cy="19.5" rx="2.2" ry="1.6" fill={LENGUA} />
         </>
       );
@@ -301,8 +308,8 @@ function Boca({ estado, actividad }: { estado: EstadoLia; actividad: Actividad }
         <>
           <path
             d="M-8 12 Q0 26 8 12 Z"
-            fill={TINTA}
-            stroke={TINTA}
+            fill={tinta}
+            stroke={tinta}
             strokeWidth="1.2"
             strokeLinejoin="round"
           />
@@ -356,7 +363,7 @@ function Extras({
   colores: Colores;
   /** Con disfraz no hay pétalos sueltos. */
   conPetalo: boolean;
-  disfraz: string;
+  disfraz: Disfraz | null;
 }) {
   switch (estado) {
     case "trabajando":
@@ -396,7 +403,7 @@ function Extras({
               />
             </g>
           )}
-          {tieneDestellos(disfraz) ? (
+          {disfraz?.efectos?.destellos ? (
             <DestellosDeDisfraz disfraz={disfraz} />
           ) : (
             <g
@@ -709,7 +716,14 @@ export function DibujoClasico({
   paleta,
   disfraz,
 }: PropsDibujo) {
-  const conPetalo = disfraz === SIN_DISFRAZ;
+  // Un disfraz puede ocultar el pétalo o recolocarlo, y cambiar el color de
+  // los trazos de la cara. Sin disfraz, todo queda como siempre.
+  const petalo = disfraz?.petalo;
+  const conPetalo = petalo !== "oculto";
+  const recolocado = typeof petalo === "object" ? petalo : null;
+  const tinta = disfraz?.trazosDeLaCara ?? TINTA;
+  const mareo = disfraz?.efectos?.mareo;
+  const corazones = disfraz?.efectos?.corazones;
   const tonos = tonosDe(paleta);
   const colores: Colores = { paleta, tonos };
   // La elevación, la sombra y la pose del pétalo las escribe el motor de
@@ -754,7 +768,7 @@ export function DibujoClasico({
           <ellipse cx="-17" cy="38" rx="6" ry="1.4" fill="#FFFFFF" />
         </g>
         <g id="lia-flotante">
-          <DisfrazDetras disfraz={disfraz} />
+          <CapaDeDisfraz disfraz={disfraz} capa="detras-del-cuerpo" paleta={paleta} />
           <path
             id="lia-cuerpo"
             d="M-44 6 C-44 -26 -24 -40 0 -40 C24 -40 44 -26 44 6 C44 28 26 38 0 38 C-26 38 -44 28 -44 6 Z"
@@ -777,25 +791,25 @@ export function DibujoClasico({
             />
             <circle cx="-33" cy="0" r="2.5" fill="#fff" />
           </g>
-          <DisfrazEnCabeza disfraz={disfraz} />
+          <CapaDeDisfraz disfraz={disfraz} capa="sobre-el-cuerpo" paleta={paleta} />
           {/* La cara entera se desvanece al derretirse. */}
           <g id="lia-cara">
             {/* `key`: al cambiar de estado las piezas se crean de nuevo. Si
                 React reutilizara el mismo elemento, conservaría la opacidad
                 que el motor le escribió (por ejemplo, una boca oculta por
                 estar dormida) y la cara nueva saldría incompleta. */}
-            <DisfrazBajoOjos disfraz={disfraz} paleta={paleta} />
+            <CapaDeDisfraz disfraz={disfraz} capa="sobre-la-cara" paleta={paleta} parte="debajo" />
             <g id="lia-ojos">
-              <Ojos key={estado} estado={estado} actividad={actividad} />
+              <Ojos key={estado} estado={estado} actividad={actividad} tinta={tinta} />
             </g>
             <g id="lia-boca">
-              <Boca key={estado} estado={estado} actividad={actividad} />
+              <Boca key={estado} estado={estado} actividad={actividad} tinta={tinta} />
             </g>
             <g id="lia-mejillas" fill={paleta.mejillas} opacity={POSES[estado].mejillas}>
               <ellipse cx="-27" cy="13" rx="5.5" ry="3" />
               <ellipse cx="27" cy="13" rx="5.5" ry="3" />
             </g>
-            <DisfrazSobreCara disfraz={disfraz} />
+            <CapaDeDisfraz disfraz={disfraz} capa="sobre-la-cara" paleta={paleta} parte="encima" />
             {/* Partes del enojo, ocultas hasta que el motor las muestra. Solo
                 existen en `inactivo`: en los demás estados la cara no cambia. */}
             {estado === "inactivo" && (
@@ -812,7 +826,7 @@ export function DibujoClasico({
                 <path
                   id="lia-cejas-enojo"
                   d="M-23 -10 L-8 -4 M23 -10 L8 -4"
-                  stroke={TINTA}
+                  stroke={tinta}
                   strokeWidth="2.4"
                   fill="none"
                   strokeLinecap="round"
@@ -850,8 +864,18 @@ export function DibujoClasico({
             />
             <circle cx="-1" cy="1.8" r="0.8" fill="#fff" opacity="0.8" />
           </g>
+          {/* El pétalo va después: así puede ser el adorno de un sombrero. */}
+          <CapaDeDisfraz disfraz={disfraz} capa="encima-de-todo" paleta={paleta} />
           {conPetalo && (
-            <g id="lia-petalo" transform={PETALO_BASE}>
+            <g
+              id="lia-petalo"
+              transform={PETALO_BASE}
+              data-recolocado={
+                recolocado
+                  ? `${recolocado.x ?? 0},${recolocado.y ?? 0},${recolocado.giro ?? 0},${recolocado.escala ?? 1}`
+                  : undefined
+              }
+            >
               <Petalo petalo={paleta.petalo} />
             </g>
           )}
@@ -875,8 +899,8 @@ export function DibujoClasico({
                   key={i}
                   id={`lia-corazon-${i}`}
                   d="M0 3.4 C-5.6 -0.8 -4 -5.4 0 -2.6 C4 -5.4 5.6 -0.8 0 3.4 Z"
-                  fill={corazonDe(disfraz)?.relleno ?? "#FF7F9E"}
-                  stroke={corazonDe(disfraz)?.borde ?? "#F2648A"}
+                  fill={corazones?.relleno ?? "#FF7F9E"}
+                  stroke={corazones?.borde ?? "#F2648A"}
                   strokeWidth="0.6"
                   strokeLinejoin="round"
                   opacity="0"
@@ -898,9 +922,9 @@ export function DibujoClasico({
               ))}
               <g id="lia-estrellas-mareo" opacity="0">
                 {[0, 1, 2].map((i) =>
-                  tieneMareo(disfraz) ? (
+                  mareo ? (
                     <g key={i} id={`lia-estrella-${i}`}>
-                      <FiguraDeMareo disfraz={disfraz} />
+                      <FiguraDeMareo motivo={mareo} />
                     </g>
                   ) : (
                     <path

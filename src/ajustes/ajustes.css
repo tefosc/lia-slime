@@ -247,3 +247,64 @@ button.paleta[aria-checked="true"] {
 .campo input.hex-invalido {
   border-color: #e8745a;
 }
+
+/* Pestañas de Ajustes. */
+.pestanas {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+button.pestana {
+  border-color: #d5e5dc;
+  background: #ffffff;
+  color: #33423b;
+}
+
+button.pestana[aria-selected="true"] {
+  border-color: #45b084;
+  background: #74d0a8;
+  color: #12372a;
+}
+
+/* Vista previa de la apariencia: Lia sobre un fondo oscuro, como suele
+   verse en el escritorio. */
+.vista-previa-lia {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.escenario {
+  flex: none;
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  background: #3b3d48;
+}
+
+.estados {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.estados button[aria-checked="true"] {
+  border-color: #45b084;
+  background: #eefaf5;
+}
+
+/* Miniatura: el dibujo en reposo, reducido. Un solo fotograma, sin bucle. */
+.miniatura {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: #3b3d48;
+  overflow: hidden;
+}
+
+.miniatura svg {
+  width: 64px;
+  height: 64px;
+}

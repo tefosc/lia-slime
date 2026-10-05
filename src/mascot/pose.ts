@@ -53,6 +53,11 @@ export interface Pose {
     /** Giro de las espirales de los ojos mareados. */
     giroEspiral: number;
   };
+  /**
+   * Movimiento secundario: valor de cada resorte con nombre que declara el
+   * disfraz (orejas, sombrero, cola, alas). Vacío si no hay disfraz.
+   */
+  fisicaSecundaria: Record<string, number>;
   efectos: {
     /** Desvanecido final de todo el personaje antes de ocultarse. */
     fundido: number;
@@ -98,6 +103,7 @@ export function crearPose(estado: EstadoLia): Pose {
       tension: 0,
       giroEspiral: 0,
     },
+    fisicaSecundaria: {},
     efectos: {
       fundido: 0,
       charquito: { progreso: 0, onda: { visible: false, opacidad: 0, escala: 1 } },

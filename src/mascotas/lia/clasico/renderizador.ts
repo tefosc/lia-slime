@@ -4,11 +4,29 @@ import type { ParteTocada, Renderizador } from "../../../mascot/renderizador";
 import { TOQUES } from "../../../mascot/useAnimacionLia";
 import { elipseDe } from "../../../zonas";
 import type { Forma } from "../../../zonas";
-import { transformPar, transformTocado } from "./Disfraz";
+import type { Ancla } from "../../../disfraces/tipos";
+import { ANCLAS_CLASICO, transformPieza } from "./Disfraz";
 import { bocaEsfuerzo, grosorOjosEsfuerzo, ojosEsfuerzo, sombraPara } from "./trazos";
 
 /** Centro del cuerpo dentro del viewBox (-82 -110 164 164), en fracción. */
 const CENTRO_CUERPO = { x: 82 / 164, y: 110 / 164 };
+
+/** Pieza de un disfraz que el renderizador mueve en cada fotograma. */
+interface PiezaMovil {
+  el: SVGElement;
+  clave: string;
+  base: { x: number; y: number; giro: number; espejo: boolean };
+  resorte: string | undefined;
+  factor: number;
+  sube: number;
+}
+
+/**
+ * Escala de seguridad. El lienzo va de -82 a 82 en horizontal y de -110 a
+ * 54 en vertical; al cuerpo se le reserva sitio para saltar y flotar. Si un
+ * disfraz no cabe, la mascota entera se reduce, anclada en su base.
+ */
+const SEGURO = { arriba: -108, lado: 80, salto: 22 };
 
 /** Punto de apoyo del cuerpo: la deformación se ancla en su base. */
 const BASE_Y = 38;
@@ -65,8 +83,11 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
   const ojosEl = buscar(svg, "lia-ojos");
   // El pétalo o, con disfraz, las orejas: cambian al cambiar de disfraz.
   let petaloEl = buscar(svg, "lia-petalo");
-  let par: { disfraz: string; i: SVGElement | null; d: SVGElement | null } | null = null;
-  let tocado: { disfraz: string; el: SVGElement } | null = null;
+  /** Piezas del disfraz que se mueven: con un resorte o que suben. */
+  let piezas: PiezaMovil[] = [];
+  /** El disfraz puede recolocar el pétalo: desplazamiento, giro y escala. */
+  let recolocado: [dx: number, dy: number, giro: number, escala: number] | null = null;
+  let escala = 1;
   const gotaEl = buscar(svg, "lia-gota");
   const personajeEl = buscar(svg, "lia-personaje");
   const caraEl = buscar(svg, "lia-cara");
@@ -93,16 +114,52 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
 
   const buscarAccesorio = () => {
     petaloEl = buscar(svg, "lia-petalo");
-    const detras = buscar(svg, "lia-disfraz-detras");
-    par = detras
-      ? {
-          disfraz: detras.dataset.disfraz ?? "",
-          i: buscar(svg, "lia-par-i"),
-          d: buscar(svg, "lia-par-d"),
-        }
-      : null;
-    const tocadoEl = buscar(svg, "lia-tocado");
-    tocado = tocadoEl ? { disfraz: tocadoEl.dataset.disfraz ?? "", el: tocadoEl } : null;
+    const datos = petaloEl?.dataset.recolocado?.split(",").map(Number);
+    recolocado = datos && datos.length === 4 ? (datos as [number, number, number, number]) : null;
+
+    piezas = [];
+    for (const el of svg?.querySelectorAll<SVGElement>("[data-pieza]") ?? []) {
+      const [x, y, giro, espejo] = (el.dataset.base ?? "0,0,0,0").split(",").map(Number);
+      const resorte = el.dataset.resorte;
+      const sube = Number(el.dataset.sube) || 0;
+      if (!resorte && !sube) continue;
+      piezas.push({
+        el,
+        clave: `pieza-${el.dataset.pieza}`,
+        base: { x, y, giro, espejo: espejo === 1 },
+        resorte,
+        factor: Number(el.dataset.factor) || 0,
+        sube,
+      });
+    }
+    medirEscala();
+  };
+
+  /**
+   * Escala de seguridad: si lo que lleva puesto no cabe en la ventana, se
+   * reduce a la mascota lo justo. Sin disfraz no se mide ni se escribe nada.
+   */
+  const medirEscala = () => {
+    const personaje = buscar(svg, "lia-personaje");
+    const flotante = svg?.querySelector<SVGGraphicsElement>("#lia-flotante");
+    const vestida = svg?.querySelector("[data-pieza]") != null;
+    let nueva = 1;
+    if (vestida && flotante) {
+      const caja = flotante.getBBox();
+      const alto = BASE_Y - caja.y + SEGURO.salto;
+      const medio = Math.max(-caja.x, caja.x + caja.width) + 3;
+      nueva = Math.min(1, (BASE_Y - SEGURO.arriba) / alto, SEGURO.lado / medio);
+    }
+    escala = nueva;
+    if (!personaje) return;
+    if (nueva < 1) {
+      personaje.setAttribute(
+        "transform",
+        `translate(0,${BASE_Y}) scale(${nueva.toFixed(3)}) translate(0,${-BASE_Y})`,
+      );
+    } else if (personaje.hasAttribute("transform")) {
+      personaje.removeAttribute("transform");
+    }
   };
   buscarAccesorio();
 
@@ -131,6 +188,14 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
       return buscar(svg, "lia-cuerpo")?.getBoundingClientRect() ?? null;
     },
 
+    ancla(nombre: Ancla): { x: number; y: number } {
+      return ANCLAS_CLASICO[nombre];
+    },
+
+    escalaDeSeguridad(): number {
+      return escala;
+    },
+
     centro(): { x: number; y: number } | null {
       if (!svg) return null;
       const caja = svg.getBoundingClientRect();
@@ -146,7 +211,8 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
      */
     reencontrar(): void {
       buscarAccesorio();
-      for (const clave of ["petalo", "par-i", "par-d", "tocado"]) escritos.delete(clave);
+      escritos.delete("petalo");
+      for (const pieza of piezas) escritos.delete(pieza.clave);
       ojosEsfuerzoEl = buscar(svg, "lia-ojos-esfuerzo");
       bocaOnduladaEl = buscar(svg, "lia-boca-ondulada");
       // Son elementos nuevos: lo escrito en los anteriores ya no vale.
@@ -289,28 +355,17 @@ export function crearRenderizadorClasico(contenedor: HTMLElement): Renderizador 
         petaloEl,
         "petalo",
         "transform",
-        `translate(${pose.accesorio.x.toFixed(1)},${pose.accesorio.y.toFixed(1)}) rotate(${pose.accesorio.giro.toFixed(1)})`,
+        recolocado
+          ? `translate(${(pose.accesorio.x + recolocado[0]).toFixed(1)},${(pose.accesorio.y + recolocado[1]).toFixed(1)}) rotate(${(pose.accesorio.giro + recolocado[2]).toFixed(1)}) scale(${recolocado[3]})`
+          : `translate(${pose.accesorio.x.toFixed(1)},${pose.accesorio.y.toFixed(1)}) rotate(${pose.accesorio.giro.toFixed(1)})`,
       );
-      if (par || tocado) {
-        // Las piezas del disfraz siguen al mismo accesorio que el pétalo,
-        // pero sin soltarse: se balancean con su giro (con seno, para que
-        // una vuelta entera del pétalo sea un vaivén), suben un poco cuando
-        // el pétalo sube y las orejas y alas se caen al dormirse.
-        const delta = pose.accesorio.giro - POSES.inactivo.petalo.giro;
-        const balanceo = 22 * Math.sin((delta * Math.PI) / 180);
-        const caida = 20 * cara.dormida;
-        const subida = Math.max(0, POSES.inactivo.petalo.y - pose.accesorio.y) * 0.12;
-        if (par) {
-          escribir(par.i, "par-i", "transform", transformPar(par.disfraz, -1, balanceo, caida, subida));
-          escribir(par.d, "par-d", "transform", transformPar(par.disfraz, 1, balanceo, caida, subida));
-        }
-        if (tocado) {
-          escribir(
-            tocado.el,
-            "tocado",
-            "transform",
-            transformTocado(tocado.disfraz, balanceo * 0.6 + caida * 0.5, subida),
-          );
+      if (piezas.length > 0) {
+        // Piezas del disfraz: cada una gira lo que diga su resorte y sube un
+        // poco cuando subiría el pétalo.
+        const subida = Math.max(0, POSES.inactivo.petalo.y - pose.accesorio.y);
+        for (const pieza of piezas) {
+          const giro = pieza.resorte ? (pose.fisicaSecundaria[pieza.resorte] ?? 0) * pieza.factor : 0;
+          escribir(pieza.el, pieza.clave, "transform", transformPieza(pieza.base, giro, subida * pieza.sube));
         }
       }
 
