@@ -10,19 +10,43 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
 
 ## 0. Preparación
 
-- [ ] Tengo `Lia-Slime_X.Y.Z_x64-setup.exe` y `SHA256SUMS.txt` de la release en
-      borrador.
+- [ ] Tengo `Lia-Slime_X.Y.Z_x64-setup.exe` y `SHA256SUMS.txt`, de uno de
+      estos dos sitios (anota cuál): `[ ]` el artefacto de una ejecución
+      manual del flujo Release, `[ ]` la release en borrador.
+      Cómo conseguirlos: [publicar.md](publicar.md).
+- [ ] Si vienen del artefacto: descargué `lia-slime-X.Y.Z.zip` de la página
+      de la ejecución y lo descomprimí; dentro están los dos archivos, con
+      esos nombres.
 - [ ] El entorno tiene Claude Code instalado y con sesión iniciada (hace falta
       para el paso 5).
 - [ ] No existe `%APPDATA%\io.github.tefosc.lia` ni hay hooks de Lia en
       `%USERPROFILE%\.claude\settings.json`.
+- [ ] No hay instalada una versión anterior llamada "Lia" (antes del cambio
+      de nombre): no se actualiza sola y dejaría dos entradas.
 - [ ] Hice una copia de `settings.json` (si existe).
 
 ## 1. Verificar e instalar
 
-- [ ] El SHA-256 coincide:
-      `Get-FileHash .\Lia-Slime_X.Y.Z_x64-setup.exe -Algorithm SHA256` da el mismo
-      valor que `SHA256SUMS.txt`.
+En PowerShell, desde la carpeta donde están los dos archivos (cambia `X.Y.Z`
+por la versión; las comillas hacen falta si el nombre llevara espacios):
+
+```powershell
+$instalador = ".\Lia-Slime_X.Y.Z_x64-setup.exe"
+(Get-FileHash -LiteralPath $instalador -Algorithm SHA256).Hash.ToLower()
+Get-Content -LiteralPath ".\SHA256SUMS.txt"
+(Get-Item -LiteralPath $instalador).VersionInfo | Format-List ProductName, ProductVersion, FileVersion, FileDescription
+Get-AuthenticodeSignature -LiteralPath $instalador | Format-List Status
+```
+
+- [ ] El SHA-256 calculado es igual al de `SHA256SUMS.txt`.
+- [ ] `SHA256SUMS.txt` tiene una sola línea, `<hash>  Lia-Slime_X.Y.Z_x64-setup.exe`,
+      sin rutas.
+- [ ] Ese mismo hash aparece en el registro de la ejecución del flujo (paso
+      "Renombrar y calcular el SHA-256") y, si hay borrador, en sus notas.
+- [ ] Metadatos: `ProductName` es `Lia Slime`, y `ProductVersion` y
+      `FileVersion` son `X.Y.Z`.
+- [ ] La firma dice `NotSigned` (es lo esperado mientras la firma esté
+      pendiente).
 - [ ] Al abrir el instalador, SmartScreen muestra el aviso esperado si no está
       firmado ("Windows protegió su PC" > "Más información" > "Ejecutar de
       todas formas"). Si está firmado, aparece el nombre del editor.
@@ -54,6 +78,9 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
 - [ ] Las casillas (iniciar con Windows, modo privado, ocultarse por
       inactividad, sonidos) y el volumen responden y se conservan al cerrar y
       abrir Ajustes.
+- [ ] Con "Iniciar con Windows" activado hay **una sola** entrada, llamada
+      `Lia Slime`, y apunta a `%LOCALAPPDATA%\Lia Slime\lia.exe`:
+      `Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' | Select-Object Lia*`
 - [ ] El menú de la bandeja muestra las mismas opciones y coinciden con
       Ajustes.
 
@@ -105,7 +132,8 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
 - [ ] Oculta a mano, una solicitud de permiso la hace reaparecer sin robar el
       foco.
 - [ ] Sin actividad, se adormece, se derrite y se oculta en el tiempo elegido.
-- [ ] Vuelve sola con el siguiente evento de Claude Code.
+- [ ] Vuelve sola cuando Claude trabaja, necesita algo o termina; abrir o
+      cerrar Claude Code no la despierta.
 - [ ] Al dejar el cursor en el borde superior, cerca del centro, baja la isla
       sin marco ni barra de título y sin robar el foco; sube al alejarse.
 - [ ] "Ver más" de un resultado largo abre la isla con el texto completo.
@@ -129,8 +157,11 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
       muestra procesos de Lia.
 - [ ] `Select-String -Path "$env:USERPROFILE\.claude\settings.json" -Pattern '127.0.0.1:47615' -Quiet`
       devuelve `False`.
-- [ ] No hay valor `Lia Slime` en
-      `HKCU:\Software\Microsoft\Windows\CurrentVersion\Run`.
+- [ ] No queda ninguna entrada de inicio automático, ni la nueva ni la
+      antigua. Este comando no debe mostrar nada:
+      `(Get-Item 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run').Property -match '^Lia'`
+- [ ] En **Configuración > Aplicaciones > Inicio** no aparece "Lia Slime" ni
+      "Lia".
 - [ ] `%APPDATA%\io.github.tefosc.lia` no existe si marqué borrar los datos (o
       existe, con solo preferencias y token, si no lo marqué).
 - [ ] Claude Code abre una sesión nueva sin errores de hooks.

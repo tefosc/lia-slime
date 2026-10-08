@@ -1,7 +1,7 @@
 # Cómo contribuir
 
-Gracias por el interés. Lia es un proyecto personal y pequeño: antes de un
-cambio grande, abre un issue para comentarlo.
+Gracias por el interés. Lia Slime es un proyecto personal y pequeño: antes
+de un cambio grande, abre un issue para comentarlo.
 
 Las vulnerabilidades no van en issues: mira [SECURITY.md](SECURITY.md).
 
@@ -45,7 +45,8 @@ por pull request: Lia no carga disfraces desde el disco ni desde la red. La
 guía, con las reglas del arte y la lista de pruebas, está en
 [docs/crear-disfraz.md](docs/crear-disfraz.md). Antes de enviarlo, comprueba
 que `pnpm verificar` pasa y que la página de revisión no lista ningún
-incumplimiento.
+incumplimiento. Un disfraz es arte: lee antes
+[Licencia de las contribuciones](#licencia-de-las-contribuciones).
 
 ## Dependencias
 
@@ -74,7 +75,31 @@ Este proyecto intenta tener las menos posibles.
 
 ## Licencia de las contribuciones
 
-Al contribuir aceptas que tu código se publique bajo la licencia
-[MIT](LICENSE). El personaje Lia y sus disfraces tienen su propia licencia
-en [src/mascot/LICENSE-ARTE.md](src/mascot/LICENSE-ARTE.md): el arte que
-aportes se distribuye bajo ella.
+> La licencia del arte es todavía una **plantilla pendiente de revisión**
+> (lo dice su propio aviso). Hasta que se apruebe, lo de esta sección sobre
+> el arte es la intención del proyecto, no un texto definitivo.
+
+**Código.** Al contribuir aceptas que tu código se publique bajo la licencia
+[MIT](LICENSE).
+
+**Arte** (disfraces, paletas, sprites, dibujos e iconos). El personaje Lia y
+sus disfraces no son MIT: tienen su propia licencia en
+[src/mascot/LICENSE-ARTE.md](src/mascot/LICENSE-ARTE.md). Al aportar arte:
+
+- conservas la autoría de lo que aportas;
+- concedes al mantenedor una licencia perpetua, mundial y gratuita para
+  incluir, modificar y distribuir tu contribución como parte del proyecto;
+- confirmas que es obra original tuya y que no usa personajes, marcas ni
+  material de terceros (nada de disfraces de personajes de películas,
+  juegos o series, ni logotipos).
+
+## Forks y nombres
+
+El código es MIT: puedes modificarlo y publicar tu versión. Si lo haces,
+quita o reemplaza el arte de Lia y los nombres "Lia" y "Lia Slime" (otro
+personaje, otro nombre y otros iconos); el código sigue siendo MIT. Un fork
+hecho para enviar un pull request aquí no necesita cambiar nada.
+
+El nombre "Lia Slime" y el personaje no se pueden usar para sugerir que otro
+proyecto está afiliado a este o respaldado por él. Los detalles están en
+[src/mascot/LICENSE-ARTE.md](src/mascot/LICENSE-ARTE.md).

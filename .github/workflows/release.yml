@@ -1,12 +1,19 @@
-# Al subir una etiqueta v*: compila el instalador de Windows, calcula los
-# SHA-256 y crea una release en BORRADOR. No firma nada y no usa secretos de
-# firma: la firma está pendiente (ver docs/firma.md).
-# La release nunca se publica sola: se revisa y se publica a mano.
+# Compila el instalador de Windows, lo renombra, calcula su SHA-256 y lo sube
+# como artefacto del flujo. Tiene dos formas de arrancar:
+#
+# - A mano (workflow_dispatch): solo compila y sube el artefacto, que se
+#   borra a los 7 días. NO crea etiqueta ni release. Sirve para ensayar.
+# - Al subir una etiqueta v*: hace lo mismo y, además, crea la release en
+#   BORRADOR. La release nunca se publica sola: se revisa y se publica a mano.
+#
+# No firma nada y no usa secretos: la firma está pendiente (docs/firma.md).
+# Guía de uso: docs/publicar.md.
 name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 # Por defecto, solo lectura. El único trabajo que escribe lo pide abajo.
 permissions:
@@ -16,34 +23,74 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
-  release:
-    # Solo en el repositorio original: un fork no crea releases de este proyecto.
+  compilar:
+    # Solo en el repositorio original: un fork no compila releases de este proyecto.
     if: github.repository == 'tefosc/lia-slime'
     runs-on: windows-latest
     timeout-minutes: 60
+    # Este trabajo ejecuta el código del repositorio y el de sus
+    # dependencias: solo puede leer.
     permissions:
-      # Necesario para crear la release en borrador. El token solo se entrega
-      # al último paso; los pasos de compilación no lo reciben.
-      contents: write
-    defaults:
-      run:
-        shell: pwsh
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prelanzamiento: ${{ steps.version.outputs.prelanzamiento }}
+      instalador: ${{ steps.artefactos.outputs.instalador }}
+      sha256: ${{ steps.artefactos.outputs.sha256 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Comprobar la etiqueta
+      # Falla pronto: la versión debe ser la misma en los cuatro archivos y,
+      # con etiqueta, coincidir con ella. Una etiqueta con sufijo
+      # (v0.1.0-rc.1) vale para la versión 0.1.0 y marca un pre-lanzamiento.
+      - name: Comprobar la versión
+        id: version
         run: |
-          $version = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
-          if ("v$version" -ne $env:GITHUB_REF_NAME) {
-            throw "La etiqueta $env:GITHUB_REF_NAME no coincide con la versión $version de tauri.conf.json."
+          $versiones = [ordered]@{}
+          $versiones['package.json'] = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $versiones['src-tauri/tauri.conf.json'] = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $cargo = Get-Content src-tauri/Cargo.toml -Raw
+          if ($cargo -notmatch '(?ms)^\[package\].*?^version\s*=\s*"([^"]+)"') { throw "No encuentro la versión en src-tauri/Cargo.toml." }
+          $versiones['src-tauri/Cargo.toml'] = $Matches[1]
+          $candado = Get-Content src-tauri/Cargo.lock -Raw
+          if ($candado -notmatch '(?m)^name = "lia"\r?\nversion = "([^"]+)"') { throw "No encuentro el paquete lia en src-tauri/Cargo.lock." }
+          $versiones['src-tauri/Cargo.lock'] = $Matches[1]
+
+          $versiones.GetEnumerator() | ForEach-Object { "{0}: {1}" -f $_.Key, $_.Value }
+          $distintas = @($versiones.Values | Select-Object -Unique)
+          if ($distintas.Count -ne 1) {
+            throw "La versión no es la misma en todos los archivos: $($distintas -join ', ')."
           }
-          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
-          if ($LASTEXITCODE -ne 0) { throw "La etiqueta no está en la rama main." }
+          $version = $distintas[0]
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "La versión '$version' no tiene la forma X.Y.Z." }
+
+          $prelanzamiento = 'false'
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $etiqueta = $env:GITHUB_REF_NAME
+            if ($etiqueta -notmatch '^v(\d+\.\d+\.\d+)(-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
+              throw "La etiqueta '$etiqueta' no tiene la forma vX.Y.Z ni vX.Y.Z-sufijo."
+            }
+            if ($Matches[1] -ne $version) {
+              throw "La etiqueta '$etiqueta' no coincide con la versión $version de package.json, tauri.conf.json y Cargo.toml."
+            }
+            if ($Matches[2]) { $prelanzamiento = 'true' }
+            git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+            if ($LASTEXITCODE -ne 0) { throw "La etiqueta '$etiqueta' no está en la rama main." }
+            "Etiqueta ${etiqueta}: versión $version, pre-lanzamiento: $prelanzamiento."
+          } else {
+            "Ejecución manual desde '$env:GITHUB_REF_NAME': versión $version. No se creará ninguna release."
+          }
           "VERSION=$version" >> $env:GITHUB_ENV
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "prelanzamiento=$prelanzamiento" >> $env:GITHUB_OUTPUT
 
       # Lee la versión de pnpm del campo packageManager de package.json.
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -67,55 +114,98 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Falló pnpm verificar." }
           cargo test --locked --manifest-path src-tauri/Cargo.toml
           if ($LASTEXITCODE -ne 0) { throw "Falló cargo test." }
+          ./scripts/probar-renombrado.ps1
+          if ($LASTEXITCODE -ne 0) { throw "Falló la prueba del renombrado." }
 
       # Sin firma: scripts/firmar-windows.ps1 no firma si falta
-      # LIA_FIRMA_PROVEEDOR, y este flujo no la define ni recibe secretos de
-      # firma. Ver docs/firma.md.
+      # LIA_FIRMA_PROVEEDOR, y este flujo no la define ni recibe secretos.
       - name: Compilar el instalador
         run: |
           pnpm tauri build
           if ($LASTEXITCODE -ne 0) { throw "Falló pnpm tauri build." }
 
-      # Tauri nombra el instalador con el nombre del producto, que lleva un
-      # espacio ("Lia Slime_X.Y.Z_x64-setup.exe"). GitHub cambia los espacios
-      # de los archivos de una release, así que se publica con guion: el
-      # nombre de SHA256SUMS.txt y el del archivo descargado coinciden.
-      - name: Nombre del instalador
+      # Renombra el instalador (Tauri lo genera con un espacio en el nombre),
+      # calcula el SHA-256 del archivo ya renombrado, escribe SHA256SUMS.txt
+      # y lo comprueba. Imprime el hash en el registro.
+      - name: Renombrar y calcular el SHA-256
         run: |
-          $salida = "src-tauri/target/release/bundle/nsis"
-          $instaladores = @(Get-ChildItem $salida -Filter *.exe)
-          if ($instaladores.Count -ne 1) { throw "Se esperaba un instalador y hay $($instaladores.Count)." }
-          $esperado = "Lia Slime_${env:VERSION}_x64-setup.exe"
-          if ($instaladores[0].Name -ne $esperado) {
-            throw "El instalador se llama '$($instaladores[0].Name)' y se esperaba '$esperado'."
-          }
-          $publicado = "Lia-Slime_${env:VERSION}_x64-setup.exe"
-          Rename-Item $instaladores[0].FullName $publicado
-          "INSTALADOR=$publicado" >> $env:GITHUB_ENV
+          ./scripts/preparar-artefactos.ps1 -Carpeta src-tauri/target/release/bundle/nsis -Version $env:VERSION
+          if ($LASTEXITCODE) { throw "Falló la preparación de los artefactos." }
 
-      - name: Hashes y estado de la firma
+      # Vuelve a calcular el hash, aparte, y lo compara con SHA256SUMS.txt.
+      # También anota los metadatos y el estado de la firma (solo informa).
+      - name: Comprobar el SHA-256 y los metadatos
+        id: artefactos
         run: |
           $salida = "src-tauri/target/release/bundle/nsis"
-          $archivo = Get-Item "$salida/$env:INSTALADOR"
-          $linea = "{0}  {1}" -f (Get-FileHash $archivo.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $archivo.Name
-          # Formato de sha256sum, con saltos de línea de Unix.
-          [IO.File]::WriteAllText("$salida/SHA256SUMS.txt", "$linea`n")
-          "SHA-256 del artefacto:"
-          $linea
-          # Solo informa: este flujo no firma.
-          $firma = Get-AuthenticodeSignature $archivo.FullName
-          "{0}: firma {1}" -f $archivo.Name, $firma.Status
-          "FIRMADO=$($firma.Status -eq 'Valid')" >> $env:GITHUB_ENV
+          ./scripts/preparar-artefactos.ps1 -Carpeta $salida -Version $env:VERSION -SoloComprobar
+          if ($LASTEXITCODE) { throw "El SHA-256 no coincide con SHA256SUMS.txt." }
+          $archivo = Get-Item -LiteralPath "$salida/$env:INSTALADOR"
+          $datos = $archivo.VersionInfo
+          "ProductName: $($datos.ProductName)"
+          "ProductVersion: $($datos.ProductVersion)"
+          if ($datos.ProductName -ne 'Lia Slime') { throw "El instalador no dice ser 'Lia Slime'." }
+          if ($datos.ProductVersion -ne $env:VERSION) { throw "La versión del instalador no es $env:VERSION." }
+          "Firma: $((Get-AuthenticodeSignature -LiteralPath $archivo.FullName).Status)"
+          "instalador=$env:INSTALADOR" >> $env:GITHUB_OUTPUT
+          "sha256=$env:SHA256" >> $env:GITHUB_OUTPUT
+
+      # El artefacto se descarga como un .zip con el instalador y
+      # SHA256SUMS.txt dentro. Caduca a los 7 días.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lia-slime-${{ steps.version.outputs.version }}
+          path: |
+            src-tauri/target/release/bundle/nsis/${{ env.INSTALADOR }}
+            src-tauri/target/release/bundle/nsis/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
+          # Un instalador ya va comprimido.
+          compression-level: 0
+
+  borrador:
+    # Solo con etiqueta v*. Una ejecución manual termina en el trabajo anterior.
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: compilar
+    runs-on: windows-latest
+    timeout-minutes: 10
+    # El único trabajo que escribe: crea la release en borrador. No compila
+    # ni instala dependencias.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: lia-slime-${{ needs.compilar.outputs.version }}
+          path: artefactos
+
+      # Lo descargado debe ser lo que compiló el trabajo anterior.
+      - name: Comprobar lo descargado
+        env:
+          VERSION: ${{ needs.compilar.outputs.version }}
+          SHA256_ESPERADO: ${{ needs.compilar.outputs.sha256 }}
+        run: |
+          ./scripts/preparar-artefactos.ps1 -Carpeta artefactos -Version $env:VERSION -SoloComprobar
+          if ($LASTEXITCODE) { throw "El SHA-256 de lo descargado no coincide con SHA256SUMS.txt." }
+          $escrito = (Get-Content artefactos/SHA256SUMS.txt -Raw).Split(' ')[0]
+          if ($escrito -ne $env:SHA256_ESPERADO) { throw "El SHA-256 no es el que calculó el trabajo de compilación." }
 
       - name: Crear la release en borrador
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.compilar.outputs.version }}
+          PRELANZAMIENTO: ${{ needs.compilar.outputs.prelanzamiento }}
+          INSTALADOR: ${{ needs.compilar.outputs.instalador }}
         run: |
-          $salida = "src-tauri/target/release/bundle/nsis"
-          $aviso = if ($env:FIRMADO -eq 'True') {
+          $firmado = (Get-AuthenticodeSignature -LiteralPath "artefactos/$env:INSTALADOR").Status -eq 'Valid'
+          $aviso = if ($firmado) {
             "El instalador está firmado."
           } else {
-            "**El instalador no está firmado.** Windows SmartScreen mostrará un aviso al abrirlo. Comprueba el SHA-256 antes de instalar (ver el README)."
+            "**El instalador no está firmado.** Windows SmartScreen mostrará un aviso al abrirlo. Comprueba el SHA-256 antes de instalar."
           }
           $repo = "https://github.com/$env:GITHUB_REPOSITORY"
           $cerca = '```'
@@ -123,7 +213,14 @@ jobs:
             "Lia Slime $env:VERSION", "",
             $aviso, "",
             "Compilado en GitHub Actions por el flujo público [release.yml]($repo/blob/$env:GITHUB_SHA/.github/workflows/release.yml) de este repositorio, a partir de la etiqueta $env:GITHUB_REF_NAME (commit $env:GITHUB_SHA), sin caché. [Registro de la ejecución]($repo/actions/runs/$env:GITHUB_RUN_ID).", "",
-            "SHA-256:", "", $cerca, (Get-Content "$salida/SHA256SUMS.txt" -Raw).TrimEnd(), $cerca, "",
+            "## SHA-256", "",
+            $cerca, (Get-Content artefactos/SHA256SUMS.txt -Raw).TrimEnd(), $cerca, "",
+            "Para comprobarlo, en PowerShell, desde la carpeta de la descarga:", "",
+            "$($cerca)powershell",
+            "(Get-FileHash -LiteralPath `".\$env:INSTALADOR`" -Algorithm SHA256).Hash.ToLower()",
+            "Get-Content -LiteralPath `".\SHA256SUMS.txt`"",
+            $cerca, "",
+            "Los dos valores deben ser iguales. Si no lo son, no lo instales.", "",
             "Cambios: ver [CHANGELOG.md]($repo/blob/$env:GITHUB_REF_NAME/CHANGELOG.md).", "",
             "## Code signing policy", "",
             "Estado: **pendiente**. Los binarios de esta versión **no están firmados**; todavía no hay ningún acuerdo de firma.", "",
@@ -133,6 +230,15 @@ jobs:
             "Política completa: [README]($repo/blob/$env:GITHUB_REF_NAME/README.md#code-signing-policy)."
           ) -join "`n"
           Set-Content notas.md $notas
-          $archivos = @("$salida/$env:INSTALADOR", "$salida/SHA256SUMS.txt")
-          gh release create $env:GITHUB_REF_NAME --draft --verify-tag --title "Lia Slime $env:VERSION" --notes-file notas.md @archivos
-          if ($LASTEXITCODE -ne 0) { throw "No se pudo crear la release en borrador." }
+          $argumentos = @(
+            'release', 'create', $env:GITHUB_REF_NAME,
+            '--draft', '--verify-tag',
+            '--title', "Lia Slime $env:GITHUB_REF_NAME".Replace(' v', ' '),
+            '--notes-file', 'notas.md'
+          )
+          if ($env:PRELANZAMIENTO -eq 'true') { $argumentos += '--prerelease' }
+          $argumentos += @("artefactos/$env:INSTALADOR", 'artefactos/SHA256SUMS.txt')
+          gh @argumentos
+          if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo crear la release en borrador. Si el error es un 403, revisa Settings > Actions > General > Workflow permissions (ver docs/publicar.md)."
+          }

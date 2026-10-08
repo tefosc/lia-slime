@@ -469,10 +469,21 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   El script va en UTF-8 con BOM porque lo ejecuta Windows PowerShell 5.1.
   La sección "Code signing policy" de los README es un borrador en estado
   pendiente. Ver `docs/firma.md`.
-- CI (`.github/workflows/`): `pruebas.yml` sin secretos; `release.yml` solo
-  con etiquetas `v*`, sin caché, crea la release en borrador. Las acciones se
-  fijan por SHA completo. No uses `pull_request_target`.
-- Antes de publicar una versión: `docs/prueba-instalacion.md`.
+- CI (`.github/workflows/`, depende de GitHub Actions): `pruebas.yml` sin
+  secretos. `release.yml`, sin caché ni secretos, tiene dos trabajos:
+  `compilar` (solo lectura; corre a mano con `workflow_dispatch` y con
+  etiquetas `v*`; sube el instalador y `SHA256SUMS.txt` como artefacto de 7
+  días) y `borrador` (`contents: write`; solo con etiqueta; crea la release
+  en borrador, pre-lanzamiento si la etiqueta lleva sufijo). La etiqueta debe
+  coincidir con la versión de `package.json`, `tauri.conf.json`, `Cargo.toml`
+  y `Cargo.lock`. Las acciones se fijan por SHA completo. No uses
+  `pull_request_target`.
+- `scripts/preparar-artefactos.ps1` renombra el instalador y escribe y
+  comprueba `SHA256SUMS.txt`; lo usa el flujo y lo prueba
+  `scripts/probar-renombrado.ps1` con un archivo ficticio.
+  `scripts/verificar-antes-de-etiquetar.ps1 -Version X.Y.Z` (solo lectura)
+  dice si se puede etiquetar. Los tres van en UTF-8 con BOM.
+- Publicar una versión: `docs/publicar.md` y `docs/prueba-instalacion.md`.
 
 ## Reglas de seguridad y dependencias (obligatorias)
 

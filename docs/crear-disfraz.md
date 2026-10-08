@@ -251,3 +251,15 @@ Sin disfraz, esta escala no existe.
       pierde ni mueve la ventana.
 - [ ] Sin disfraz, la página de revisión sigue diciendo "todos idénticos a la
       referencia".
+- [ ] El disfraz es obra original mía: no usa personajes, marcas ni material
+      de terceros.
+
+## Licencia de lo que aportas
+
+Un disfraz, una paleta o un sprite son arte, no código, y no se publican
+bajo MIT. Al enviarlo conservas tu autoría y concedes al mantenedor una
+licencia perpetua, mundial y gratuita para incluirlo, modificarlo y
+distribuirlo como parte del proyecto; y confirmas que es obra original tuya,
+sin personajes, marcas ni material de terceros. Las reglas completas están en
+[CONTRIBUTING.md](../CONTRIBUTING.md#licencia-de-las-contribuciones) y en
+[src/mascot/LICENSE-ARTE.md](../src/mascot/LICENSE-ARTE.md).
