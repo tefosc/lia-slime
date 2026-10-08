@@ -17,6 +17,8 @@ use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -26,6 +28,10 @@ use tauri::{AppHandle, Manager};
 const COLA_TRANSCRIPCION: u64 = 256 * 1024;
 /// Caracteres máximos del mensaje que llega a la tarjeta.
 const MENSAJE_MAXIMO: usize = 2000;
+/// Si la transcripción aún no tiene texto, se vuelve a mirar: Claude Code
+/// puede avisar del `Stop` antes de terminar de escribirla.
+const REINTENTOS_TRANSCRIPCION: u32 = 3;
+const ESPERA_ENTRE_REINTENTOS: Duration = Duration::from_millis(400);
 const ARCHIVO_AJUSTES: &str = "ajustes.json";
 /// Configuración de desarrollo: admite además el directorio de
 /// transcripciones falsas del simulador (`.pruebas/transcripciones` en la raíz
@@ -190,6 +196,8 @@ pub enum Origen {
     Evento,
     Transcripcion,
     RutaRechazada,
+    /// No vino el campo ni la ruta de la transcripción.
+    SinDatos,
     SinMensaje,
 }
 
@@ -200,7 +208,19 @@ impl Origen {
             Origen::Evento => "mensaje desde last_assistant_message",
             Origen::Transcripcion => "mensaje desde la transcripción",
             Origen::RutaRechazada => "transcripción rechazada; solo estadísticas",
+            Origen::SinDatos => "el evento no trae mensaje ni transcripción",
             Origen::SinMensaje => "sin mensaje legible; solo estadísticas",
+        }
+    }
+
+    /// Por qué no hay mensaje, para que la interfaz lo explique. Es una
+    /// palabra fija: nunca lleva contenido ni rutas.
+    pub fn motivo(&self) -> Option<&'static str> {
+        match self {
+            Origen::Privado | Origen::Evento | Origen::Transcripcion => None,
+            Origen::RutaRechazada => Some("ruta"),
+            Origen::SinDatos => Some("sin-datos"),
+            Origen::SinMensaje => Some("vacia"),
         }
     }
 }
@@ -219,22 +239,24 @@ pub fn ultimo_mensaje(
         return (Some(texto), Origen::Evento);
     }
     let Some(ruta) = ruta else {
-        return (None, Origen::SinMensaje);
+        return (None, Origen::SinDatos);
     };
     let Some(archivo) = ruta_permitida(app, &ruta) else {
         return (None, Origen::RutaRechazada);
     };
-    match leer_cola(&archivo).and_then(|cola| extraer(&cola)) {
-        Some(texto) => {
-            let texto = limpiar(&texto);
-            if texto.is_empty() {
-                (None, Origen::SinMensaje)
-            } else {
-                (Some(texto), Origen::Transcripcion)
-            }
+    for intento in 0..=REINTENTOS_TRANSCRIPCION {
+        if intento > 0 {
+            thread::sleep(ESPERA_ENTRE_REINTENTOS);
         }
-        None => (None, Origen::SinMensaje),
+        let texto = leer_cola(&archivo)
+            .and_then(|cola| extraer(&cola))
+            .map(|texto| limpiar(&texto))
+            .filter(|texto| !texto.is_empty());
+        if let Some(texto) = texto {
+            return (Some(texto), Origen::Transcripcion);
+        }
     }
+    (None, Origen::SinMensaje)
 }
 
 /// Carpetas desde las que se permite leer, ya en forma canónica.

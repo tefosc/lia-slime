@@ -173,7 +173,9 @@ export function Isla({ muestra }: { muestra?: { estado: EstadoIsla; vista: Vista
             <div ref={cuerpo} className="isla-cuerpo">
               {detalle.texto === null ? (
                 <p className="isla-nota">
-                  {estado.privado ? TEXTOS_REGISTRO.privado : TEXTOS_REGISTRO.sinTexto}
+                  {estado.privado
+                    ? TEXTOS_REGISTRO.privado
+                    : (detalle.nota ?? TEXTOS_REGISTRO.sinTexto)}
                 </p>
               ) : detalle.mono ? (
                 <pre className="mensaje-codigo isla-comando">{detalle.texto}</pre>

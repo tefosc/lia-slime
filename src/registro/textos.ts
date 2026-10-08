@@ -48,7 +48,16 @@ export const TEXTOS_REGISTRO = {
     herramientas === 0
       ? duracion
       : `${duracion} · ${herramientas} ${herramientas === 1 ? "herramienta" : "herramientas"}`,
-  sinTexto: "No pude leer el mensaje de esta tarea, pero aquí tienes el resumen.",
+  sinTexto: "No pude leer el mensaje de esta tarea. Arriba tienes el resumen; el mensaje está en Claude Code.",
+  /** Por qué falta el mensaje, según el motivo que da el receptor. */
+  sinTextoPor: (motivo: string | null): string | undefined =>
+    motivo === "sin-datos"
+      ? "Claude Code avisó de que terminó, pero no envió el mensaje. Arriba tienes el resumen; el mensaje está en Claude Code."
+      : motivo === "ruta"
+        ? "No pude abrir la conversación de esta tarea. Arriba tienes el resumen; el mensaje está en Claude Code."
+        : motivo === "vacia"
+          ? "La conversación de esta tarea aún no tenía el mensaje cuando la leí. Arriba tienes el resumen; el mensaje está en Claude Code."
+          : undefined,
   privado: "Modo privado: no leo los mensajes de Claude.",
   cerrar: "Cerrar",
 };

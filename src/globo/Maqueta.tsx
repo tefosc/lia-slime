@@ -23,6 +23,7 @@ const resultado = (id: number, leido: boolean, minutos: number): Resultado => ({
     { nombre: "Bash", usos: 1 },
   ],
   ediciones: 4,
+  motivo: null,
   mensaje:
     "Listo. Cambié la validación del formulario y añadí dos pruebas.\nLas dos pasan; revisa el mensaje de error del campo de correo, por si prefieres otro texto.",
   momento: ahora - minutos * 60_000,

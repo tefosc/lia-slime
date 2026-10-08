@@ -25,6 +25,8 @@ export interface DetalleIsla {
   detalle: string;
   /** null si no hay mensaje o el modo privado está activado. */
   texto: string | null;
+  /** Sin texto: frase fija que explica por qué falta. */
+  nota?: string;
   /** Es un comando o una ruta: letra monoespaciada. */
   mono: boolean;
 }

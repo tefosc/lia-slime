@@ -247,6 +247,7 @@ function App() {
         titulo: TEXTOS_RESULTADO.titulo(r.id),
         detalle: resumenDe(r),
         texto: modoPrivado ? null : r.mensaje,
+        nota: TEXTOS_REGISTRO.sinTextoPor(r.motivo),
         mono: false,
       };
     }

@@ -15,6 +15,8 @@ export interface Resultado {
   ediciones: number;
   /** Último mensaje de Claude, solo en memoria; null si no hay o es privado. */
   mensaje: string | null;
+  /** Por qué no hay mensaje, si se sabe (una palabra fija, sin contenido). */
+  motivo: string | null;
   /** Momento (ms) en que terminó la tarea. */
   momento: number;
   /** Momento (ms) en que caduca. */
@@ -160,6 +162,7 @@ function crearResultado(
       .filter(([nombre]) => HERRAMIENTAS_DE_EDICION.has(nombre))
       .reduce((total, [, n]) => total + n, 0),
     mensaje: evento.mensaje,
+    motivo: evento.motivo ?? null,
     momento: Date.now(),
     caduca: Date.now() + RESULTADOS.tiempoCaducidadBurbuja * 1000,
     leido: false,

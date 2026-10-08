@@ -94,6 +94,8 @@ struct EventoLia {
     herramienta: Option<String>,
     /// Solo en `Stop`: último mensaje de Claude, limpio y recortado.
     mensaje: Option<String>,
+    /// Solo en `Stop` sin mensaje: por qué falta (una palabra fija).
+    motivo: Option<&'static str>,
 }
 
 /// Resultado del arranque, para que el frontend pueda consultarlo.
@@ -432,7 +434,7 @@ fn validar_evento(
     } else {
         None
     };
-    let mensaje = if hook.hook_event_name == "Stop" {
+    let (mensaje, motivo) = if hook.hook_event_name == "Stop" {
         let (mensaje, origen) = resultados::ultimo_mensaje(
             app,
             ajustes,
@@ -442,9 +444,10 @@ fn validar_evento(
         if cfg!(debug_assertions) {
             eprintln!("[lia] Stop: {}", origen.describir());
         }
-        mensaje
+        let motivo = origen.motivo();
+        (mensaje, motivo)
     } else {
-        None
+        (None, None)
     };
     Ok(EventoLia {
         evento: hook.hook_event_name,
@@ -453,6 +456,7 @@ fn validar_evento(
         error: hook.error_type,
         herramienta,
         mensaje,
+        motivo,
     })
 }
 
