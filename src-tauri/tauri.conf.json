@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Lia",
+  "productName": "Lia Slime",
   "version": "0.1.0",
   "identifier": "io.github.tefosc.lia",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Lia",
+        "title": "Lia Slime",
         "width": 200,
         "height": 200,
         "resizable": false,
@@ -31,7 +31,7 @@
       },
       {
         "label": "isla",
-        "title": "Lia",
+        "title": "Lia Slime",
         "url": "isla.html",
         "width": 572,
         "height": 360,
@@ -80,7 +80,7 @@
     "copyright": "Copyright © 2026 Alejandro Stéfano Solís Martos",
     "category": "DeveloperTool",
     "shortDescription": "Mascota de escritorio que acompaña a Claude Code",
-    "longDescription": "Lia es una mascota flotante para Windows que reacciona a los eventos de Claude Code: avisa cuando necesita permiso, cuando termina una tarea y te deja responder sin cambiar de ventana.",
+    "longDescription": "Lia Slime pone a Lia, una mascota flotante, en tu escritorio de Windows. Reacciona a los eventos de Claude Code: avisa cuando necesita permiso, cuando termina una tarea y te deja responder sin cambiar de ventana.",
     "homepage": "https://github.com/tefosc/lia-slime",
     "license": "MIT",
     "icon": [

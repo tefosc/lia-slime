@@ -1,12 +1,18 @@
-# Lia
+# Lia Slime
 
 Mascota flotante para Windows que vigila agentes de código (como Claude Code) y
 reacciona a sus eventos. Proyecto de código abierto.
 
+Nombres: **Lia Slime** es el producto y el proyecto (instalador, accesos
+directos, entrada de desinstalación, títulos de ventana del sistema, tooltip
+de la bandeja, títulos de README y docs, metadatos del exe). **Lia** es el
+personaje: así se la llama en los textos de la interfaz y en la prosa. El
+ejecutable sigue siendo `lia.exe` y el identificador no cambia.
+
 Estado actual: mascota completa (estados, permisos, resultados, reacciones,
 bandeja, Ajustes, sueño por inactividad y sonidos), lista para publicar la
-versión 0.1.0 con instalador NSIS. La firma del instalador es opcional y aún
-no está conectada.
+versión 0.1.0 con instalador NSIS, sin firmar. La firma está pendiente (ver
+`docs/firma.md`).
 
 ## Stack
 
@@ -449,9 +455,20 @@ binario y en `dist/`, y pidiendo las rutas a la app compilada):
   `pnpm tauri icon src/mascot/icono-app.svg` (borra después las carpetas
   `android` e `ios`). El de la bandeja es `src-tauri/icons/bandeja.png`,
   generado de `src/mascot/icono-bandeja.svg` a 64 px.
-- Firma opcional: `signCommand` llama a `scripts/firmar-windows.ps1`, que no
-  firma si falta `LIA_FIRMA_PROVEEDOR`. El script va en UTF-8 con BOM porque
-  lo ejecuta Windows PowerShell 5.1. Ver `docs/firma.md`.
+- Nombre del producto (`productName`: "Lia Slime"; depende de Windows): de
+  él salen ProductName y FileDescription de los binarios, la carpeta
+  `%LOCALAPPDATA%\Lia Slime`, los accesos directos, la clave de
+  desinstalación, el valor Run del inicio con Windows y el nombre del
+  instalador, `Lia Slime_X.Y.Z_x64-setup.exe`. `release.yml` lo publica como
+  `Lia-Slime_X.Y.Z_x64-setup.exe`, porque GitHub cambia los espacios de los
+  archivos de una release. Una instalación anterior llamada "Lia" no se
+  actualiza: hay que desinstalarla antes.
+- Firma: pendiente. `release.yml` no firma ni recibe secretos de firma; no
+  añadas un paso de firma sin que se pida. `signCommand` llama a
+  `scripts/firmar-windows.ps1`, que no firma si falta `LIA_FIRMA_PROVEEDOR`.
+  El script va en UTF-8 con BOM porque lo ejecuta Windows PowerShell 5.1.
+  La sección "Code signing policy" de los README es un borrador en estado
+  pendiente. Ver `docs/firma.md`.
 - CI (`.github/workflows/`): `pruebas.yml` sin secretos; `release.yml` solo
   con etiquetas `v*`, sin caché, crea la release en borrador. Las acciones se
   fijan por SHA completo. No uses `pull_request_target`.

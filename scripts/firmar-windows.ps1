@@ -9,8 +9,8 @@
   así se puede compilar en local y en CI sin ningún secreto.
 
   La firma se activa con la variable de entorno LIA_FIRMA_PROVEEDOR. Ningún
-  secreto va en el repositorio: todo llega por variables de entorno (en CI,
-  desde los secretos del repositorio).
+  secreto va en el repositorio: todo llega por variables de entorno. Hoy el
+  flujo de release no define ninguna: ver docs/firma.md.
 
   Proveedor "azure" (Azure Trusted Signing / Artifact Signing). Variables:
     LIA_FIRMA_PROVEEDOR   = azure
@@ -71,7 +71,7 @@ switch ($proveedor.ToLowerInvariant()) {
     if (-not $herramienta) {
       Fallar "No se encontró artifact-signing-cli en el PATH."
     }
-    & $herramienta.Source -e $env:LIA_FIRMA_ENDPOINT -a $env:LIA_FIRMA_CUENTA -c $env:LIA_FIRMA_PERFIL -d 'Lia' $Archivo
+    & $herramienta.Source -e $env:LIA_FIRMA_ENDPOINT -a $env:LIA_FIRMA_CUENTA -c $env:LIA_FIRMA_PERFIL -d 'Lia Slime' $Archivo
     if ($LASTEXITCODE -ne 0) {
       Fallar "La firma falló (código $LASTEXITCODE)."
     }

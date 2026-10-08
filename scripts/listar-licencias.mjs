@@ -124,7 +124,7 @@ const texto = `# Licencias de terceros
 
 Generado con \`pnpm licencias\` (scripts/listar-licencias.mjs). No lo edites a mano.
 
-Lia se publica bajo MIT (el código). Este listado recoge la licencia que
+Lia Slime se publica bajo MIT (el código). Este listado recoge la licencia que
 declara cada dependencia. La columna "En Windows" indica si el crate se compila
 para Windows y, por tanto, acaba en el instalador; el resto solo se usa en
 otras plataformas.
@@ -144,7 +144,7 @@ ${
         .join("\n")
 }
 
-- **copyleft débil** (MPL-2.0): compatible con publicar Lia bajo MIT. Obliga a
+- **copyleft débil** (MPL-2.0): compatible con publicar Lia Slime bajo MIT. Obliga a
   publicar los cambios que se hagan a los archivos de esa dependencia; Lia no
   los modifica.
 - **revisar**: licencia no reconocida o sin declarar; hay que leerla.

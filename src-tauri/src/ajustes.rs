@@ -247,7 +247,7 @@ pub fn abrir_ventana(app: &AppHandle) {
         VENTANA_AJUSTES,
         WebviewUrl::App("ajustes.html".into()),
     )
-    .title("Ajustes de Lia")
+    .title("Ajustes de Lia Slime")
     .inner_size(620.0, 700.0)
     .min_inner_size(480.0, 420.0)
     .resizable(true)

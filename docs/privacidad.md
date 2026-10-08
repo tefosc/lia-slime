@@ -68,7 +68,7 @@ desde Ajustes:
 |---|---|
 | `settings.json.lia-respaldo-AAAAMMDD-HHMMSS` | Copia de tu `settings.json` antes del cambio. Se conservan las 5 más recientes. Contienen lo mismo que tu `settings.json`: trátalas igual. |
 
-Si activas "Iniciar con Windows", se añade un valor `Lia` en la clave
+Si activas "Iniciar con Windows", se añade un valor `Lia Slime` en la clave
 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
 
 WebView2 (el componente de Microsoft que dibuja la ventana) guarda su propia

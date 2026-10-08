@@ -1,5 +1,6 @@
-# Al subir una etiqueta v*: compila el instalador de Windows, lo firma si hay
-# secretos de firma, calcula los SHA-256 y crea una release en BORRADOR.
+# Al subir una etiqueta v*: compila el instalador de Windows, calcula los
+# SHA-256 y crea una release en BORRADOR. No firma nada y no usa secretos de
+# firma: la firma está pendiente (ver docs/firma.md).
 # La release nunca se publica sola: se revisa y se publica a mano.
 name: Release
 
@@ -17,7 +18,7 @@ concurrency:
 
 jobs:
   release:
-    # Solo en el repositorio original: en un fork no hay secretos ni release.
+    # Solo en el repositorio original: un fork no crea releases de este proyecto.
     if: github.repository == 'tefosc/lia-slime'
     runs-on: windows-latest
     timeout-minutes: 60
@@ -67,47 +68,44 @@ jobs:
           cargo test --locked --manifest-path src-tauri/Cargo.toml
           if ($LASTEXITCODE -ne 0) { throw "Falló cargo test." }
 
-      # scripts/firmar-windows.ps1 firma solo si LIA_FIRMA_PROVEEDOR está
-      # definido; si no, la compilación sigue sin firmar. Ver docs/firma.md.
-      # Los secretos solo llegan a este paso, y este flujo nunca se ejecuta
-      # en pull requests.
+      # Sin firma: scripts/firmar-windows.ps1 no firma si falta
+      # LIA_FIRMA_PROVEEDOR, y este flujo no la define ni recibe secretos de
+      # firma. Ver docs/firma.md.
       - name: Compilar el instalador
-        env:
-          LIA_FIRMA_PROVEEDOR: ${{ vars.LIA_FIRMA_PROVEEDOR }}
-          LIA_FIRMA_ENDPOINT: ${{ vars.LIA_FIRMA_ENDPOINT }}
-          LIA_FIRMA_CUENTA: ${{ vars.LIA_FIRMA_CUENTA }}
-          LIA_FIRMA_PERFIL: ${{ vars.LIA_FIRMA_PERFIL }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         run: |
           pnpm tauri build
           if ($LASTEXITCODE -ne 0) { throw "Falló pnpm tauri build." }
 
-      - name: Hashes y firma
-        env:
-          LIA_FIRMA_PROVEEDOR: ${{ vars.LIA_FIRMA_PROVEEDOR }}
+      # Tauri nombra el instalador con el nombre del producto, que lleva un
+      # espacio ("Lia Slime_X.Y.Z_x64-setup.exe"). GitHub cambia los espacios
+      # de los archivos de una release, así que se publica con guion: el
+      # nombre de SHA256SUMS.txt y el del archivo descargado coinciden.
+      - name: Nombre del instalador
         run: |
           $salida = "src-tauri/target/release/bundle/nsis"
           $instaladores = @(Get-ChildItem $salida -Filter *.exe)
-          if ($instaladores.Count -eq 0) { throw "No se generó ningún instalador." }
-          $lineas = $instaladores | ForEach-Object {
-            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
+          if ($instaladores.Count -ne 1) { throw "Se esperaba un instalador y hay $($instaladores.Count)." }
+          $esperado = "Lia Slime_${env:VERSION}_x64-setup.exe"
+          if ($instaladores[0].Name -ne $esperado) {
+            throw "El instalador se llama '$($instaladores[0].Name)' y se esperaba '$esperado'."
           }
+          $publicado = "Lia-Slime_${env:VERSION}_x64-setup.exe"
+          Rename-Item $instaladores[0].FullName $publicado
+          "INSTALADOR=$publicado" >> $env:GITHUB_ENV
+
+      - name: Hashes y estado de la firma
+        run: |
+          $salida = "src-tauri/target/release/bundle/nsis"
+          $archivo = Get-Item "$salida/$env:INSTALADOR"
+          $linea = "{0}  {1}" -f (Get-FileHash $archivo.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $archivo.Name
           # Formato de sha256sum, con saltos de línea de Unix.
-          [IO.File]::WriteAllText("$salida/SHA256SUMS.txt", (($lineas -join "`n") + "`n"))
-          "SHA-256 de los artefactos:"
-          $lineas
-          $firmado = $true
-          foreach ($archivo in $instaladores) {
-            $firma = Get-AuthenticodeSignature $archivo.FullName
-            "{0}: firma {1}" -f $archivo.Name, $firma.Status
-            if ($firma.Status -ne 'Valid') { $firmado = $false }
-          }
-          if ($env:LIA_FIRMA_PROVEEDOR -and -not $firmado) {
-            throw "Se configuró la firma, pero algún instalador no tiene una firma válida."
-          }
-          "FIRMADO=$firmado" >> $env:GITHUB_ENV
+          [IO.File]::WriteAllText("$salida/SHA256SUMS.txt", "$linea`n")
+          "SHA-256 del artefacto:"
+          $linea
+          # Solo informa: este flujo no firma.
+          $firma = Get-AuthenticodeSignature $archivo.FullName
+          "{0}: firma {1}" -f $archivo.Name, $firma.Status
+          "FIRMADO=$($firma.Status -eq 'Valid')" >> $env:GITHUB_ENV
 
       - name: Crear la release en borrador
         env:
@@ -119,15 +117,22 @@ jobs:
           } else {
             "**El instalador no está firmado.** Windows SmartScreen mostrará un aviso al abrirlo. Comprueba el SHA-256 antes de instalar (ver el README)."
           }
+          $repo = "https://github.com/$env:GITHUB_REPOSITORY"
           $cerca = '```'
           $notas = @(
-            "Lia $env:VERSION", "",
+            "Lia Slime $env:VERSION", "",
             $aviso, "",
-            "Compilado por el flujo público de este repositorio a partir de la etiqueta $env:GITHUB_REF_NAME (commit $env:GITHUB_SHA).", "",
+            "Compilado en GitHub Actions por el flujo público [release.yml]($repo/blob/$env:GITHUB_SHA/.github/workflows/release.yml) de este repositorio, a partir de la etiqueta $env:GITHUB_REF_NAME (commit $env:GITHUB_SHA), sin caché. [Registro de la ejecución]($repo/actions/runs/$env:GITHUB_RUN_ID).", "",
             "SHA-256:", "", $cerca, (Get-Content "$salida/SHA256SUMS.txt" -Raw).TrimEnd(), $cerca, "",
-            "Cambios: ver CHANGELOG.md."
+            "Cambios: ver [CHANGELOG.md]($repo/blob/$env:GITHUB_REF_NAME/CHANGELOG.md).", "",
+            "## Code signing policy", "",
+            "Estado: **pendiente**. Los binarios de esta versión **no están firmados**; todavía no hay ningún acuerdo de firma.", "",
+            "- Committers and reviewers: [@tefosc](https://github.com/tefosc)",
+            "- Approvers: [@tefosc](https://github.com/tefosc)",
+            "- Privacy policy: [docs/privacidad.md]($repo/blob/$env:GITHUB_REF_NAME/docs/privacidad.md). This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.", "",
+            "Política completa: [README]($repo/blob/$env:GITHUB_REF_NAME/README.md#code-signing-policy)."
           ) -join "`n"
           Set-Content notas.md $notas
-          $archivos = @(Get-ChildItem $salida -Filter *.exe | ForEach-Object { $_.FullName }) + "$salida/SHA256SUMS.txt"
-          gh release create $env:GITHUB_REF_NAME --draft --verify-tag --title "Lia $env:VERSION" --notes-file notas.md @archivos
+          $archivos = @("$salida/$env:INSTALADOR", "$salida/SHA256SUMS.txt")
+          gh release create $env:GITHUB_REF_NAME --draft --verify-tag --title "Lia Slime $env:VERSION" --notes-file notas.md @archivos
           if ($LASTEXITCODE -ne 0) { throw "No se pudo crear la release en borrador." }

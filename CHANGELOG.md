@@ -5,7 +5,8 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [0.1.0] - sin publicar
 
-Primera versión. Solo para Windows.
+Primera versión. Solo para Windows. El proyecto y el instalador se llaman
+**Lia Slime**; Lia es el nombre del personaje.
 
 ### Añadido
 

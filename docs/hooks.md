@@ -1,4 +1,4 @@
-# Conectar Lia con Claude Code
+# Conectar Lia Slime con Claude Code
 
 Lia reacciona a los eventos de Claude Code mediante _hooks_. Cada hook envía
 el evento a un receptor que Lia abre en `127.0.0.1:47615` mientras está en

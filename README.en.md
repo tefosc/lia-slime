@@ -1,8 +1,8 @@
-# Lia
+# Lia Slime
 
 English · [Español](README.md)
 
-Lia is a desktop pet for Windows that keeps
+Lia Slime is a Windows app with Lia, a desktop pet that keeps
 [Claude Code](https://claude.com/product/claude-code) company. She floats above your
 windows, tells you when Claude needs permission or finishes a task, and lets
 you answer without switching windows.
@@ -89,7 +89,7 @@ To draw one, see [docs/crear-disfraz.md](docs/crear-disfraz.md) (in Spanish).
 
 ## Installation
 
-1. Download `Lia_0.1.0_x64-setup.exe` and `SHA256SUMS.txt` from
+1. Download `Lia-Slime_0.1.0_x64-setup.exe` and `SHA256SUMS.txt` from
    [Releases](https://github.com/tefosc/lia-slime/releases).
 2. Verify the file (see below).
 3. Run the installer. It installs for your user only, **without administrator
@@ -100,9 +100,10 @@ Requirements: 64-bit Windows 10 or 11. If your machine lacks WebView2
 
 ### The installer is not signed
 
-Code signing on Windows costs money and this is a personal project, so
-version 0.1.0 ships **without a digital signature**. Here is what you will see
-and what you can do:
+Version 0.1.0 ships **without a digital signature**: the project does not
+have a code signing certificate yet (see
+[Code signing policy](#code-signing-policy)). Here is what you will see and
+what you can do:
 
 - **SmartScreen** will show "Windows protected your PC" with an "unknown"
   publisher. To continue: **More info > Run anyway**. That is the standard
@@ -111,7 +112,7 @@ and what you can do:
 - **Verify the SHA-256** before running it. In PowerShell:
 
   ```powershell
-  Get-FileHash .\Lia_0.1.0_x64-setup.exe -Algorithm SHA256
+  Get-FileHash .\Lia-Slime_0.1.0_x64-setup.exe -Algorithm SHA256
   ```
 
   The result must match `SHA256SUMS.txt` and the value in the release notes.
@@ -126,6 +127,33 @@ and what you can do:
 The hash proves the file is the one the workflow produced; it is not a
 substitute for a signature and does not protect you if you download
 everything from a fake site. Always use this repository's Releases page.
+
+## Code signing policy
+
+Status: **pending**. Lia Slime binaries are **not signed yet** and there is
+no signing agreement in place. This section is the draft of the policy that
+will apply if the project obtains a code signing certificate for open source;
+until then, see [The installer is not signed](#the-installer-is-not-signed).
+
+<!-- PENDING APPROVAL. Do not show this line until SignPath Foundation
+     approves the project; then it becomes visible, with its links:
+     Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/)
+-->
+
+- **What would be signed:** only the binaries that the public
+  [`release.yml`](.github/workflows/release.yml) workflow builds on GitHub
+  Actions from a tag of this repository. Never a file built anywhere else.
+- **Committers and reviewers:** [@tefosc](https://github.com/tefosc)
+- **Approvers:** [@tefosc](https://github.com/tefosc)
+- **Privacy policy:** [docs/privacidad.md](docs/privacidad.md) (in Spanish).
+  This program will not transfer any information to other networked systems
+  unless specifically requested by the user or the person installing or
+  operating it. The only possible connection happens during installation: if
+  the machine lacks WebView2, the installer downloads it from Microsoft.
+  WebView2 is a Microsoft component with its own
+  [privacy statement](https://privacy.microsoft.com/privacystatement).
+
+Details and pending steps: [docs/firma.md](docs/firma.md) (in Spanish).
 
 ## Claude Code hooks
 

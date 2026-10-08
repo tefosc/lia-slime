@@ -1,4 +1,4 @@
-# Desinstalar Lia
+# Desinstalar Lia Slime
 
 Todo lo de esta página depende de Windows.
 
@@ -10,7 +10,7 @@ Todo lo de esta página depende de Windows.
 3. Si tenías activado **Iniciar con Windows**, desmárcalo.
 4. Sal de Lia (bandeja > **Salir**).
 5. Desinstala desde **Configuración > Aplicaciones > Aplicaciones instaladas >
-   Lia > Desinstalar**. No pide permisos de administrador.
+   Lia Slime > Desinstalar**. No pide permisos de administrador.
 
 El desinstalador te recordará el paso 2 con un mensaje. **Nunca modifica el
 `settings.json` de Claude Code por su cuenta**: ese archivo es tuyo.
@@ -74,7 +74,7 @@ Instala Lia otra vez, abre Ajustes, pulsa **Quitar hooks** y desinstala.
 | Preferencias y token | `%APPDATA%\io.github.tefosc.lia` | Borra la carpeta |
 | Caché de WebView2 | `%LOCALAPPDATA%\io.github.tefosc.lia` | Borra la carpeta |
 | Respaldos de `settings.json` | `%USERPROFILE%\.claude\settings.json.lia-respaldo-*` | Bórralos cuando ya no los necesites |
-| Inicio con Windows | Valor `Lia` en `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | El desinstalador lo quita; si quedó, bórralo desde **Configuración > Aplicaciones > Inicio** |
+| Inicio con Windows | Valor `Lia Slime` en `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | El desinstalador lo quita; si quedó, bórralo desde **Configuración > Aplicaciones > Inicio** |
 
 Si usaste una versión de desarrollo anterior a la 0.1.0, su carpeta de datos
 era `%APPDATA%\dev.lia.mascota`; también puedes borrarla.

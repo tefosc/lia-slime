@@ -169,7 +169,7 @@ pub fn crear(
     )?;
 
     let constructor = TrayIconBuilder::with_id("lia")
-        .tooltip("Lia")
+        .tooltip("Lia Slime")
         .menu(&menu)
         // El clic izquierdo muestra u oculta; el menú queda para el derecho.
         .show_menu_on_left_click(false)

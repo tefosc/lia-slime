@@ -1,11 +1,11 @@
-# Lia
+# Lia Slime
 
 [English](README.en.md) · Español
 
-Lia es una mascota de escritorio para Windows que acompaña a
-[Claude Code](https://claude.com/product/claude-code). Flota sobre tus ventanas, te
-avisa cuando Claude necesita permiso o termina una tarea, y te deja responder
-sin cambiar de ventana.
+Lia Slime es una app para Windows con Lia, una mascota de escritorio que
+acompaña a [Claude Code](https://claude.com/product/claude-code). Flota sobre
+tus ventanas, te avisa cuando Claude necesita permiso o termina una tarea, y
+te deja responder sin cambiar de ventana.
 
 Es para quien usa Claude Code en la terminal y deja tareas largas corriendo
 mientras hace otra cosa.
@@ -90,7 +90,7 @@ Si quieres dibujar uno: [docs/crear-disfraz.md](docs/crear-disfraz.md).
 
 ## Instalación
 
-1. Descarga `Lia_0.1.0_x64-setup.exe` y `SHA256SUMS.txt` desde
+1. Descarga `Lia-Slime_0.1.0_x64-setup.exe` y `SHA256SUMS.txt` desde
    [Releases](https://github.com/tefosc/lia-slime/releases).
 2. Verifica el archivo (ver abajo).
 3. Ejecuta el instalador. Se instala solo para tu usuario, **sin permisos de
@@ -101,9 +101,10 @@ Requisitos: Windows 10 u 11 de 64 bits. Si tu equipo no tiene WebView2
 
 ### El instalador no está firmado
 
-Firmar código en Windows cuesta dinero y este es un proyecto personal, así que
-la versión 0.1.0 se publica **sin firma digital**. Esto es lo que verás y lo
-que puedes hacer:
+La versión 0.1.0 se publica **sin firma digital**: el proyecto todavía no
+tiene un certificado de firma de código (ver
+[Code signing policy](#code-signing-policy)). Esto es lo que verás y lo que
+puedes hacer:
 
 - **SmartScreen** mostrará "Windows protegió su PC" con el editor como
   "desconocido". Para continuar: **Más información > Ejecutar de todas
@@ -112,7 +113,7 @@ que puedes hacer:
 - **Verifica el SHA-256** antes de ejecutarlo. En PowerShell:
 
   ```powershell
-  Get-FileHash .\Lia_0.1.0_x64-setup.exe -Algorithm SHA256
+  Get-FileHash .\Lia-Slime_0.1.0_x64-setup.exe -Algorithm SHA256
   ```
 
   El resultado debe coincidir con el de `SHA256SUMS.txt` y con el que aparece
@@ -127,6 +128,35 @@ que puedes hacer:
 El hash prueba que el archivo es el que produjo el flujo; no sustituye a una
 firma ni te protege si descargas todo desde un sitio falso. Usa siempre la
 página de Releases de este repositorio.
+
+## Code signing policy
+
+Estado: **pendiente**. Los binarios de Lia Slime **todavía no están
+firmados** y no hay ningún acuerdo de firma. Esta sección es el borrador de la
+política que se aplicará si el proyecto obtiene un certificado de firma para
+código abierto; hasta entonces vale lo de
+[El instalador no está firmado](#el-instalador-no-está-firmado).
+
+<!-- PENDIENTE DE APROBACIÓN. No mostrar esta línea hasta que SignPath
+     Foundation apruebe el proyecto; entonces va visible, con sus enlaces:
+     Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/)
+-->
+
+- **Qué se firmaría:** solo los binarios que el flujo público
+  [`release.yml`](.github/workflows/release.yml) compila en GitHub Actions a
+  partir de una etiqueta de este repositorio. Nunca un archivo compilado en
+  otro sitio.
+- **Committers and reviewers:** [@tefosc](https://github.com/tefosc)
+- **Approvers:** [@tefosc](https://github.com/tefosc)
+- **Privacy policy:** [docs/privacidad.md](docs/privacidad.md). This program
+  will not transfer any information to other networked systems unless
+  specifically requested by the user or the person installing or operating it.
+  La única conexión posible ocurre durante la instalación: si el equipo no
+  tiene WebView2, el instalador lo descarga de Microsoft. WebView2 es un
+  componente de Microsoft con su propia
+  [declaración de privacidad](https://privacy.microsoft.com/privacystatement).
+
+Detalles y pasos pendientes: [docs/firma.md](docs/firma.md).
 
 ## Hooks de Claude Code
 

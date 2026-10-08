@@ -10,7 +10,7 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
 
 ## 0. Preparación
 
-- [ ] Tengo `Lia_X.Y.Z_x64-setup.exe` y `SHA256SUMS.txt` de la release en
+- [ ] Tengo `Lia-Slime_X.Y.Z_x64-setup.exe` y `SHA256SUMS.txt` de la release en
       borrador.
 - [ ] El entorno tiene Claude Code instalado y con sesión iniciada (hace falta
       para el paso 5).
@@ -21,7 +21,7 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
 ## 1. Verificar e instalar
 
 - [ ] El SHA-256 coincide:
-      `Get-FileHash .\Lia_X.Y.Z_x64-setup.exe -Algorithm SHA256` da el mismo
+      `Get-FileHash .\Lia-Slime_X.Y.Z_x64-setup.exe -Algorithm SHA256` da el mismo
       valor que `SHA256SUMS.txt`.
 - [ ] Al abrir el instalador, SmartScreen muestra el aviso esperado si no está
       firmado ("Windows protegió su PC" > "Más información" > "Ejecutar de
@@ -29,9 +29,9 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
 - [ ] El instalador **no pide permisos de administrador** (no aparece el
       diálogo de Control de cuentas de usuario).
 - [ ] El instalador sale en el idioma de Windows (español o inglés).
-- [ ] Se instala en `%LOCALAPPDATA%\Lia`.
-- [ ] Hay un acceso directo a Lia en el menú de inicio.
-- [ ] Lia aparece en **Configuración > Aplicaciones > Aplicaciones
+- [ ] Se instala en `%LOCALAPPDATA%\Lia Slime`.
+- [ ] Hay un acceso directo "Lia Slime" en el menú de inicio.
+- [ ] "Lia Slime" aparece en **Configuración > Aplicaciones > Aplicaciones
       instaladas**, con versión y editor correctos.
 
 ## 2. Primera ejecución
@@ -120,8 +120,8 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
 - [ ] El desinstalador muestra el recordatorio de quitar los hooks y permite
       continuar o cancelar.
 - [ ] El desinstalador no pide permisos de administrador.
-- [ ] Tras desinstalar: no existe `%LOCALAPPDATA%\Lia`, no hay acceso directo
-      y Lia no aparece en Aplicaciones instaladas.
+- [ ] Tras desinstalar: no existe `%LOCALAPPDATA%\Lia Slime`, no hay acceso directo
+      y "Lia Slime" no aparece en Aplicaciones instaladas.
 
 ## 8. Que no quede nada colgando
 
@@ -129,7 +129,7 @@ Versión probada: `______`  Fecha: `______`  Windows: `______`
       muestra procesos de Lia.
 - [ ] `Select-String -Path "$env:USERPROFILE\.claude\settings.json" -Pattern '127.0.0.1:47615' -Quiet`
       devuelve `False`.
-- [ ] No hay valor `Lia` en
+- [ ] No hay valor `Lia Slime` en
       `HKCU:\Software\Microsoft\Windows\CurrentVersion\Run`.
 - [ ] `%APPDATA%\io.github.tefosc.lia` no existe si marqué borrar los datos (o
       existe, con solo preferencias y token, si no lo marqué).
