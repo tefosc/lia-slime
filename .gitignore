@@ -37,6 +37,7 @@ dist-ssr
 # Datos locales de Lia: token, ajustes y respaldos de settings.json. Viven en
 # la carpeta de datos de la app, pero no deben entrar aunque se copien aquí.
 cabecera-hook.txt
+cabecera-hook-aislada.txt
 /ajustes.json
 ajustes-mostrados
 *.lia-respaldo-*
