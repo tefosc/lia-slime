@@ -12,7 +12,7 @@ export interface EventoLia {
   herramienta: string | null;
   /** Solo en `Stop`: último mensaje de Claude (texto plano, solo en memoria). */
   mensaje: string | null;
-  /** Solo en `Stop` sin mensaje: por qué falta (`ruta`, `sin-datos`, `vacia`). */
+  /** Solo en `Stop` sin mensaje: por qué falta (`privado`, `ruta`, `sin-datos`, `vacia`). */
   motivo?: string | null;
 }
 

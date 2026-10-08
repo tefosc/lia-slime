@@ -51,13 +51,17 @@ export const TEXTOS_REGISTRO = {
   sinTexto: "No pude leer el mensaje de esta tarea. Arriba tienes el resumen; el mensaje está en Claude Code.",
   /** Por qué falta el mensaje, según el motivo que da el receptor. */
   sinTextoPor: (motivo: string | null): string | undefined =>
-    motivo === "sin-datos"
-      ? "Claude Code avisó de que terminó, pero no envió el mensaje. Arriba tienes el resumen; el mensaje está en Claude Code."
-      : motivo === "ruta"
-        ? "No pude abrir la conversación de esta tarea. Arriba tienes el resumen; el mensaje está en Claude Code."
-        : motivo === "vacia"
-          ? "La conversación de esta tarea aún no tenía el mensaje cuando la leí. Arriba tienes el resumen; el mensaje está en Claude Code."
-          : undefined,
+    motivo === "borrado"
+      ? "Este mensaje se borró al activar el modo privado. Arriba tienes el resumen; el mensaje sigue en Claude Code."
+      : motivo === "privado"
+        ? "Esta tarea terminó con el modo privado activado, así que no leí su mensaje. Arriba tienes el resumen; el mensaje está en Claude Code."
+        : motivo === "sin-datos"
+        ? "Claude Code avisó de que terminó, pero no envió el mensaje. Arriba tienes el resumen; el mensaje está en Claude Code."
+        : motivo === "ruta"
+          ? "No pude abrir la conversación de esta tarea. Arriba tienes el resumen; el mensaje está en Claude Code."
+          : motivo === "vacia"
+            ? "La conversación de esta tarea aún no tenía el mensaje cuando la leí. Arriba tienes el resumen; el mensaje está en Claude Code."
+            : undefined,
   privado: "Modo privado: no leo los mensajes de Claude.",
   cerrar: "Cerrar",
 };

@@ -86,7 +86,7 @@ export function useResultados() {
     listen<boolean>("lia-privado", ({ payload }) => {
       setPrivado(payload);
       if (payload) {
-        setHistorial((actual) => actual.map((r) => ({ ...r, mensaje: null })));
+        setHistorial((actual) => actual.map((r) => (r.mensaje === null ? r : { ...r, mensaje: null, motivo: "borrado" })));
       }
     })
       .then((fn) => (cancelado ? fn() : (dejarPrivado = fn)))
@@ -120,7 +120,7 @@ export function useResultados() {
   const cambiarPrivado = useCallback((valor: boolean) => {
     setPrivado(valor);
     // Al activarlo, el texto que ya hubiera en memoria también se borra.
-    if (valor) setHistorial((actual) => actual.map((r) => ({ ...r, mensaje: null })));
+    if (valor) setHistorial((actual) => actual.map((r) => (r.mensaje === null ? r : { ...r, mensaje: null, motivo: "borrado" })));
     invoke("establecer_modo_privado", { valor }).catch(() => {
       console.error("No se pudo guardar el modo privado");
     });

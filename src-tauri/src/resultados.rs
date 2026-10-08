@@ -217,7 +217,8 @@ impl Origen {
     /// palabra fija: nunca lleva contenido ni rutas.
     pub fn motivo(&self) -> Option<&'static str> {
         match self {
-            Origen::Privado | Origen::Evento | Origen::Transcripcion => None,
+            Origen::Evento | Origen::Transcripcion => None,
+            Origen::Privado => Some("privado"),
             Origen::RutaRechazada => Some("ruta"),
             Origen::SinDatos => Some("sin-datos"),
             Origen::SinMensaje => Some("vacia"),
