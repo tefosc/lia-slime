@@ -10,7 +10,6 @@ you answer without switching windows.
 She is for people who run Claude Code in the terminal and leave long tasks
 running while they do something else.
 
-
 ![Lia in her four states: idle, working, needs you and done](docs/media/estados.png)
 
 > Independent project. **Not affiliated with or endorsed by Anthropic.**
@@ -117,6 +116,7 @@ and what you can do:
 
   The result must match `SHA256SUMS.txt` and the value in the release notes.
   If it does not, do not install it.
+
 - **The binary is built in public.** It is produced by the
   [`release.yml`](.github/workflows/release.yml) GitHub Actions workflow from
   the version tag, with no cache, and the workflow prints the hashes. You can
@@ -216,18 +216,18 @@ To try it without Claude Code, use `scripts/simular-evento.ps1`.
 
 ## Project layout
 
-| Folder | Contents |
-|---|---|
-| `src/` | Interface (React and TypeScript) |
-| `src/mascot/` | The character engine: animation and reactions |
-| `src/mascotas/` | The drawings: each pet with its styles, and the palettes |
-| `src/disfraces/` | The costumes, as data |
-| `src/estado/`, `src/permisos/`, `src/resultados/` | Sessions, permission cards and results |
-| `src/audio/` | Synthesized sounds |
-| `src/ajustes/` | Settings window |
-| `src-tauri/` | Rust: local receiver, cursor, tray, hook installation |
-| `scripts/` | Event simulator, signing and license listing |
-| `docs/` | Hooks, privacy, uninstalling, signing, the test script and how to make a costume |
+| Folder                                            | Contents                                                                         |
+| ------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `src/`                                            | Interface (React and TypeScript)                                                 |
+| `src/mascot/`                                     | The character engine: animation and reactions                                    |
+| `src/mascotas/`                                   | The drawings: each pet with its styles, and the palettes                         |
+| `src/disfraces/`                                  | The costumes, as data                                                            |
+| `src/estado/`, `src/permisos/`, `src/resultados/` | Sessions, permission cards and results                                           |
+| `src/audio/`                                      | Synthesized sounds                                                               |
+| `src/ajustes/`                                    | Settings window                                                                  |
+| `src-tauri/`                                      | Rust: local receiver, cursor, tray, hook installation                            |
+| `scripts/`                                        | Event simulator, signing and license listing                                     |
+| `docs/`                                           | Hooks, privacy, uninstalling, signing, the test script and how to make a costume |
 
 Code, comments and commit messages are in Spanish. Built with
 [Tauri 2](https://tauri.app/), React and TypeScript.

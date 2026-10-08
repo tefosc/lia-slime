@@ -117,6 +117,7 @@ que puedes hacer:
 
   El resultado debe coincidir con el de `SHA256SUMS.txt` y con el que aparece
   en las notas de la release. Si no coincide, no lo instales.
+
 - **El binario se compila en público.** Lo genera el flujo
   [`release.yml`](.github/workflows/release.yml) de GitHub Actions a partir de
   la etiqueta de la versión, sin caché, y el propio flujo imprime los hashes.
@@ -216,18 +217,18 @@ Para probar sin Claude Code, usa `scripts/simular-evento.ps1`.
 
 ## Estructura del proyecto
 
-| Carpeta | Contenido |
-|---|---|
-| `src/` | Interfaz (React y TypeScript) |
-| `src/mascot/` | El motor del personaje: animación y reacciones |
-| `src/mascotas/` | Los dibujos: cada mascota con sus estilos, y las paletas |
-| `src/disfraces/` | Los disfraces, como datos |
-| `src/estado/`, `src/permisos/`, `src/resultados/` | Sesiones, tarjetas de permiso y resultados |
-| `src/audio/` | Sonidos sintetizados |
-| `src/ajustes/` | Ventana de Ajustes |
-| `src-tauri/` | Rust: receptor local, cursor, bandeja, instalación de hooks |
-| `scripts/` | Simulador de eventos, firma y listado de licencias |
-| `docs/` | Hooks, privacidad, desinstalación, firma, guion de prueba y cómo crear un disfraz |
+| Carpeta                                           | Contenido                                                                         |
+| ------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `src/`                                            | Interfaz (React y TypeScript)                                                     |
+| `src/mascot/`                                     | El motor del personaje: animación y reacciones                                    |
+| `src/mascotas/`                                   | Los dibujos: cada mascota con sus estilos, y las paletas                          |
+| `src/disfraces/`                                  | Los disfraces, como datos                                                         |
+| `src/estado/`, `src/permisos/`, `src/resultados/` | Sesiones, tarjetas de permiso y resultados                                        |
+| `src/audio/`                                      | Sonidos sintetizados                                                              |
+| `src/ajustes/`                                    | Ventana de Ajustes                                                                |
+| `src-tauri/`                                      | Rust: receptor local, cursor, bandeja, instalación de hooks                       |
+| `scripts/`                                        | Simulador de eventos, firma y listado de licencias                                |
+| `docs/`                                           | Hooks, privacidad, desinstalación, firma, guion de prueba y cómo crear un disfraz |
 
 Hecha con [Tauri 2](https://tauri.app/), React y TypeScript.
 
