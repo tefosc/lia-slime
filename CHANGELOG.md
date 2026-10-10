@@ -3,7 +3,7 @@
 Este archivo sigue el formato de [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
-## [0.1.0] - sin publicar
+## [0.1.0] - 2026-10-10
 
 Primera versión. Solo para Windows. El proyecto y el instalador se llaman
 **Lia Slime**; Lia es el nombre del personaje.
