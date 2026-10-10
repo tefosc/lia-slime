@@ -9,10 +9,12 @@ de la bandeja, títulos de README y docs, metadatos del exe). **Lia** es el
 personaje: así se la llama en los textos de la interfaz y en la prosa. El
 ejecutable sigue siendo `lia.exe` y el identificador no cambia.
 
-Estado actual: mascota completa (estados, permisos, resultados, reacciones,
-bandeja, Ajustes, sueño por inactividad y sonidos), lista para publicar la
-versión 0.1.0 con instalador NSIS, sin firmar. La firma está pendiente (ver
-`docs/firma.md`).
+Estado actual: versión 0.1.0 publicada el 2026-10-10 (etiqueta `v0.1.0`), con
+instalador NSIS sin firmar. Mascota completa: estados, permisos, resultados,
+reacciones, bandeja, Ajustes, apariencia y disfraces, sueño por inactividad y
+sonidos. La firma está pendiente (ver `docs/firma.md`). Los archivos de una
+release publicada no se cambian: un arreglo va en la versión siguiente, con
+su entrada en `CHANGELOG.md`.
 
 ## Stack
 
