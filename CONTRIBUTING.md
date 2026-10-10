@@ -75,10 +75,6 @@ Este proyecto intenta tener las menos posibles.
 
 ## Licencia de las contribuciones
 
-> La licencia del arte es todavía una **plantilla pendiente de revisión**
-> (lo dice su propio aviso). Hasta que se apruebe, lo de esta sección sobre
-> el arte es la intención del proyecto, no un texto definitivo.
-
 **Código.** Al contribuir aceptas que tu código se publique bajo la licencia
 [MIT](LICENSE).
 

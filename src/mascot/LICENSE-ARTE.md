@@ -1,10 +1,5 @@
 # Licencia del personaje Lia (arte y nombres)
 
-> **PLANTILLA SIN REVISAR.** Este texto es un borrador que el titular de los
-> derechos debe leer, ajustar y aprobar antes de publicar. No es asesoría
-> legal. Mientras este aviso siga aquí, trata el arte como "todos los derechos
-> reservados" sin más permisos que los que la ley ya concede.
-
 Copyright © 2026 Alejandro Stéfano Solís Martos. Todos los derechos
 reservados.
 
