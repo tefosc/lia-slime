@@ -10,7 +10,7 @@ you answer without switching windows.
 She is for people who run Claude Code in the terminal and leave long tasks
 running while they do something else.
 
-![Lia in her four states: idle, working, needs you and done](docs/media/estados.png)
+![Lia asks for permission to create a file, celebrates when Claude finishes and shows the result](docs/media/demo.gif)
 
 > Independent project. **Not affiliated with or endorsed by Anthropic.**
 > Claude and Claude Code are trademarks of their respective owners.
@@ -18,6 +18,8 @@ running while they do something else.
 The app's interface is in Spanish.
 
 ## Features
+
+![Lia in her four states: idle, working, needs you and done](docs/media/estados.png)
 
 - **States.** Lia mirrors what Claude Code is doing: idle, working, "needs
   you" and "done". With several conversations open, the most urgent one wins.

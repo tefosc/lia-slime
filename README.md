@@ -10,12 +10,14 @@ te deja responder sin cambiar de ventana.
 Es para quien usa Claude Code en la terminal y deja tareas largas corriendo
 mientras hace otra cosa.
 
-![Lia en sus cuatro estados: en reposo, trabajando, te necesita y terminó](docs/media/estados.png)
+![Lia pide permiso para crear un archivo, celebra cuando Claude termina y muestra el resultado](docs/media/demo.gif)
 
 > Proyecto independiente. **No está afiliado a Anthropic ni cuenta con su
 > respaldo.** Claude y Claude Code son marcas de sus respectivos dueños.
 
 ## Funciones
+
+![Lia en sus cuatro estados: en reposo, trabajando, te necesita y terminó](docs/media/estados.png)
 
 - **Estados.** Lia refleja lo que hace Claude Code: en reposo, trabajando,
   "te necesita" y "terminó". Con varias conversaciones abiertas, manda la más
