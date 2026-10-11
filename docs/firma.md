@@ -7,6 +7,18 @@ de release no tiene ningún paso de firma ni recibe secretos de firma. Esta
 página recoge las rutas posibles, lo que falta para cada una y lo que ya está
 preparado.
 
+## Por qué importa
+
+Sin firma, Windows reacciona de dos formas según el equipo (visto con la
+0.1.0 en equipos de prueba):
+
+- **SmartScreen** avisa ("Windows protegió su PC") y deja continuar con "Más
+  información > Ejecutar de todas formas".
+- **Control Inteligente de Aplicaciones** (Smart App Control, activo en
+  instalaciones recientes de Windows 11) **bloquea el instalador sin opción
+  de continuar**. En esos equipos Lia Slime no se puede instalar hasta que
+  esté firmada.
+
 ## Qué hay hoy
 
 - `release.yml` compila el instalador en GitHub Actions desde una etiqueta

@@ -111,6 +111,21 @@ what you can do:
   publisher. To continue: **More info > Run anyway**. That is the standard
   warning for unsigned or rarely downloaded programs; it says nothing about
   the contents.
+
+  ![SmartScreen warning: "Windows protected your PC" (in Spanish)](docs/media/instalar-smartscreen-1.png)
+  ![After "More info", the "Run anyway" button appears](docs/media/instalar-smartscreen-2.png)
+
+- **If it says "Smart App Control blocked an app" instead**, that machine
+  cannot install Lia Slime for now. It is a Windows 11 protection that blocks
+  unsigned programs and, unlike SmartScreen, offers no way to continue: the
+  "OK" button only closes the message. It is usually on in recent Windows 11
+  installs. The only way to install there is to turn that protection off in
+  Windows Security, and we do not recommend doing so just for this: it affects
+  the whole machine and may not be possible to turn back on without resetting
+  Windows. It will be solved once the installer is signed.
+
+  ![Smart App Control block (in Spanish)](docs/media/instalar-bloqueo.png)
+
 - **Verify the SHA-256** before running it. In PowerShell:
 
   ```powershell

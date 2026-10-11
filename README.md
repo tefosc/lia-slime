@@ -112,6 +112,22 @@ puedes hacer:
   "desconocido". Para continuar: **Más información > Ejecutar de todas
   formas**. Es el aviso normal para programas sin firma o poco descargados; no
   dice nada sobre el contenido.
+
+  ![Aviso de SmartScreen: "Windows protegió su PC"](docs/media/instalar-smartscreen-1.png)
+  ![Tras pulsar "Más información" aparece "Ejecutar de todas formas"](docs/media/instalar-smartscreen-2.png)
+
+- **Si en su lugar dice "Control Inteligente de Aplicaciones bloqueó una
+  aplicación"**, ese equipo no puede instalar Lia Slime por ahora. Es una
+  protección de Windows 11 (Smart App Control) que bloquea los programas sin
+  firma y, a diferencia de SmartScreen, no ofrece la opción de continuar: el
+  botón "Aceptable" solo cierra el mensaje. Suele estar activa en
+  instalaciones recientes de Windows 11. La única forma de instalar ahí es
+  desactivar esa protección en Seguridad de Windows, y no lo recomendamos
+  solo para esto: afecta a todo el equipo y puede no poder reactivarse sin
+  restablecer Windows. Se resolverá cuando el instalador esté firmado.
+
+  ![Bloqueo del Control Inteligente de Aplicaciones](docs/media/instalar-bloqueo.png)
+
 - **Verifica el SHA-256** antes de ejecutarlo. En PowerShell:
 
   ```powershell
