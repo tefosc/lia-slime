@@ -293,6 +293,10 @@ Hecha con [Tauri 2](https://tauri.app/), React y TypeScript.
 ## Créditos
 
 - Diseño, personaje y desarrollo: Alejandro Stéfano Solís Martos.
+- Inspirado en [Coucou](https://github.com/Louis-CFM/coucou), de Louis
+  Raillé: de ahí viene la idea de una mascota que acompaña a los agentes de
+  código. Lia Slime es un proyecto independiente, sin relación con Coucou; no
+  usa su código, su personaje (Mochi) ni sus recursos.
 - Estructura inicial generada con la plantilla oficial `create-tauri-app`
   (MIT o Apache-2.0).
 - Buena parte del código se escribió con ayuda de Claude Code.

@@ -290,6 +290,10 @@ Code, comments and commit messages are in Spanish. Built with
 ## Credits
 
 - Design, character and development: Alejandro Stéfano Solís Martos.
+- Inspired by [Coucou](https://github.com/Louis-CFM/coucou), by Louis Raillé:
+  the idea of a pet that keeps coding agents company comes from there. Lia
+  Slime is an independent project, not related to Coucou; it does not use its
+  code, its character (Mochi) or its assets.
 - Initial scaffold generated with the official `create-tauri-app` template
   (MIT or Apache-2.0).
 - Much of the code was written with the help of Claude Code.
